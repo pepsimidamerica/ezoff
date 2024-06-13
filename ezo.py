@@ -187,6 +187,54 @@ def create_member(member: dict) -> dict:
     return response.json()
 
 
+def update_member(member_id: int, member: dict) -> dict:
+    """
+    Update a member
+    """
+    if "EZO_BASE_URL" not in os.environ:
+        raise Exception("EZO_BASE_URL not found in environment variables.")
+    if "EZO_TOKEN" not in os.environ:
+        raise Exception("EZO_TOKEN not found in environment variables.")
+
+    # Remove any keys that are not valid
+    valid_keys = [
+        "user[email]",
+        "user[employee_id]",
+        "user[role_id]",
+        "user[team_id]",
+        "user[user_listing_id]",
+        "user[first_name]",
+        "user[last_name]",
+        "user[phone_number]",
+        "user[fax]",
+        "skip_confirmation_email",
+    ]
+
+    # Check for custom attributes
+    member = {
+        k: v
+        for k, v in member.items()
+        if k in valid_keys or k.startswith("user[custom_attributes]")
+    }
+
+    url = os.environ["EZO_BASE_URL"] + "members/" + str(member_id) + ".api"
+
+    try:
+        response = requests.put(
+            url,
+            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+            data=member,
+            timeout=10,
+        )
+    except Exception as e:
+        print("Error, could not update member in EZOfficeInventory: ", e)
+        raise Exception(
+            "Error, could not update member in EZOfficeInventory: " + str(e)
+        )
+
+    return response.json()
+
+
 def get_locations(filter: Optional[dict]) -> list[dict]:
     """
     Get locations
@@ -567,6 +615,61 @@ def search_for_asset(search_term: str) -> list[dict]:
     return all_assets
 
 
+def create_asset(asset: dict) -> dict:
+    """
+    Create an asset
+    """
+    if "EZO_BASE_URL" not in os.environ:
+        raise Exception("EZO_BASE_URL not found in environment variables")
+    if "EZO_TOKEN" not in os.environ:
+        raise Exception("EZO_TOKEN not found in environment variables")
+
+    # Required fields
+    if "fixed_asset[name]" not in asset:
+        raise ValueError("asset must have 'fixed_asset[name]' key")
+    if "fixed_asset[group_id]" not in asset:
+        raise ValueError("asset must have 'fixed_asset[group_id]' key")
+    if "fixed_asset[purchased_on]" not in asset:
+        raise ValueError("asset must have 'fixed_asset[purchased_on]' key")
+        # Also check that the date is in the correct format mm/dd/yyyy
+        try:
+            datetime.strptime(asset["fixed_asset[purchased_on]"], "%m/%d/%Y")
+        except ValueError:
+            raise ValueError(
+                "asset['fixed_asset[purchased_on]'] must be in the format mm/dd/yyyy"
+            )
+
+    # Remove any keys that are not valid
+    valid_keys = [
+        "fixed_asset[name]",
+        "fixed_asset[group_id]",
+        "fixed_asset[sub_group_id]" "fixed_asset[purchased_on]",
+        "fixed_asset[location_id]",
+        "fixed_asset[image_url]",
+        "fixed_asset[document_urls][]",
+        "fixed_asset[identifier]",
+    ]
+
+    asset = {
+        k: v for k, v in asset.items() if k in valid_keys or k.startswith("cust_attr")
+    }
+
+    url = os.environ["EZO_BASE_URL"] + "assets.api"
+
+    try:
+        response = requests.post(
+            url,
+            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+            data=asset,
+            timeout=10,
+        )
+    except Exception as e:
+        print("Error, could not create asset in EZOfficeInventory: ", e)
+        raise Exception("Error, could not create asset in EZOfficeInventory: " + str(e))
+
+    return response.json()
+
+
 if __name__ == "__main__":
     """
     Testing
@@ -580,8 +683,5 @@ if __name__ == "__main__":
         exit(1)
     os.environ["EZO_BASE_URL"] = config["EZO_BASE_URL"]
     os.environ["EZO_TOKEN"] = config["EZO_TOKEN"]
-
-    # Get assets
-    assets = search_for_asset("laptop")
 
     pass

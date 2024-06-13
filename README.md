@@ -14,3 +14,9 @@ Several environment variables are required for ezo to function.
 | --------- | ------------ | ----------- |
 | EZO_BASE_URL | Yes | Should be https://{companyname}.ezofficeinventory.com/ |
 | EZO_TOKEN | Yes | The access token used to authenticate requests |
+
+## Members
+
+## Locations
+
+## Assets
