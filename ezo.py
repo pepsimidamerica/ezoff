@@ -348,14 +348,13 @@ def create_location(location: dict) -> dict:
     return response.json()
 
 
-def get_assets(filter: Optional[dict]) -> list[dict]:
+def get_all_assets() -> list[dict]:
     """
     Get assets
-    Optionally use filter
+    Recommended to use endpoint that takes a filter instead.
+    This endpoint can be slow as it returns all assets in the system. Potentially
+    several hundred pages of assets.
     """
-    if filter is not None:
-        if "status" not in filter:
-            raise ValueError("filter must have 'status' key")
 
     if "EZO_BASE_URL" not in os.environ:
         raise Exception("EZO_BASE_URL not found in environment variables.")
@@ -369,8 +368,6 @@ def get_assets(filter: Optional[dict]) -> list[dict]:
 
     while True:
         params = {"page": page}
-        if filter is not None:
-            params.update(filter)
 
         try:
             response = requests.get(
@@ -423,6 +420,153 @@ def get_assets(filter: Optional[dict]) -> list[dict]:
     return all_assets
 
 
+def get_filtered_assets(filter: dict) -> list[dict]:
+    """
+    Get assets via filtering. Recommended to use this endpoint rather than
+    returning all assets.
+    """
+    if "status" not in filter:
+        raise ValueError("filter must have 'status' key")
+
+    if "EZO_BASE_URL" not in os.environ:
+        raise Exception("EZO_BASE_URL not found in environment variables.")
+    if "EZO_TOKEN" not in os.environ:
+        raise Exception("EZO_TOKEN not found in environment variables.")
+
+    url = os.environ["EZO_BASE_URL"] + "assets/filter.api"
+
+    page = 1
+    all_assets = []
+
+    while True:
+        params = {"page": page}
+        params.update(filter)
+
+        try:
+            response = requests.get(
+                url,
+                headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+                params=params,
+                data={
+                    "include_custom_fields": "true",
+                    "show_document_urls": "true",
+                    "show_image_urls": "true",
+                },
+                timeout=10,
+            )
+        except Exception as e:
+            print("Error, could not get assets from EZOfficeInventory: ", e)
+            raise Exception(
+                "Error, could not get assets from EZOfficeInventory: " + str(e)
+            )
+
+        if response.status_code != 200:
+            print(
+                f"Error {response.status_code}, could not get assets from EZOfficeInventory: ",
+                response.content,
+            )
+            break
+
+        data = response.json()
+
+        if "assets" not in data:
+            print(
+                f"Error, could not get assets from EZOfficeInventory: ",
+                response.content,
+            )
+            raise Exception(
+                f"Error, could not get assets from EZOfficeInventory: "
+                + str(response.content)
+            )
+
+        all_assets.extend(data["assets"])
+
+        if "total_pages" not in data:
+            print("Error, could not get total_pages from EZOfficeInventory: ", data)
+            break
+
+        if page >= data["total_pages"]:
+            break
+
+        page += 1
+
+    return all_assets
+
+
+def search_for_asset(search_term: str) -> list[dict]:
+    """
+    Search for an asset. Similar to filtering but more flexible.
+    The equivalent of the search bar in the EZOfficeInventory UI.
+    May not return all assets that match the search term. Better to use
+    get_filtered_assets if you want to return all assets that match a filter.
+    """
+
+    if "EZO_BASE_URL" not in os.environ:
+        raise Exception("EZO_BASE_URL not found in environment variables.")
+    if "EZO_TOKEN" not in os.environ:
+        raise Exception("EZO_TOKEN not found in environment variables.")
+
+    url = os.environ["EZO_BASE_URL"] + "search.api"
+
+    page = 1
+    all_assets = []
+
+    while True:
+        data = {
+            "page": page,
+            "search": search_term,
+            "facet": "FixedAsset",
+            "include_custom_fields": "true",
+            "show_document_urls": "true",
+            "show_image_urls": "true",
+            "show_document_details": "true",
+        }
+
+        try:
+            response = requests.get(
+                url,
+                headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+                data=data,
+                timeout=10,
+            )
+        except Exception as e:
+            print("Error, could not get assets from EZOfficeInventory: ", e)
+            raise Exception(
+                "Error, could not get assets from EZOfficeInventory: " + str(e)
+            )
+
+        if response.status_code != 200:
+            print(
+                f"Error {response.status_code}, could not get assets from EZOfficeInventory: ",
+                response.content,
+            )
+            break
+
+        data = response.json()
+
+        if "assets" not in data:
+            print(
+                f"Error, could not get assets from EZOfficeInventory: ",
+                response.content,
+            )
+            raise Exception(
+                f"Error, could not get assets from EZOfficeInventory: "
+                + str(response.content)
+            )
+
+        all_assets.extend(data["assets"])
+
+        if "total_pages" not in data:
+            break
+
+        if page >= data["total_pages"]:
+            break
+
+        page += 1
+
+    return all_assets
+
+
 if __name__ == "__main__":
     """
     Testing
@@ -437,7 +581,7 @@ if __name__ == "__main__":
     os.environ["EZO_BASE_URL"] = config["EZO_BASE_URL"]
     os.environ["EZO_TOKEN"] = config["EZO_TOKEN"]
 
-    # Get all assets
-    assets = get_assets(None)
+    # Get assets
+    assets = search_for_asset("laptop")
 
     pass
