@@ -248,6 +248,54 @@ def update_member(member_id: int, member: dict) -> dict:
 
 
 @Decorators.check_env_vars
+def deactivate_member(member_id: int) -> dict:
+    """
+    Deactivate a member
+    https://ezo.io/ezofficeinventory/developers/#api-deactivate-user
+    """
+
+    url = os.environ["EZO_BASE_URL"] + "members/" + str(member_id) + "/deactivate.api"
+
+    try:
+        response = requests.put(
+            url,
+            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+            timeout=10,
+        )
+    except Exception as e:
+        print("Error, could not deactivate member in EZOfficeInventory: ", e)
+        raise Exception(
+            "Error, could not deactivate member in EZOfficeInventory: " + str(e)
+        )
+
+    return response.json()
+
+
+@Decorators.check_env_vars
+def activate_member(member_id: int) -> dict:
+    """
+    Activate a member
+    https://ezo.io/ezofficeinventory/developers/#api-activate-user
+    """
+
+    url = os.environ["EZO_BASE_URL"] + "members/" + str(member_id) + "/activate.api"
+
+    try:
+        response = requests.put(
+            url,
+            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+            timeout=10,
+        )
+    except Exception as e:
+        print("Error, could not activate member in EZOfficeInventory: ", e)
+        raise Exception(
+            "Error, could not activate member in EZOfficeInventory: " + str(e)
+        )
+
+    return response.json()
+
+
+@Decorators.check_env_vars
 def get_custom_roles() -> list[dict]:
     """
     Get list of custom roles
