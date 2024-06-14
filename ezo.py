@@ -8,6 +8,29 @@ from typing import Literal, Optional
 import requests
 
 
+class Decorators:
+
+    @staticmethod
+    def check_env_vars(decorated):
+        """
+        Decorator to check if the required environment variables are set
+        """
+
+        def wrapper(*args, **kwargs):
+            """
+            Wrapper function
+            """
+            if "EZO_BASE_URL" not in os.environ:
+                raise Exception("EZO_BASE_URL not found in environment variables.")
+            if "EZO_TOKEN" not in os.environ:
+                raise Exception("EZO_TOKEN not found in environment variables.")
+            return decorated(*args, **kwargs)
+
+        wrapper.__name__ = decorated.__name__
+        return wrapper
+
+
+@Decorators.check_env_vars
 def get_members(filter: Optional[dict]) -> list[dict]:
     """
     Get members from EZOfficeInventory
@@ -26,11 +49,6 @@ def get_members(filter: Optional[dict]) -> list[dict]:
             raise ValueError(
                 "filter['filter'] must be one of 'email', 'employee_identification_number', 'status'"
             )
-
-    if "EZO_BASE_URL" not in os.environ:
-        raise Exception("EZO_BASE_URL not found in environment variables.")
-    if "EZO_TOKEN" not in os.environ:
-        raise Exception("EZO_TOKEN not found in environment variables.")
 
     url = os.environ["EZO_BASE_URL"] + "members.api"
 
@@ -87,16 +105,12 @@ def get_members(filter: Optional[dict]) -> list[dict]:
     return all_members
 
 
+@Decorators.check_env_vars
 def get_member_details(member_id: int) -> dict:
     """
     Get member from EZOfficeInventory by member_id
     https://ezo.io/ezofficeinventory/developers/#api-member-details
     """
-
-    if "EZO_BASE_URL" not in os.environ:
-        raise Exception("EZO_BASE_URL not found in environment variables.")
-    if "EZO_TOKEN" not in os.environ:
-        raise Exception("EZO_TOKEN not found in environment variables.")
 
     url = os.environ["EZO_BASE_URL"] + "members/" + str(member_id) + ".api"
 
@@ -124,15 +138,12 @@ def get_member_details(member_id: int) -> dict:
     return response.json()
 
 
+@Decorators.check_env_vars
 def create_member(member: dict) -> dict:
     """
     Create a new member
     https://ezo.io/ezofficeinventory/developers/#api-create-member
     """
-    if "EZO_BASE_URL" not in os.environ:
-        raise Exception("EZO_BASE_URL not found in environment variables.")
-    if "EZO_TOKEN" not in os.environ:
-        raise Exception("EZO_TOKEN not found in environment variables.")
 
     # Required fields
     if "user[email]" not in member:
@@ -191,15 +202,12 @@ def create_member(member: dict) -> dict:
     return response.json()
 
 
+@Decorators.check_env_vars
 def update_member(member_id: int, member: dict) -> dict:
     """
     Update a member
     https://ezo.io/ezofficeinventory/developers/#api-update-member
     """
-    if "EZO_BASE_URL" not in os.environ:
-        raise Exception("EZO_BASE_URL not found in environment variables.")
-    if "EZO_TOKEN" not in os.environ:
-        raise Exception("EZO_TOKEN not found in environment variables.")
 
     # Remove any keys that are not valid
     valid_keys = [
@@ -240,6 +248,7 @@ def update_member(member_id: int, member: dict) -> dict:
     return response.json()
 
 
+@Decorators.check_env_vars
 def get_custom_roles() -> list[dict]:
     """
     Get list of custom roles
@@ -247,10 +256,6 @@ def get_custom_roles() -> list[dict]:
     is usually small enough that it can be returned in one page.
     https://ezo.io/ezofficeinventory/developers/#api-retrieve-roles
     """
-    if "EZO_BASE_URL" not in os.environ:
-        raise Exception("EZO_BASE_URL not found in environment variables.")
-    if "EZO_TOKEN" not in os.environ:
-        raise Exception("EZO_TOKEN not found in environment variables.")
 
     url = os.environ["EZO_BASE_URL"] + "custom_roles.api"
 
@@ -304,15 +309,12 @@ def get_custom_roles() -> list[dict]:
     return all_custom_roles
 
 
+@Decorators.check_env_vars
 def get_teams() -> list[dict]:
     """
     Get teams
     https://ezo.io/ezofficeinventory/developers/#api-retrieve-teams
     """
-    if "EZO_BASE_URL" not in os.environ:
-        raise Exception("EZO_BASE_URL not found in environment variables.")
-    if "EZO_TOKEN" not in os.environ:
-        raise Exception("EZO_TOKEN not found in environment variables.")
 
     url = os.environ["EZO_BASE_URL"] + "teams.api"
 
@@ -366,6 +368,7 @@ def get_teams() -> list[dict]:
     return all_teams
 
 
+@Decorators.check_env_vars
 def get_locations(filter: Optional[dict]) -> list[dict]:
     """
     Get locations
@@ -379,11 +382,6 @@ def get_locations(filter: Optional[dict]) -> list[dict]:
             raise ValueError(
                 "filter['status'] must be one of 'all', 'active', 'inactive'"
             )
-
-    if "EZO_BASE_URL" not in os.environ:
-        raise Exception("EZO_BASE_URL not found in environment variables.")
-    if "EZO_TOKEN" not in os.environ:
-        raise Exception("EZO_TOKEN not found in environment variables.")
 
     url = os.environ["EZO_BASE_URL"] + "locations/get_line_item_locations.api"
 
@@ -440,15 +438,12 @@ def get_locations(filter: Optional[dict]) -> list[dict]:
     return all_locations
 
 
+@Decorators.check_env_vars
 def get_location_details(location_num: int) -> dict:
     """
     Get location details
     https://ezo.io/ezofficeinventory/developers/#api-location-details
     """
-    if "EZO_BASE_URL" not in os.environ:
-        raise Exception("EZO_BASE_URL not found in environment variables")
-    if "EZO_TOKEN" not in os.environ:
-        raise Exception("EZO_TOKEN not found in environment variables")
 
     url = os.environ["EZO_BASE_URL"] + "locations/" + str(location_num) + ".api"
 
@@ -478,15 +473,12 @@ def get_location_details(location_num: int) -> dict:
     return response.json()
 
 
+@Decorators.check_env_vars
 def create_location(location: dict) -> dict:
     """
     Create a location
     https://ezo.io/ezofficeinventory/developers/#api-create-location
     """
-    if "EZO_BASE_URL" not in os.environ:
-        raise Exception("EZO_BASE_URL not found in environment variables")
-    if "EZO_TOKEN" not in os.environ:
-        raise Exception("EZO_TOKEN not found in environment variables")
 
     # Required fields
     if "location[name]" not in location:
@@ -530,6 +522,7 @@ def create_location(location: dict) -> dict:
     return response.json()
 
 
+@Decorators.check_env_vars
 def get_all_assets() -> list[dict]:
     """
     Get assets
@@ -538,11 +531,6 @@ def get_all_assets() -> list[dict]:
     several hundred pages of assets.
     https://ezo.io/ezofficeinventory/developers/#api-retrive-assets
     """
-
-    if "EZO_BASE_URL" not in os.environ:
-        raise Exception("EZO_BASE_URL not found in environment variables.")
-    if "EZO_TOKEN" not in os.environ:
-        raise Exception("EZO_TOKEN not found in environment variables.")
 
     url = os.environ["EZO_BASE_URL"] + "assets.api"
 
@@ -603,6 +591,7 @@ def get_all_assets() -> list[dict]:
     return all_assets
 
 
+@Decorators.check_env_vars
 def get_filtered_assets(filter: dict) -> list[dict]:
     """
     Get assets via filtering. Recommended to use this endpoint rather than
@@ -610,11 +599,6 @@ def get_filtered_assets(filter: dict) -> list[dict]:
     """
     if "status" not in filter:
         raise ValueError("filter must have 'status' key")
-
-    if "EZO_BASE_URL" not in os.environ:
-        raise Exception("EZO_BASE_URL not found in environment variables.")
-    if "EZO_TOKEN" not in os.environ:
-        raise Exception("EZO_TOKEN not found in environment variables.")
 
     url = os.environ["EZO_BASE_URL"] + "assets/filter.api"
 
@@ -676,6 +660,7 @@ def get_filtered_assets(filter: dict) -> list[dict]:
     return all_assets
 
 
+@Decorators.check_env_vars
 def search_for_asset(search_term: str) -> list[dict]:
     """
     Search for an asset.
@@ -684,11 +669,6 @@ def search_for_asset(search_term: str) -> list[dict]:
     get_filtered_assets if you want to return all assets that match a filter.
     https://ezo.io/ezofficeinventory/developers/#api-search-name
     """
-
-    if "EZO_BASE_URL" not in os.environ:
-        raise Exception("EZO_BASE_URL not found in environment variables.")
-    if "EZO_TOKEN" not in os.environ:
-        raise Exception("EZO_TOKEN not found in environment variables.")
 
     url = os.environ["EZO_BASE_URL"] + "search.api"
 
@@ -751,15 +731,12 @@ def search_for_asset(search_term: str) -> list[dict]:
     return all_assets
 
 
+@Decorators.check_env_vars
 def create_asset(asset: dict) -> dict:
     """
     Create an asset
     https://ezo.io/ezofficeinventory/developers/#api-create-asset
     """
-    if "EZO_BASE_URL" not in os.environ:
-        raise Exception("EZO_BASE_URL not found in environment variables")
-    if "EZO_TOKEN" not in os.environ:
-        raise Exception("EZO_TOKEN not found in environment variables")
 
     # Required fields
     if "fixed_asset[name]" not in asset:
@@ -807,15 +784,12 @@ def create_asset(asset: dict) -> dict:
     return response.json()
 
 
+@Decorators.check_env_vars
 def update_asset(asset_id: int, asset: dict) -> dict:
     """
     Update an asset's details
     https://ezo.io/ezofficeinventory/developers/#api-update-asset
     """
-    if "EZO_BASE_URL" not in os.environ:
-        raise Exception("EZO_BASE_URL not found in environment variables")
-    if "EZO_TOKEN" not in os.environ:
-        raise Exception("EZO_TOKEN not found in environment variables")
 
     # Remove any keys that are not valid
     valid_keys = [
@@ -848,15 +822,12 @@ def update_asset(asset_id: int, asset: dict) -> dict:
     return response.json()
 
 
+@Decorators.check_env_vars
 def delete_asset(asset_id: int) -> dict:
     """
     Delete an asset
     https://ezo.io/ezofficeinventory/developers/#api-delete-asset
     """
-    if "EZO_BASE_URL" not in os.environ:
-        raise Exception("EZO_BASE_URL not found in environment variables")
-    if "EZO_TOKEN" not in os.environ:
-        raise Exception("EZO_TOKEN not found in environment variables")
 
     url = os.environ["EZO_BASE_URL"] + "assets/" + str(asset_id) + ".api"
 
@@ -873,15 +844,12 @@ def delete_asset(asset_id: int) -> dict:
     return response.json()
 
 
+@Decorators.check_env_vars
 def checkin_asset(asset_id: int, checkin: dict) -> dict:
     """
     Check in an asset to a location
     https://ezo.io/ezofficeinventory/developers/#api-checkin-asset
     """
-    if "EZO_BASE_URL" not in os.environ:
-        raise Exception("EZO_BASE_URL not found in environment variables")
-    if "EZO_TOKEN" not in os.environ:
-        raise Exception("EZO_TOKEN not found in environment variables")
 
     # Required fields
     if "checkin[location_id]" not in checkin:
@@ -917,15 +885,12 @@ def checkin_asset(asset_id: int, checkin: dict) -> dict:
     return response.json()
 
 
+@Decorators.check_env_vars
 def checkout_asset(asset_id: int, user_id: int, checkout: dict) -> dict:
     """
     Check out an asset to a member
     https://ezo.io/ezofficeinventory/developers/#api-checkout-asset
     """
-    if "EZO_BASE_URL" not in os.environ:
-        raise Exception("EZO_BASE_URL not found in environment variables")
-    if "EZO_TOKEN" not in os.environ:
-        raise Exception("EZO_TOKEN not found in environment variables")
 
     # Remove any keys that are not valid
     valid_keys = [
@@ -962,15 +927,12 @@ def checkout_asset(asset_id: int, user_id: int, checkout: dict) -> dict:
     return response.json()
 
 
+@Decorators.check_env_vars
 def get_asset_history(asset_id: int) -> list[dict]:
     """
     Get asset history
     https://ezo.io/ezofficeinventory/developers/#api-checkin-out-history
     """
-    if "EZO_BASE_URL" not in os.environ:
-        raise Exception("EZO_BASE_URL not found in environment variables")
-    if "EZO_TOKEN" not in os.environ:
-        raise Exception("EZO_TOKEN not found in environment variables")
 
     url = (
         os.environ["EZO_BASE_URL"] + "assets/" + str(asset_id) + "/history_paginate.api"
@@ -1026,6 +988,7 @@ def get_asset_history(asset_id: int) -> list[dict]:
     return all_history
 
 
+@Decorators.check_env_vars
 def get_work_orders(
     filter: Literal["complete", "in_progress", "review_pending", "open"]
 ) -> dict:
@@ -1033,10 +996,6 @@ def get_work_orders(
     Get filtered work orders (complete, in_progress, review_pending, or open)
     https://ezo.io/ezofficeinventory/developers/#api-get-filtered-task
     """
-    if "EZO_BASE_URL" not in os.environ:
-        raise Exception("EZO_BASE_URL not found in environment variables")
-    if "EZO_TOKEN" not in os.environ:
-        raise Exception("EZO_TOKEN not found in environment variables")
 
     url = os.environ["EZO_BASE_URL"] + "tasks.api"
 
@@ -1091,15 +1050,12 @@ def get_work_orders(
     return all_work_orders
 
 
+@Decorators.check_env_vars
 def get_work_order_details(work_order_id: int) -> dict:
     """
     Get work order details
     https://ezo.io/ezofficeinventory/developers/#api-retrive-task-details
     """
-    if "EZO_BASE_URL" not in os.environ:
-        raise Exception("EZO_BASE_URL not found in environment variables")
-    if "EZO_TOKEN" not in os.environ:
-        raise Exception("EZO_TOKEN not found in environment variables")
 
     url = os.environ["EZO_BASE_URL"] + "tasks/" + str(work_order_id) + ".api"
 
@@ -1128,26 +1084,76 @@ def get_work_order_details(work_order_id: int) -> dict:
     return response.json()
 
 
+@Decorators.check_env_vars
+def get_work_order_types() -> list[dict]:
+    """
+    Get work order types
+    Function doesn't appear to be paginated even though most other similar
+    functions are.
+    https://ezo.io/ezofficeinventory/developers/#api-get-task-types
+    """
+
+    url = os.environ["EZO_BASE_URL"] + "task_types.api"
+
+    try:
+        response = requests.get(
+            url,
+            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+            timeout=10,
+        )
+    except Exception as e:
+        print("Error, could not get work order types from EZOfficeInventory: ", e)
+        raise Exception(
+            "Error, could not get work order types from EZOfficeInventory: " + str(e)
+        )
+
+    if response.status_code != 200:
+        print(
+            f"Error {response.status_code}, could not get work order types from EZOfficeInventory: ",
+            response.content,
+        )
+        raise Exception(
+            f"Error, could not get work order types from EZOfficeInventory: "
+            + str(response.content)
+        )
+
+    if "work_order_types" not in response.json():
+        print(
+            f"Error, could not get work order types from EZOfficeInventory: ",
+            response.content,
+        )
+        raise Exception(
+            f"Error, could not get work order types from EZOfficeInventory: "
+            + str(response.content)
+        )
+
+    return response.json()["work_order_types"]
+
+
+@Decorators.check_env_vars
 def create_work_order(work_order: dict) -> dict:
     """
     Create a work order
     https://ezo.io/ezofficeinventory/developers/#api-create-task
     """
-    if "EZO_BASE_URL" not in os.environ:
-        raise Exception("EZO_BASE_URL not found in environment variables")
-    if "EZO_TOKEN" not in os.environ:
-        raise Exception("EZO_TOKEN not found in environment variables")
+    pass
 
 
+@Decorators.check_env_vars
+def start_work_order(work_order_id: int) -> dict:
+    """
+    Start a work order
+    https://ezo.io/ezofficeinventory/developers/#api-start-task
+    """
+    pass
+
+
+@Decorators.check_env_vars
 def get_checklists() -> list[dict]:
     """
     Get checklists
     https://ezo.io/ezofficeinventory/developers/#api-retrieve-checklists
     """
-    if "EZO_BASE_URL" not in os.environ:
-        raise Exception("EZO_BASE_URL not found in environment variables")
-    if "EZO_TOKEN" not in os.environ:
-        raise Exception("EZO_TOKEN not found in environment variables")
 
     page = 1
     all_checklists = []
