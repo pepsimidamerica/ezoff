@@ -11,6 +11,7 @@ def get_members(filter: Optional[dict]) -> list[dict]:
     """
     Get members from EZOfficeInventory
     Optionally filter by email, employee_identification_number, or status
+    https://ezo.io/ezofficeinventory/developers/#api-retrieve-members
     """
 
     if filter is not None:
@@ -88,6 +89,7 @@ def get_members(filter: Optional[dict]) -> list[dict]:
 def get_member_details(member_id: int) -> dict:
     """
     Get member from EZOfficeInventory by member_id
+    https://ezo.io/ezofficeinventory/developers/#api-member-details
     """
 
     if "EZO_BASE_URL" not in os.environ:
@@ -124,6 +126,7 @@ def get_member_details(member_id: int) -> dict:
 def create_member(member: dict) -> dict:
     """
     Create a new member
+    https://ezo.io/ezofficeinventory/developers/#api-create-member
     """
     if "EZO_BASE_URL" not in os.environ:
         raise Exception("EZO_BASE_URL not found in environment variables.")
@@ -190,6 +193,7 @@ def create_member(member: dict) -> dict:
 def update_member(member_id: int, member: dict) -> dict:
     """
     Update a member
+    https://ezo.io/ezofficeinventory/developers/#api-update-member
     """
     if "EZO_BASE_URL" not in os.environ:
         raise Exception("EZO_BASE_URL not found in environment variables.")
@@ -235,10 +239,137 @@ def update_member(member_id: int, member: dict) -> dict:
     return response.json()
 
 
+def get_custom_roles() -> list[dict]:
+    """
+    Get list of custom roles
+    Results are technically paginated but the number of custom roles
+    is usually small enough that it can be returned in one page.
+    https://ezo.io/ezofficeinventory/developers/#api-retrieve-roles
+    """
+    if "EZO_BASE_URL" not in os.environ:
+        raise Exception("EZO_BASE_URL not found in environment variables.")
+    if "EZO_TOKEN" not in os.environ:
+        raise Exception("EZO_TOKEN not found in environment variables.")
+
+    url = os.environ["EZO_BASE_URL"] + "custom_roles.api"
+
+    pages = 1
+    all_custom_roles = []
+
+    while True:
+        try:
+            response = requests.get(
+                url,
+                headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+                params={"page": pages},
+                timeout=10,
+            )
+        except Exception as e:
+            print("Error, could not get custom roles from EZOfficeInventory: ", e)
+            raise Exception(
+                "Error, could not get custom roles from EZOfficeInventory: " + str(e)
+            )
+
+        if response.status_code != 200:
+            print(
+                f"Error {response.status_code}, could not get custom roles from EZOfficeInventory: ",
+                response.content,
+            )
+            break
+
+        data = response.json()
+
+        if "custom_roles" not in data:
+            print(
+                f"Error, could not get custom roles from EZOfficeInventory: ",
+                response.content,
+            )
+            raise Exception(
+                f"Error, could not get custom roles from EZOfficeInventory: "
+                + str(response.content)
+            )
+
+        all_custom_roles.extend(data["custom_roles"])
+
+        if "total_pages" not in data:
+            print("Error, could not get total_pages from EZOfficeInventory: ", data)
+            break
+
+        if pages >= data["total_pages"]:
+            break
+
+        pages += 1
+
+    return all_custom_roles
+
+
+def get_teams() -> list[dict]:
+    """
+    Get teams
+    https://ezo.io/ezofficeinventory/developers/#api-retrieve-teams
+    """
+    if "EZO_BASE_URL" not in os.environ:
+        raise Exception("EZO_BASE_URL not found in environment variables.")
+    if "EZO_TOKEN" not in os.environ:
+        raise Exception("EZO_TOKEN not found in environment variables.")
+
+    url = os.environ["EZO_BASE_URL"] + "teams.api"
+
+    page = 1
+    all_teams = []
+
+    while True:
+        try:
+            response = requests.get(
+                url,
+                headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+                params={"page": page},
+                timeout=10,
+            )
+        except Exception as e:
+            print("Error, could not get teams from EZOfficeInventory: ", e)
+            raise Exception(
+                "Error, could not get teams from EZOfficeInventory: " + str(e)
+            )
+
+        if response.status_code != 200:
+            print(
+                f"Error {response.status_code}, could not get teams from EZOfficeInventory: ",
+                response.content,
+            )
+            break
+
+        data = response.json()
+
+        if "teams" not in data:
+            print(
+                f"Error, could not get teams from EZOfficeInventory: ",
+                response.content,
+            )
+            raise Exception(
+                f"Error, could not get teams from EZOfficeInventory: "
+                + str(response.content)
+            )
+
+        all_teams.extend(data["teams"])
+
+        if "total_pages" not in data:
+            print("Error, could not get total_pages from EZOfficeInventory: ", data)
+            break
+
+        if page >= data["total_pages"]:
+            break
+
+        page += 1
+
+    return all_teams
+
+
 def get_locations(filter: Optional[dict]) -> list[dict]:
     """
     Get locations
     Optionally filter by status
+    https://ezo.io/ezofficeinventory/developers/#api-retreive-locations
     """
     if filter is not None:
         if "status" not in filter:
@@ -311,6 +442,7 @@ def get_locations(filter: Optional[dict]) -> list[dict]:
 def get_location_details(location_num: int) -> dict:
     """
     Get location details
+    https://ezo.io/ezofficeinventory/developers/#api-location-details
     """
     if "EZO_BASE_URL" not in os.environ:
         raise Exception("EZO_BASE_URL not found in environment variables")
@@ -348,6 +480,7 @@ def get_location_details(location_num: int) -> dict:
 def create_location(location: dict) -> dict:
     """
     Create a location
+    https://ezo.io/ezofficeinventory/developers/#api-create-location
     """
     if "EZO_BASE_URL" not in os.environ:
         raise Exception("EZO_BASE_URL not found in environment variables")
@@ -402,6 +535,7 @@ def get_all_assets() -> list[dict]:
     Recommended to use endpoint that takes a filter instead.
     This endpoint can be slow as it returns all assets in the system. Potentially
     several hundred pages of assets.
+    https://ezo.io/ezofficeinventory/developers/#api-retrive-assets
     """
 
     if "EZO_BASE_URL" not in os.environ:
@@ -543,10 +677,11 @@ def get_filtered_assets(filter: dict) -> list[dict]:
 
 def search_for_asset(search_term: str) -> list[dict]:
     """
-    Search for an asset. Similar to filtering but more flexible.
+    Search for an asset.
     The equivalent of the search bar in the EZOfficeInventory UI.
     May not return all assets that match the search term. Better to use
     get_filtered_assets if you want to return all assets that match a filter.
+    https://ezo.io/ezofficeinventory/developers/#api-search-name
     """
 
     if "EZO_BASE_URL" not in os.environ:
@@ -618,6 +753,7 @@ def search_for_asset(search_term: str) -> list[dict]:
 def create_asset(asset: dict) -> dict:
     """
     Create an asset
+    https://ezo.io/ezofficeinventory/developers/#api-create-asset
     """
     if "EZO_BASE_URL" not in os.environ:
         raise Exception("EZO_BASE_URL not found in environment variables")
@@ -670,6 +806,161 @@ def create_asset(asset: dict) -> dict:
     return response.json()
 
 
+def update_asset(asset_id: int, asset: dict) -> dict:
+    """
+    Update an asset's details
+    https://ezo.io/ezofficeinventory/developers/#api-update-asset
+    """
+    if "EZO_BASE_URL" not in os.environ:
+        raise Exception("EZO_BASE_URL not found in environment variables")
+    if "EZO_TOKEN" not in os.environ:
+        raise Exception("EZO_TOKEN not found in environment variables")
+
+    # Remove any keys that are not valid
+    valid_keys = [
+        "fixed_asset[name]",
+        "fixed_asset[group_id]",
+        "fixed_asset[sub_group_id]",
+        "fixed_asset[purchased_on]",
+        "fixed_asset[location_id]",
+        "fixed_asset[image_url]",
+        "fixed_asset[document_urls][]",
+    ]
+
+    asset = {
+        k: v for k, v in asset.items() if k in valid_keys or k.startswith("cust_attr")
+    }
+
+    url = os.environ["EZO_BASE_URL"] + "assets/" + str(asset_id) + ".api"
+
+    try:
+        response = requests.put(
+            url,
+            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+            data=asset,
+            timeout=10,
+        )
+    except Exception as e:
+        print("Error, could not update asset in EZOfficeInventory: ", e)
+        raise Exception("Error, could not update asset in EZOfficeInventory: " + str(e))
+
+    return response.json()
+
+
+def delete_asset(asset_id: int) -> dict:
+    """
+    Delete an asset
+    https://ezo.io/ezofficeinventory/developers/#api-delete-asset
+    """
+    if "EZO_BASE_URL" not in os.environ:
+        raise Exception("EZO_BASE_URL not found in environment variables")
+    if "EZO_TOKEN" not in os.environ:
+        raise Exception("EZO_TOKEN not found in environment variables")
+
+    url = os.environ["EZO_BASE_URL"] + "assets/" + str(asset_id) + ".api"
+
+    try:
+        response = requests.delete(
+            url,
+            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+            timeout=10,
+        )
+    except Exception as e:
+        print("Error, could not delete asset in EZOfficeInventory: ", e)
+        raise Exception("Error, could not delete asset in EZOfficeInventory: " + str(e))
+
+    return response.json()
+
+
+def checkin_asset(asset_id: int, checkin: dict) -> dict:
+    """
+    Check in an asset to a location
+    https://ezo.io/ezofficeinventory/developers/#api-checkin-asset
+    """
+    if "EZO_BASE_URL" not in os.environ:
+        raise Exception("EZO_BASE_URL not found in environment variables")
+    if "EZO_TOKEN" not in os.environ:
+        raise Exception("EZO_TOKEN not found in environment variables")
+
+    # Required fields
+    if "checkin[location_id]" not in checkin:
+        raise ValueError("checkin must have 'checkin[location_id]' key")
+
+    # Remove any keys that are not valid
+    valid_keys = [
+        "checkin[location_id]",
+        "checkin[comments]",
+    ]
+
+    checkin = {
+        k: v
+        for k, v in checkin.items()
+        if k in valid_keys or k.startswith("checkin_values[c_attr_vals]")
+    }
+
+    url = os.environ["EZO_BASE_URL"] + "assets/" + str(asset_id) + "/checkin.api"
+
+    try:
+        response = requests.post(
+            url,
+            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+            data=checkin,
+            timeout=10,
+        )
+    except Exception as e:
+        print("Error, could not checkin asset in EZOfficeInventory: ", e)
+        raise Exception(
+            "Error, could not checkin asset in EZOfficeInventory: " + str(e)
+        )
+
+    return response.json()
+
+
+def checkout_asset(asset_id: int, user_id: int, checkout: dict) -> dict:
+    """
+    Check out an asset to a member
+    https://ezo.io/ezofficeinventory/developers/#api-checkout-asset
+    """
+    if "EZO_BASE_URL" not in os.environ:
+        raise Exception("EZO_BASE_URL not found in environment variables")
+    if "EZO_TOKEN" not in os.environ:
+        raise Exception("EZO_TOKEN not found in environment variables")
+
+    # Remove any keys that are not valid
+    valid_keys = [
+        "checkout_values[location_id]",
+        "checkout_values[comments]",
+        "till",
+        "till_time",
+        "checkout_values[override_conflicting_reservations]",
+        "checkout_values[override_my_conflicting_reservations]",
+    ]
+
+    checkout = {
+        k: v
+        for k, v in checkout.items()
+        if k in valid_keys or k.startswith("checkout_values[c_attr_vals]")
+    }
+
+    url = os.environ["EZO_BASE_URL"] + "assets/" + str(asset_id) + "/checkout.api"
+
+    try:
+        response = requests.post(
+            url,
+            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+            params={"user_id": user_id},
+            data=checkout,
+            timeout=10,
+        )
+    except Exception as e:
+        print("Error, could not checkout asset in EZOfficeInventory: ", e)
+        raise Exception(
+            "Error, could not checkout asset in EZOfficeInventory: " + str(e)
+        )
+
+    return response.json()
+
+
 if __name__ == "__main__":
     """
     Testing
@@ -684,4 +975,5 @@ if __name__ == "__main__":
     os.environ["EZO_BASE_URL"] = config["EZO_BASE_URL"]
     os.environ["EZO_TOKEN"] = config["EZO_TOKEN"]
 
+    teams = get_teams()
     pass
