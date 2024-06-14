@@ -2,7 +2,8 @@ import json
 import os
 from datetime import datetime, timedelta
 from pprint import pprint
-from typing import Optional
+from tabnanny import check
+from typing import Literal, Optional
 
 import requests
 
@@ -961,6 +962,243 @@ def checkout_asset(asset_id: int, user_id: int, checkout: dict) -> dict:
     return response.json()
 
 
+def get_asset_history(asset_id: int) -> list[dict]:
+    """
+    Get asset history
+    https://ezo.io/ezofficeinventory/developers/#api-checkin-out-history
+    """
+    if "EZO_BASE_URL" not in os.environ:
+        raise Exception("EZO_BASE_URL not found in environment variables")
+    if "EZO_TOKEN" not in os.environ:
+        raise Exception("EZO_TOKEN not found in environment variables")
+
+    url = (
+        os.environ["EZO_BASE_URL"] + "assets/" + str(asset_id) + "/history_paginate.api"
+    )
+
+    page = 1
+    all_history = []
+
+    while True:
+        try:
+            response = requests.get(
+                url,
+                headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+                params={"page": page},
+                timeout=10,
+            )
+        except Exception as e:
+            print("Error, could not get asset history from EZOfficeInventory: ", e)
+            raise Exception(
+                "Error, could not get asset history from EZOfficeInventory: " + str(e)
+            )
+
+        if response.status_code != 200:
+            print(
+                f"Error {response.status_code}, could not get asset history from EZOfficeInventory: ",
+                response.content,
+            )
+            break
+
+        data = response.json()
+
+        if "history" not in data:
+            print(
+                f"Error, could not get asset history from EZOfficeInventory: ",
+                response.content,
+            )
+            raise Exception(
+                f"Error, could not get asset history from EZOfficeInventory: "
+                + str(response.content)
+            )
+
+        all_history.extend(data["history"])
+
+        if "total_pages" not in data:
+            print("Error, could not get total_pages from EZOfficeInventory: ", data)
+            break
+
+        if page >= data["total_pages"]:
+            break
+
+        page += 1
+
+    return all_history
+
+
+def get_work_orders(
+    filter: Literal["complete", "in_progress", "review_pending", "open"]
+) -> dict:
+    """
+    Get filtered work orders (complete, in_progress, review_pending, or open)
+    https://ezo.io/ezofficeinventory/developers/#api-get-filtered-task
+    """
+    if "EZO_BASE_URL" not in os.environ:
+        raise Exception("EZO_BASE_URL not found in environment variables")
+    if "EZO_TOKEN" not in os.environ:
+        raise Exception("EZO_TOKEN not found in environment variables")
+
+    url = os.environ["EZO_BASE_URL"] + "tasks.api"
+
+    page = 1
+    all_work_orders = {}
+
+    while True:
+
+        try:
+            response = requests.get(
+                url,
+                headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+                params={"page": page, "filter": filter},
+                timeout=10,
+            )
+        except Exception as e:
+            print("Error, could not get work orders from EZOfficeInventory: ", e)
+            raise Exception(
+                "Error, could not get work orders from EZOfficeInventory: " + str(e)
+            )
+
+        if response.status_code != 200:
+            print(
+                f"Error {response.status_code}, could not get work orders from EZOfficeInventory: ",
+                response.content,
+            )
+            break
+
+        data = response.json()
+
+        if "work_orders" not in data:
+            print(
+                f"Error, could not get work orders from EZOfficeInventory: ",
+                response.content,
+            )
+            raise Exception(
+                f"Error, could not get work orders from EZOfficeInventory: "
+                + str(response.content)
+            )
+
+        all_work_orders.update(data["work_orders"])
+
+        if "total_pages" not in data:
+            print("Error, could not get total_pages from EZOfficeInventory: ", data)
+            break
+
+        if page >= data["total_pages"]:
+            break
+
+        page += 1
+
+    return all_work_orders
+
+
+def get_work_order_details(work_order_id: int) -> dict:
+    """
+    Get work order details
+    https://ezo.io/ezofficeinventory/developers/#api-retrive-task-details
+    """
+    if "EZO_BASE_URL" not in os.environ:
+        raise Exception("EZO_BASE_URL not found in environment variables")
+    if "EZO_TOKEN" not in os.environ:
+        raise Exception("EZO_TOKEN not found in environment variables")
+
+    url = os.environ["EZO_BASE_URL"] + "tasks/" + str(work_order_id) + ".api"
+
+    try:
+        response = requests.get(
+            url,
+            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+            timeout=10,
+        )
+    except Exception as e:
+        print("Error, could not get work order from EZOfficeInventory: ", e)
+        raise Exception(
+            "Error, could not get work order from EZOfficeInventory: " + str(e)
+        )
+
+    if response.status_code != 200:
+        print(
+            f"Error {response.status_code}, could not get work order from EZOfficeInventory: ",
+            response.content,
+        )
+        raise Exception(
+            f"Error, could not get work order from EZOfficeInventory: "
+            + str(response.content)
+        )
+
+    return response.json()
+
+
+def create_work_order(work_order: dict) -> dict:
+    """
+    Create a work order
+    https://ezo.io/ezofficeinventory/developers/#api-create-task
+    """
+    if "EZO_BASE_URL" not in os.environ:
+        raise Exception("EZO_BASE_URL not found in environment variables")
+    if "EZO_TOKEN" not in os.environ:
+        raise Exception("EZO_TOKEN not found in environment variables")
+
+
+def get_checklists() -> list[dict]:
+    """
+    Get checklists
+    https://ezo.io/ezofficeinventory/developers/#api-retrieve-checklists
+    """
+    if "EZO_BASE_URL" not in os.environ:
+        raise Exception("EZO_BASE_URL not found in environment variables")
+    if "EZO_TOKEN" not in os.environ:
+        raise Exception("EZO_TOKEN not found in environment variables")
+
+    page = 1
+    all_checklists = []
+
+    while True:
+        try:
+            response = requests.get(
+                os.environ["EZO_BASE_URL"] + "checklists.api",
+                headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+                params={"page": page},
+                timeout=10,
+            )
+        except Exception as e:
+            print("Error, could not get checklists from EZOfficeInventory: ", e)
+            raise Exception(
+                "Error, could not get checklists from EZOfficeInventory: " + str(e)
+            )
+
+        if response.status_code != 200:
+            print(
+                f"Error {response.status_code}, could not get checklists from EZOfficeInventory: ",
+                response.content,
+            )
+            break
+
+        data = response.json()
+
+        if "checklists" not in data:
+            print(
+                f"Error, could not get checklists from EZOfficeInventory: ",
+                response.content,
+            )
+            raise Exception(
+                f"Error, could not get checklists from EZOfficeInventory: "
+                + str(response.content)
+            )
+
+        all_checklists.extend(data["checklists"])
+
+        if "total_pages" not in data:
+            print("Error, could not get total_pages from EZOfficeInventory: ", data)
+            break
+
+        if page >= data["total_pages"]:
+            break
+
+        page += 1
+
+    return all_checklists
+
+
 if __name__ == "__main__":
     """
     Testing
@@ -975,5 +1213,5 @@ if __name__ == "__main__":
     os.environ["EZO_BASE_URL"] = config["EZO_BASE_URL"]
     os.environ["EZO_TOKEN"] = config["EZO_TOKEN"]
 
-    teams = get_teams()
-    pass
+    result = get_work_order_details(1652)
+    pprint(result)
