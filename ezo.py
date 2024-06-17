@@ -570,6 +570,30 @@ def create_location(location: dict) -> dict:
 
 
 @Decorators.check_env_vars
+def deactivate_location(location_num: int) -> dict:
+    """
+    Deactivate a location
+    https://ezo.io/ezofficeinventory/developers/#api-deactivate-location
+    """
+
+    url = os.environ["EZO_BASE_URL"] + "locations/" + str(location_num) + "/deactivate.api"
+
+    try:
+        response = requests.patch(
+            url,
+            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+            timeout=10,
+        )
+    except Exception as e:
+        print("Error, could not deactivate location in EZOfficeInventory: ", e)
+        raise Exception(
+            "Error, could not deactivate location in EZOfficeInventory: " + str(e)
+        )
+
+    return response.json(
+
+
+@Decorators.check_env_vars
 def get_all_assets() -> list[dict]:
     """
     Get assets
