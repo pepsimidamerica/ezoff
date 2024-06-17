@@ -576,7 +576,12 @@ def deactivate_location(location_num: int) -> dict:
     https://ezo.io/ezofficeinventory/developers/#api-deactivate-location
     """
 
-    url = os.environ["EZO_BASE_URL"] + "locations/" + str(location_num) + "/deactivate.api"
+    url = (
+        os.environ["EZO_BASE_URL"]
+        + "locations/"
+        + str(location_num)
+        + "/deactivate.api"
+    )
 
     try:
         response = requests.patch(
@@ -590,7 +595,7 @@ def deactivate_location(location_num: int) -> dict:
             "Error, could not deactivate location in EZOfficeInventory: " + str(e)
         )
 
-    return response.json(
+    return response.json()
 
 
 @Decorators.check_env_vars
