@@ -521,6 +521,47 @@ def get_location_details(location_num: int) -> dict:
 
 
 @Decorators.check_env_vars
+def get_location_item_quantities(location_num: int) -> dict:
+    """
+    Get quantities of each item at a location
+    """
+
+    url = (
+        os.environ["EZO_BASE_URL"]
+        + "locations/"
+        + str(location_num)
+        + "/quantities_by_asset_ids.api"
+    )
+
+    try:
+        response = requests.get(
+            url,
+            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+            timeout=10,
+        )
+    except Exception as e:
+        print(
+            "Error, could not get location item quantities from EZOfficeInventory: ", e
+        )
+        raise Exception(
+            "Error, could not get location item quantities from EZOfficeInventory: "
+            + str(e)
+        )
+
+    if response.status_code != 200:
+        print(
+            f"Error {response.status_code}, could not get location item quantities from EZOfficeInventory: ",
+            response.content,
+        )
+        raise Exception(
+            f"Error {response.status_code}, could not get location item quantities from EZOfficeInventory: "
+            + str(response.content)
+        )
+
+    return response.json()
+
+
+@Decorators.check_env_vars
 def create_location(location: dict) -> dict:
     """
     Create a location
