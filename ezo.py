@@ -570,6 +570,32 @@ def create_location(location: dict) -> dict:
 
 
 @Decorators.check_env_vars
+def activate_location(location_num: int) -> dict:
+    """
+    Activate a location
+    https://ezo.io/ezofficeinventory/developers/#api-activate-location
+    """
+
+    url = (
+        os.environ["EZO_BASE_URL"] + "locations/" + str(location_num) + "/activate.api"
+    )
+
+    try:
+        response = requests.patch(
+            url,
+            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+            timeout=10,
+        )
+    except Exception as e:
+        print("Error, could not activate location in EZOfficeInventory: ", e)
+        raise Exception(
+            "Error, could not activate location in EZOfficeInventory: " + str(e)
+        )
+
+    return response.json()
+
+
+@Decorators.check_env_vars
 def deactivate_location(location_num: int) -> dict:
     """
     Deactivate a location
