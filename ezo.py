@@ -585,7 +585,11 @@ def create_location(location: dict) -> dict:
         "location[description]",
     ]
 
-    location = {k: v for k, v in location.items() if k in valid_keys}
+    location = {
+        k: v
+        for k, v in location.items()
+        if k in valid_keys or k.startswith("location[custom_attributes]")
+    }
 
     if "location[status]" in location:
         if location["location[status]"] not in ["active", "inactive"]:
@@ -660,6 +664,60 @@ def deactivate_location(location_num: int) -> dict:
         print("Error, could not deactivate location in EZOfficeInventory: ", e)
         raise Exception(
             "Error, could not deactivate location in EZOfficeInventory: " + str(e)
+        )
+
+    return response.json()
+
+
+@Decorators.check_env_vars
+def update_location(location_num: int, location: dict) -> dict:
+    """
+    Updates a location
+    https://ezo.io/ezofficeinventory/developers/#api-update-location
+    """
+
+    # Remove any keys that are not valid
+    valid_keys = [
+        "location[parent_id]",
+        "location[name]",
+        "location[city]",
+        "location[state]",
+        "location[zipcode]",
+        "location[street1]",
+        "location[street2]",
+        "location[status]",
+        "location[description]",
+    ]
+
+    location = {
+        k: v
+        for k, v in location.items()
+        if k in valid_keys or k.startswith("location[custom_attributes]")
+    }
+
+    url = os.environ["EZO_BASE_URL"] + "locations/" + str(location_num) + ".api"
+
+    try:
+        response = requests.put(
+            url,
+            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+            data=location,
+            timeout=10,
+        )
+    except Exception as e:
+        print("Error, could not update location in EZOfficeInventory: ", e)
+        raise Exception(
+            "Error, could not update location in EZOfficeInventory: " + str(e)
+        )
+
+    if response.status_code != 200:
+        print(
+            f"Error {response.status_code}, could not update location in EZOfficeInventory: ",
+            response.content,
+        )
+        raise Exception(
+            f"Error {response.status_code}, could not update location in EZOfficeInventory: "
+            + str(response.content)
         )
 
     return response.json()
