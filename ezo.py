@@ -6,11 +6,11 @@ import json
 import os
 from pprint import pprint
 
-from assets import *
-from groups import *
-from locations import *
-from members import *
-from workorders import *
+from .assets import *
+from .groups import *
+from .locations import *
+from .members import *
+from .workorders import *
 
 if __name__ == "__main__":
     """
