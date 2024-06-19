@@ -1,3 +1,7 @@
+"""
+Module for interacting with the EZOffice Inventory API
+"""
+
 import json
 import os
 from pprint import pprint
