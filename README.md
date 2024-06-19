@@ -15,8 +15,16 @@ Several environment variables are required for ezo to function.
 | EZO_BASE_URL | Yes | Should be https://{companyname}.ezofficeinventory.com/ |
 | EZO_TOKEN | Yes | The access token used to authenticate requests |
 
-## Members
+## Project Structure
 
-## Locations
+Project is split up into several files depending on what area of the EZOffice API is being dealt with. Purely for organizational purposes.
 
-## Assets
+### Assets
+
+### Groups
+
+### Locations
+
+### Members
+
+### Work Orders

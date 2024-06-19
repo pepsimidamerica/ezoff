@@ -1,3 +1,7 @@
+"""
+This module contains functions for interacting with locations in EZOfficeInventory
+"""
+
 import os
 from typing import Optional
 

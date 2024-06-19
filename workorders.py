@@ -1,3 +1,7 @@
+"""
+This module contains functions to interact with work orders in EZOfficeInventory.
+"""
+
 import os
 from typing import Literal
 

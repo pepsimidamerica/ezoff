@@ -1,5 +1,5 @@
 """
-Covers everything related to assets in EZOffice
+Covers everything related to fixed assets in EZOffice
 """
 
 import os

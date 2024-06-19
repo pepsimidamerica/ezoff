@@ -1,3 +1,8 @@
+"""
+Handles any authentication-realted functionality.
+Largely just checking if the required environment variables are set.
+"""
+
 import os
 
 

@@ -1,3 +1,7 @@
+"""
+Covers everything related to groups and subgroups in EZOfficeInventory
+"""
+
 import os
 from typing import Optional
 

@@ -1,3 +1,7 @@
+"""
+This module contains functions for interacting with members/roles/user setup in EZOfficeInventory
+"""
+
 import os
 from typing import Optional
 
