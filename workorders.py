@@ -7,7 +7,7 @@ from typing import Literal
 
 import requests
 
-from auth import Decorators
+from .auth import Decorators
 
 
 @Decorators.check_env_vars
