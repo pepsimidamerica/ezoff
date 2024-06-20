@@ -244,7 +244,8 @@ def create_asset(asset: dict) -> dict:
     valid_keys = [
         "fixed_asset[name]",
         "fixed_asset[group_id]",
-        "fixed_asset[sub_group_id]" "fixed_asset[purchased_on]",
+        "fixed_asset[sub_group_id]",
+        "fixed_asset[purchased_on]",
         "fixed_asset[location_id]",
         "fixed_asset[image_url]",
         "fixed_asset[document_urls][]",
