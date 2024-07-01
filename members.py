@@ -139,6 +139,7 @@ def create_member(member: dict) -> dict:
     valid_keys = [
         "user[email]",
         "user[employee_id]",
+        "user[employee_identification_number]",
         "user[role_id]",
         "user[team_id]",
         "user[user_listing_id]",
