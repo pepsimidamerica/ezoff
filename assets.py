@@ -284,6 +284,7 @@ def update_asset(asset_id: int, asset: dict) -> dict:
         "fixed_asset[name]",
         "fixed_asset[group_id]",
         "fixed_asset[sub_group_id]",
+        "fixed_asset[identifier]",
         "fixed_asset[purchased_on]",
         "fixed_asset[location_id]",
         "fixed_asset[image_url]",

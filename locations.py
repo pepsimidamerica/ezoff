@@ -170,6 +170,7 @@ def create_location(location: dict) -> dict:
     # Remove any keys that are not valid
     valid_keys = [
         "location[parent_id]",
+        "location[identification_number]",
         "location[name]",
         "location[city]",
         "location[state]",
