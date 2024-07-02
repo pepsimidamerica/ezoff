@@ -241,6 +241,7 @@ def activate_location(location_num: int) -> dict:
         raise Exception(
             f"Error {response.status_code}, could not activate location in EZOfficeInventory: "
             + str(response.content)
+        )
 
     return response.json()
 
