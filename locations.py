@@ -233,6 +233,15 @@ def activate_location(location_num: int) -> dict:
             "Error, could not activate location in EZOfficeInventory: " + str(e)
         )
 
+    if response.status_code != 200:
+        print(
+            f"Error {response.status_code}, could not activate location in EZOfficeInventory: ",
+            response.content,
+        )
+        raise Exception(
+            f"Error {response.status_code}, could not activate location in EZOfficeInventory: "
+            + str(response.content)
+
     return response.json()
 
 
@@ -260,6 +269,16 @@ def deactivate_location(location_num: int) -> dict:
         print("Error, could not deactivate location in EZOfficeInventory: ", e)
         raise Exception(
             "Error, could not deactivate location in EZOfficeInventory: " + str(e)
+        )
+
+    if response.status_code != 200:
+        print(
+            f"Error {response.status_code}, could not deactivate location in EZOfficeInventory: ",
+            response.content,
+        )
+        raise Exception(
+            f"Error {response.status_code}, could not deactivate location in EZOfficeInventory: "
+            + str(response.content)
         )
 
     return response.json()
