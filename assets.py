@@ -282,6 +282,7 @@ def update_asset(asset_id: int, asset: dict) -> dict:
     # Remove any keys that are not valid
     valid_keys = [
         "fixed_asset[name]",
+        "fixed_asset[description]",
         "fixed_asset[group_id]",
         "fixed_asset[sub_group_id]",
         "fixed_asset[identifier]",
