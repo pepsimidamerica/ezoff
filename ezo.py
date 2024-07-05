@@ -25,7 +25,3 @@ if __name__ == "__main__":
         exit(1)
     os.environ["EZO_BASE_URL"] = config["EZO_BASE_URL"]
     os.environ["EZO_TOKEN"] = config["EZO_TOKEN"]
-
-    result = get_subgroups(356045)
-    pass
-    pprint(result)
