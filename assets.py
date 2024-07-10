@@ -309,6 +309,16 @@ def update_asset(asset_id: int, asset: dict) -> dict:
         print("Error, could not update asset in EZOfficeInventory: ", e)
         raise Exception("Error, could not update asset in EZOfficeInventory: " + str(e))
 
+    if response.status_code != 200:
+        print(
+            f"Error {response.status_code}, could not update asset in EZOfficeInventory: ",
+            response.content,
+        )
+        raise Exception(
+            f"Error {response.status_code}, could not update asset in EZOfficeInventory: "
+            + str(response.content)
+        )
+
     return response.json()
 
 
