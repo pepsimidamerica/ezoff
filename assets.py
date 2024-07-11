@@ -269,6 +269,16 @@ def create_asset(asset: dict) -> dict:
         print("Error, could not create asset in EZOfficeInventory: ", e)
         raise Exception("Error, could not create asset in EZOfficeInventory: " + str(e))
 
+    if response.status_code != 200:
+        print(
+            f"Error {response.status_code}, could not create asset in EZOfficeInventory: ",
+            response.content,
+        )
+        raise Exception(
+            f"Error {response.status_code}, could not create asset in EZOfficeInventory: "
+            + str(response.content)
+        )
+
     return response.json()
 
 
@@ -341,6 +351,16 @@ def delete_asset(asset_id: int) -> dict:
         print("Error, could not delete asset in EZOfficeInventory: ", e)
         raise Exception("Error, could not delete asset in EZOfficeInventory: " + str(e))
 
+    if response.status_code != 200:
+        print(
+            f"Error {response.status_code}, could not delete asset in EZOfficeInventory: ",
+            response.content,
+        )
+        raise Exception(
+            f"Error {response.status_code}, could not delete asset in EZOfficeInventory: "
+            + str(response.content)
+        )
+
     return response.json()
 
 
@@ -380,6 +400,16 @@ def checkin_asset(asset_id: int, checkin: dict) -> dict:
         print("Error, could not checkin asset in EZOfficeInventory: ", e)
         raise Exception(
             "Error, could not checkin asset in EZOfficeInventory: " + str(e)
+        )
+
+    if response.status_code != 200:
+        print(
+            f"Error {response.status_code}, could not checkin asset in EZOfficeInventory: ",
+            response.content,
+        )
+        raise Exception(
+            f"Error {response.status_code}, could not checkin asset in EZOfficeInventory: "
+            + str(response.content)
         )
 
     return response.json()
@@ -422,6 +452,16 @@ def checkout_asset(asset_id: int, user_id: int, checkout: dict) -> dict:
         print("Error, could not checkout asset in EZOfficeInventory: ", e)
         raise Exception(
             "Error, could not checkout asset in EZOfficeInventory: " + str(e)
+        )
+
+    if response.status_code != 200:
+        print(
+            f"Error {response.status_code}, could not checkout asset in EZOfficeInventory: ",
+            response.content,
+        )
+        raise Exception(
+            f"Error {response.status_code}, could not checkout asset in EZOfficeInventory: "
+            + str(response.content)
         )
 
     return response.json()
