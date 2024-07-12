@@ -390,7 +390,7 @@ def checkin_asset(asset_id: int, checkin: dict) -> dict:
     url = os.environ["EZO_BASE_URL"] + "assets/" + str(asset_id) + "/checkin.api"
 
     try:
-        response = requests.post(
+        response = requests.put(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             data=checkin,
@@ -441,7 +441,7 @@ def checkout_asset(asset_id: int, user_id: int, checkout: dict) -> dict:
     url = os.environ["EZO_BASE_URL"] + "assets/" + str(asset_id) + "/checkout.api"
 
     try:
-        response = requests.post(
+        response = requests.put(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             params={"user_id": user_id},
