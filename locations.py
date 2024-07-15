@@ -207,6 +207,16 @@ def create_location(location: dict) -> dict:
             "Error, could not create location in EZOfficeInventory: " + str(e)
         )
 
+    if response.status_code != 200:
+        print(
+            f"Error {response.status_code}, could not create location in EZOfficeInventory: ",
+            response.content,
+        )
+        raise Exception(
+            f"Error {response.status_code}, could not create location in EZOfficeInventory: "
+            + str(response.content)
+        )
+
     return response.json()
 
 
