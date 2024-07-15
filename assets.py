@@ -377,8 +377,8 @@ def checkin_asset(asset_id: int, checkin: dict) -> dict:
 
     # Remove any keys that are not valid
     valid_keys = [
-        "checkin[location_id]",
-        "checkin[comments]",
+        "checkin_values[location_id]",
+        "checkin_values[comments]",
     ]
 
     checkin = {
