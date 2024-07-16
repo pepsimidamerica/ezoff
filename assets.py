@@ -372,7 +372,7 @@ def checkin_asset(asset_id: int, checkin: dict) -> dict:
     """
 
     # Required fields
-    if "checkin[location_id]" not in checkin:
+    if "checkin_values[location_id]" not in checkin:
         raise ValueError("checkin must have 'checkin[location_id]' key")
 
     # Remove any keys that are not valid
