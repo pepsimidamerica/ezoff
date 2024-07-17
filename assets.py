@@ -421,6 +421,9 @@ def checkout_asset(asset_id: int, user_id: int, checkout: dict) -> dict:
     """
     Check out an asset to a member
     https://ezo.io/ezofficeinventory/developers/#api-checkout-asset
+
+    Note: If user is inactive, checkout will return a 200 status code but the
+    asset will not be checked out. Response will contain a message.
     """
 
     # Remove any keys that are not valid
