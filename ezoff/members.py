@@ -180,6 +180,16 @@ def create_member(member: dict) -> dict:
             "Error, could not create member in EZOfficeInventory: " + str(e)
         )
 
+    if response.status_code != 200:
+        print(
+            f"Error {response.status_code}, could not create member in EZOfficeInventory: ",
+            response.content,
+        )
+        raise Exception(
+            f"Error {response.status_code}, could not create member in EZOfficeInventory: "
+            + str(response.content)
+        )
+
     return response.json()
 
 
@@ -226,6 +236,16 @@ def update_member(member_id: int, member: dict) -> dict:
             "Error, could not update member in EZOfficeInventory: " + str(e)
         )
 
+    if response.status_code != 200:
+        print(
+            f"Error {response.status_code}, could not update member in EZOfficeInventory: ",
+            response.content,
+        )
+        raise Exception(
+            f"Error {response.status_code}, could not update member in EZOfficeInventory: "
+            + str(response.content)
+        )
+
     return response.json()
 
 
@@ -250,6 +270,16 @@ def deactivate_member(member_id: int) -> dict:
             "Error, could not deactivate member in EZOfficeInventory: " + str(e)
         )
 
+    if response.status_code != 200:
+        print(
+            f"Error {response.status_code}, could not deactivate member in EZOfficeInventory: ",
+            response.content,
+        )
+        raise Exception(
+            f"Error {response.status_code}, could not deactivate member in EZOfficeInventory: "
+            + str(response.content)
+        )
+
     return response.json()
 
 
@@ -272,6 +302,16 @@ def activate_member(member_id: int) -> dict:
         print("Error, could not activate member in EZOfficeInventory: ", e)
         raise Exception(
             "Error, could not activate member in EZOfficeInventory: " + str(e)
+        )
+
+    if response.status_code != 200:
+        print(
+            f"Error {response.status_code}, could not activate member in EZOfficeInventory: ",
+            response.content,
+        )
+        raise Exception(
+            f"Error {response.status_code}, could not activate member in EZOfficeInventory: "
+            + str(response.content)
         )
 
     return response.json()
