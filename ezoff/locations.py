@@ -303,9 +303,19 @@ def deactivate_location(location_num: int) -> dict:
 @Decorators.check_env_vars
 def update_location(location_num: int, location: dict) -> dict:
     """
-    Updates a location
+    Updates a location.
+    Note: The location's parent ID (location[parent_id]) is a required field for this call,
+    because EZOffice will wipe out whatever is currently in that field
+    if you don't include it. No idea why. If you're not changing the parent
+    location of the location, you just use the current parent ID. The documentation
+    also suggests that location[name] is a required field, but that doesn't appear
+    to be the case. Not sure if documentation is wrong or I'm misunderstanding what
+    they're saying.
     https://ezo.io/ezofficeinventory/developers/#api-update-location
     """
+
+    if "location[parent_id]" not in location:
+        raise ValueError("'location[parent_id]' is a required key")
 
     # Remove any keys that are not valid
     valid_keys = [
