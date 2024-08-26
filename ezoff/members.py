@@ -3,6 +3,7 @@ This module contains functions for interacting with members/roles/user setup in 
 """
 
 import os
+import time
 from typing import Optional
 
 import requests
@@ -81,6 +82,10 @@ def get_members(filter: Optional[dict]) -> list[dict]:
             break
 
         page += 1
+
+        # Potentially running into rate limiting issues with this endpoint
+        # Sleep for a second to avoid this
+        time.sleep(1)
 
     return all_members
 

@@ -3,6 +3,7 @@ Covers everything related to fixed assets in EZOffice
 """
 
 import os
+import time
 
 import requests
 
@@ -75,6 +76,10 @@ def get_all_assets() -> list[dict]:
 
         page += 1
 
+        # Potentially running into rate limiting issues with this endpoint
+        # Sleep for a second to avoid this
+        time.sleep(1)
+
     return all_assets
 
 
@@ -143,6 +148,10 @@ def get_filtered_assets(filter: dict) -> list[dict]:
             break
 
         page += 1
+
+        # Potentially running into rate limiting issues with this endpoint
+        # Sleep for a second to avoid this
+        time.sleep(1)
 
     return all_assets
 

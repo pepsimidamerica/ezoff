@@ -3,6 +3,7 @@ This module contains functions for interacting with locations in EZOfficeInvento
 """
 
 import os
+import time
 from typing import Optional
 
 import requests
@@ -76,6 +77,10 @@ def get_locations(filter: Optional[dict]) -> list[dict]:
             break
 
         page += 1
+
+        # Potentially running into rate limiting issues with this endpoint
+        # Sleep for a second to avoid this
+        time.sleep(1)
 
     return all_locations
 
