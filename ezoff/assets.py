@@ -253,6 +253,8 @@ def create_asset(asset: dict) -> dict:
     valid_keys = [
         "fixed_asset[name]",
         "fixed_asset[description]",
+        "fixed_asset[product_model_number]",
+        "fixed_asset[manufacturer]",
         "fixed_asset[group_id]",
         "fixed_asset[sub_group_id]",
         "fixed_asset[purchased_on]",
@@ -304,6 +306,8 @@ def update_asset(asset_id: int, asset: dict) -> dict:
     valid_keys = [
         "fixed_asset[name]",
         "fixed_asset[description]",
+        "fixed_asset[product_model_number]",
+        "fixed_asset[manufacturer]",
         "fixed_asset[group_id]",
         "fixed_asset[sub_group_id]",
         "fixed_asset[identifier]",
