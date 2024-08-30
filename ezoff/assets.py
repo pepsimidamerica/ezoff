@@ -487,6 +487,107 @@ def checkout_asset(asset_id: int, user_id: int, checkout: dict) -> dict:
 
 
 @Decorators.check_env_vars
+def retire_asset(asset_id: int, retire: dict) -> dict:
+    """
+    Retires an asset. Asset needs to be in an available state to retire.
+    https://ezo.io/ezofficeinventory/developers/#api-retire-asset
+
+    :param asset_id: The asset ID to retire
+    :param retire: A dictionary containing the retirement details. Must contain the keys fixed_asset[retire_reason_id] and fixed_asset[retired_on]
+    """
+
+    # Required fields
+    if "fixed_asset[retire_reason_id]" not in retire:
+        raise ValueError("retire must have 'fixed_asset[retire_reason_id]' key")
+    if "fixed_asset[retired_on]" not in retire:
+        raise ValueError("retire must have 'fixed_asset[retired_on]' key")
+        # Also check that the date is in the correct format mm/dd/yyyy
+        try:
+            datetime.strptime(retire["fixed_asset[retired_on]"], "%m/%d/%Y")
+        except ValueError:
+            raise ValueError(
+                "retire['fixed_asset[retired_on]'] must be in the format mm/dd/yyyy"
+            )
+
+    # Remove any keys that are not valid
+    valid_keys = [
+        "fixed_asset[retire_reason_id]",
+        "fixed_asset[retired_on]",
+        "fixed_asset[salvage_value]",
+    ]
+
+    retire = {k: v for k, v in retire.items() if k in valid_keys}
+
+    url = os.environ["EZO_BASE_URL"] + "assets/" + str(asset_id) + "/retire.api"
+
+    try:
+        response = requests.put(
+            url,
+            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+            data=retire,
+            timeout=10,
+        )
+    except Exception as e:
+        print("Error, could not retire asset in EZOfficeInventory: ", e)
+        raise Exception("Error, could not retire asset in EZOfficeInventory: " + str(e))
+
+    if response.status_code != 200:
+        print(
+            f"Error {response.status_code}, could not retire asset in EZOfficeInventory: ",
+            response.content,
+        )
+        raise Exception(
+            f"Error {response.status_code}, could not retire asset in EZOfficeInventory: "
+            + str(response.content)
+        )
+
+    return response.json()
+
+
+@Decorators.check_env_vars
+def reactivate_asset(asset_id: int, reactivate: dict) -> dict:
+    """
+    Reactivates a retired asset.
+    https://ezo.io/ezofficeinventory/developers/#api-activate-asset
+
+    :param asset_id: The asset ID to reactivate
+    :param reactivate: A dictionary containing the reactivation details. Currently that's only the key fixed_asset[location_id]. Whether it's required or not varies depending on company settings.
+    """
+
+    url = os.environ["EZO_BASE_URL"] + "assets/" + str(asset_id) + "/activate.api"
+
+    # Remove any keys that are not valid
+    valid_keys = ["fixed_asset[location_id]"]
+
+    reactivate = {k: v for k, v in reactivate.items() if k in valid_keys}
+
+    try:
+        response = requests.put(
+            url,
+            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+            data=reactivate,
+            timeout=10,
+        )
+    except Exception as e:
+        print("Error, could not reactivate asset in EZOfficeInventory: ", e)
+        raise Exception(
+            "Error, could not reactivate asset in EZOfficeInventory: " + str(e)
+        )
+
+    if response.status_code != 200:
+        print(
+            f"Error {response.status_code}, could not reactivate asset in EZOfficeInventory: ",
+            response.content,
+        )
+        raise Exception(
+            f"Error {response.status_code}, could not reactivate asset in EZOfficeInventory: "
+            + str(response.content)
+        )
+
+    return response.json()
+
+
+@Decorators.check_env_vars
 def get_asset_history(asset_id: int) -> list[dict]:
     """
     Get asset history
