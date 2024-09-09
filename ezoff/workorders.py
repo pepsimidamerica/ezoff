@@ -38,7 +38,7 @@ def get_work_orders(filter: Optional[dict]) -> dict:
             "filters[repetition_start_date]",
             "filters[repetition_start_date]",
             "filters[repetition_end_date]",
-            # "filters[preventive]", # Seems to cause 500 errors when used?
+            "filters[preventative]",
             "filters[on_repeat]",
             "filters[task_location]",
             # "filters[review_pending_on_me]",  # Don't know if actually useful when API is calling and not user

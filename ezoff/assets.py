@@ -688,3 +688,47 @@ def get_asset_history(asset_id: int) -> list[dict]:
         page += 1
 
     return all_history
+
+
+@Decorators.check_env_vars
+def get_items_for_token_input(q: str) -> list[dict]:
+    """
+    This isn't an official endpoint in the EZOfficeInventory API. It's used to populate
+    the token input dropdowns in the EZOfficeInventory UI. However, still works if called
+    and is needed if wanting to use the get_work_orders item filter. Which doesn't yet
+    support the asset ID as a filter. But does support the ID that comes from this endpoint.
+    Found this via the network tab in the browser. Not sure what the official name is
+    so I'm just going off of what the URL is.
+
+    Note: If you use "#{Asset Sequence Num}" as the q search parameter, it should
+    only return one result. If you use a more general search term. like searching
+    for the name, you may get multiple.
+    """
+
+    url = os.environ["EZO_BASE_URL"] + "assets/items_for_token_input.json"
+
+    try:
+        response = requests.get(
+            url,
+            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+            params={"include_id": "true", "q": q},
+            timeout=10,
+        )
+    except Exception as e:
+        print("Error, could not get items for token input from EZOfficeInventory: ", e)
+        raise Exception(
+            "Error, could not get items for token input from EZOfficeInventory: "
+            + str(e)
+        )
+
+    if response.status_code != 200:
+        print(
+            f"Error {response.status_code}, could not get items for token input from EZOfficeInventory: ",
+            response.content,
+        )
+        raise Exception(
+            f"Error {response.status_code}, could not get items for token input from EZOfficeInventory: "
+            + str(response.content)
+        )
+
+    return response.json()
