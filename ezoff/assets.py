@@ -11,6 +11,46 @@ from ezoff.auth import Decorators
 
 
 @Decorators.check_env_vars
+def get_asset_details(asset_id: int):
+    """
+    Gets asset details
+    https://ezo.io/ezofficeinventory/developers/#api-asset-details
+    """
+
+    url = os.environ["EZO_BASE_URL"] + "assets/" + str(asset_id) + ".api"
+
+    try:
+        response = requests.get(
+            url,
+            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+            data={
+                "include_custom_fields": "true",
+                "show_document_urls": "true",
+                "show_image_urls": "true",
+                "show_services_details": "true",
+            },
+            timeout=10,
+        )
+    except Exception as e:
+        print("Error, could not get asset details from EZOfficeInventory: ", e)
+        raise Exception(
+            "Error, could not get asset details from EZOfficeInventory: " + str(e)
+        )
+
+    if response.status_code != 200:
+        print(
+            f"Error {response.status_code}, could not get asset details from EZOfficeInventory: ",
+            response.content,
+        )
+        raise Exception(
+            f"Error {response.status_code}, could not get asset details from EZOfficeInventory: "
+            + str(response.content)
+        )
+
+    return response.json()
+
+
+@Decorators.check_env_vars
 def get_all_assets() -> list[dict]:
     """
     Get assets
@@ -110,6 +150,7 @@ def get_filtered_assets(filter: dict) -> list[dict]:
                     "include_custom_fields": "true",
                     "show_document_urls": "true",
                     "show_image_urls": "true",
+                    "show_services_details": "true",
                 },
                 timeout=10,
             )
@@ -180,6 +221,7 @@ def search_for_asset(search_term: str) -> list[dict]:
             "show_document_urls": "true",
             "show_image_urls": "true",
             "show_document_details": "true",
+            "show_services_details": "true",
         }
 
         try:

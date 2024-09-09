@@ -3,7 +3,7 @@ This module contains functions to interact with work orders in EZOfficeInventory
 """
 
 import os
-from typing import Literal
+from typing import Literal, Optional
 
 import requests
 
@@ -11,13 +11,42 @@ from ezoff.auth import Decorators
 
 
 @Decorators.check_env_vars
-def get_work_orders(
-    filter: Literal["complete", "in_progress", "review_pending", "open"]
-) -> dict:
+def get_work_orders(filter: Optional[dict]) -> dict:
     """
-    Get filtered work orders (complete, in_progress, review_pending, or open)
+    Get filtered work orders.
+
+    Note: This endpoint is weird. It supports many more filters than the
+    documentation advertises. There is a corresponding filter for each
+    of the filter options in the EZOffice web interface.
     https://ezo.io/ezofficeinventory/developers/#api-get-filtered-task
     """
+
+    if filter is not None:
+        # Remove any keys that are not valid
+        valid_keys = [
+            "filters[assigned_to]",
+            "filters[created_by]",
+            "filters[supervisor]",
+            "filters[reviewer]",
+            "filters[created_on]",
+            "filters[state]",
+            "filters[item]",
+            "filters[priority]",
+            "filters[task_type]",
+            "filters[due_date]",
+            "filters[expected_start_date]",
+            "filters[repetition_start_date]",
+            "filters[repetition_start_date]",
+            "filters[repetition_end_date]",
+            # "filters[preventive]", # Seems to cause 500 errors when used?
+            "filters[on_repeat]",
+            "filters[task_location]",
+            # "filters[review_pending_on_me]",  # Don't know if actually useful when API is calling and not user
+            "filters[scheduled]",
+        ]
+
+        filter = {k: v for k, v in filter.items() if k in valid_keys}
+        filter["filter"] = "filter"  # Required when using filters
 
     url = os.environ["EZO_BASE_URL"] + "tasks.api"
 
@@ -25,12 +54,15 @@ def get_work_orders(
     all_work_orders = {}
 
     while True:
+        params = {"page": page}
+        if filter is not None:
+            params.update(filter)
 
         try:
             response = requests.get(
                 url,
                 headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-                params={"page": page, "filter": filter},
+                params=params,
                 timeout=10,
             )
         except Exception as e:
