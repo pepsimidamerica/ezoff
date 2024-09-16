@@ -11,9 +11,10 @@ from ezoff.auth import Decorators
 
 
 @Decorators.check_env_vars
-def get_inventories() -> list[dict]:
+def get_all_inventories() -> list[dict]:
     """
-    Gets all inventory assets
+    Gets all inventory assets. Recommended to use the filtered endpoint instead
+    as this one will take a long time to run.
     https://ezo.io/ezofficeinventory/developers/#api-retrieve-inventories
     """
 
@@ -63,6 +64,16 @@ def get_inventories() -> list[dict]:
         time.sleep(1)
 
     return all_inventories
+
+
+# @Decorators.check_env_vars
+# def get_filtered_inventories(filter: dict):
+#     """
+#     Gets inventory assets that match the given filters
+#     https://ezo.io/ezofficeinventory/developers/#api-volatile-asset-filters
+#     """
+
+#     url = os.environ["EZO_BASE_URL"] + "inventory/filter.api"
 
 
 @Decorators.check_env_vars
@@ -199,3 +210,4 @@ def get_inventory_history(inv_asset_num: int) -> list[dict]:
 # TODO Create Inventory Asset
 # TODO Update Inventory Asset
 # TODO Delete Inventory Asset
+# TODO Get Location Based Thresholds

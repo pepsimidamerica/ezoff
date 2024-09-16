@@ -23,9 +23,13 @@ from ezoff import *
 
 # res = ezoff.reactivate_asset(14753, {"fixed_asset[location_id]": 7})
 
-item_id = get_items_for_token_input("#14753")[0]["id"]
+# item_id = get_items_for_token_input("#14753")[0]["id"]
 
-pass
+# pass
 
-res = ezoff.get_work_orders({"filters[item]": item_id})
+# res = ezoff.get_work_orders({"filters[item]": item_id})
+# pass
+
+res = get_all_inventories()
+
 pass
