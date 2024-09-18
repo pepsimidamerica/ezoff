@@ -41,7 +41,7 @@ def get_locations(filter: Optional[dict]) -> list[dict]:
                 url,
                 headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
                 params=params,
-                timeout=10,
+                timeout=30,
             )
         except Exception as e:
             print("Error, could not get locations from EZOfficeInventory: ", e)
@@ -99,7 +99,7 @@ def get_location_details(location_num: int) -> dict:
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             params={"include_custom_fields": "true"},
-            timeout=10,
+            timeout=30,
         )
     except Exception as e:
         print("Error, could not get location from EZOfficeInventory: ", e)
@@ -137,7 +137,7 @@ def get_location_item_quantities(location_num: int) -> dict:
         response = requests.get(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            timeout=10,
+            timeout=30,
         )
     except Exception as e:
         print(
@@ -240,7 +240,7 @@ def activate_location(location_num: int) -> dict:
         response = requests.patch(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            timeout=10,
+            timeout=30,
         )
     except Exception as e:
         print("Error, could not activate location in EZOfficeInventory: ", e)
@@ -279,7 +279,7 @@ def deactivate_location(location_num: int) -> dict:
         response = requests.patch(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            timeout=10,
+            timeout=30,
         )
     except Exception as e:
         print("Error, could not deactivate location in EZOfficeInventory: ", e)
@@ -343,7 +343,7 @@ def update_location(location_num: int, location: dict) -> dict:
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             data=location,
-            timeout=10,
+            timeout=30,
         )
     except Exception as e:
         print("Error, could not update location in EZOfficeInventory: ", e)

@@ -46,7 +46,7 @@ def get_members(filter: Optional[dict]) -> list[dict]:
                 url,
                 headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
                 params=params,
-                timeout=10,
+                timeout=30,
             )
         except Exception as e:
             print("Error, could not get members from EZOfficeInventory: ", e)
@@ -104,7 +104,7 @@ def get_member_details(member_id: int) -> dict:
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             params={"include_custom_fields": "true"},
-            timeout=10,
+            timeout=30,
         )
     except Exception as e:
         print("Error, could not get member from EZOfficeInventory: ", e)
@@ -177,7 +177,7 @@ def create_member(member: dict) -> dict:
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             data=member,
-            timeout=10,
+            timeout=30,
         )
     except Exception as e:
         print("Error, could not create member in EZOfficeInventory: ", e)
@@ -233,7 +233,7 @@ def update_member(member_id: int, member: dict) -> dict:
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             data=member,
-            timeout=10,
+            timeout=30,
         )
     except Exception as e:
         print("Error, could not update member in EZOfficeInventory: ", e)
@@ -267,7 +267,7 @@ def deactivate_member(member_id: int) -> dict:
         response = requests.put(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            timeout=10,
+            timeout=30,
         )
     except Exception as e:
         print("Error, could not deactivate member in EZOfficeInventory: ", e)
@@ -301,7 +301,7 @@ def activate_member(member_id: int) -> dict:
         response = requests.put(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            timeout=10,
+            timeout=30,
         )
     except Exception as e:
         print("Error, could not activate member in EZOfficeInventory: ", e)
@@ -342,7 +342,7 @@ def get_custom_roles() -> list[dict]:
                 url,
                 headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
                 params={"page": pages},
-                timeout=10,
+                timeout=30,
             )
         except Exception as e:
             print("Error, could not get custom roles from EZOfficeInventory: ", e)
@@ -401,7 +401,7 @@ def get_teams() -> list[dict]:
                 url,
                 headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
                 params={"page": page},
-                timeout=10,
+                timeout=30,
             )
         except Exception as e:
             print("Error, could not get teams from EZOfficeInventory: ", e)

@@ -29,7 +29,7 @@ def get_asset_details(asset_id: int):
                 "show_image_urls": "true",
                 "show_services_details": "true",
             },
-            timeout=10,
+            timeout=30,
         )
     except Exception as e:
         print("Error, could not get asset details from EZOfficeInventory: ", e)
@@ -78,7 +78,7 @@ def get_all_assets() -> list[dict]:
                     "show_document_urls": "true",
                     "show_image_urls": "true",
                 },
-                timeout=10,
+                timeout=30,
             )
         except Exception as e:
             print("Error, could not get assets from EZOfficeInventory: ", e)
@@ -152,7 +152,7 @@ def get_filtered_assets(filter: dict) -> list[dict]:
                     "show_image_urls": "true",
                     "show_services_details": "true",
                 },
-                timeout=10,
+                timeout=30,
             )
         except Exception as e:
             print("Error, could not get assets from EZOfficeInventory: ", e)
@@ -229,7 +229,7 @@ def search_for_asset(search_term: str) -> list[dict]:
                 url,
                 headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
                 data=data,
-                timeout=10,
+                timeout=30,
             )
         except Exception as e:
             print("Error, could not get assets from EZOfficeInventory: ", e)
@@ -318,7 +318,7 @@ def create_asset(asset: dict) -> dict:
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             data=asset,
-            timeout=10,
+            timeout=30,
         )
     except Exception as e:
         print("Error, could not create asset in EZOfficeInventory: ", e)
@@ -371,7 +371,7 @@ def update_asset(asset_id: int, asset: dict) -> dict:
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             data=asset,
-            timeout=10,
+            timeout=30,
         )
     except Exception as e:
         print("Error, could not update asset in EZOfficeInventory: ", e)
@@ -403,7 +403,7 @@ def delete_asset(asset_id: int) -> dict:
         response = requests.delete(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            timeout=10,
+            timeout=30,
         )
     except Exception as e:
         print("Error, could not delete asset in EZOfficeInventory: ", e)
@@ -452,7 +452,7 @@ def checkin_asset(asset_id: int, checkin: dict) -> dict:
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             data=checkin,
-            timeout=10,
+            timeout=30,
         )
     except Exception as e:
         print("Error, could not checkin asset in EZOfficeInventory: ", e)
@@ -507,7 +507,7 @@ def checkout_asset(asset_id: int, user_id: int, checkout: dict) -> dict:
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             params={"user_id": user_id},
             data=checkout,
-            timeout=10,
+            timeout=30,
         )
     except Exception as e:
         print("Error, could not checkout asset in EZOfficeInventory: ", e)
@@ -567,7 +567,7 @@ def retire_asset(asset_id: int, retire: dict) -> dict:
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             data=retire,
-            timeout=10,
+            timeout=30,
         )
     except Exception as e:
         print("Error, could not retire asset in EZOfficeInventory: ", e)
@@ -608,7 +608,7 @@ def reactivate_asset(asset_id: int, reactivate: dict) -> dict:
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             data=reactivate,
-            timeout=10,
+            timeout=30,
         )
     except Exception as e:
         print("Error, could not reactivate asset in EZOfficeInventory: ", e)
@@ -649,7 +649,7 @@ def get_asset_history(asset_id: int) -> list[dict]:
                 url,
                 headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
                 params={"page": page},
-                timeout=10,
+                timeout=30,
             )
         except Exception as e:
             print("Error, could not get asset history from EZOfficeInventory: ", e)
@@ -712,7 +712,7 @@ def get_items_for_token_input(q: str) -> list[dict]:
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             params={"include_id": "true", "q": q},
-            timeout=10,
+            timeout=30,
         )
     except Exception as e:
         print("Error, could not get items for token input from EZOfficeInventory: ", e)

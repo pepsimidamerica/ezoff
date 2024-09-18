@@ -63,7 +63,7 @@ def get_work_orders(filter: Optional[dict]) -> dict:
                 url,
                 headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
                 params=params,
-                timeout=10,
+                timeout=30,
             )
         except Exception as e:
             print("Error, could not get work orders from EZOfficeInventory: ", e)
@@ -117,7 +117,7 @@ def get_work_order_details(work_order_id: int) -> dict:
         response = requests.get(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            timeout=10,
+            timeout=30,
         )
     except Exception as e:
         print("Error, could not get work order from EZOfficeInventory: ", e)
@@ -153,7 +153,7 @@ def get_work_order_types() -> list[dict]:
         response = requests.get(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            timeout=10,
+            timeout=30,
         )
     except Exception as e:
         print("Error, could not get work order types from EZOfficeInventory: ", e)
@@ -240,7 +240,7 @@ def create_work_order(work_order: dict) -> dict:
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             data=work_order,
-            timeout=10,
+            timeout=30,
         )
     except Exception as e:
         print("Error, could not create work order in EZOfficeInventory: ", e)
@@ -269,7 +269,7 @@ def start_work_order(work_order_id: int) -> dict:
         response = requests.post(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            timeout=10,
+            timeout=30,
         )
     except Exception as e:
         print("Error, could not start work order in EZOfficeInventory: ", e)
@@ -298,7 +298,7 @@ def end_work_order(work_order_id: int) -> dict:
         response = requests.post(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            timeout=10,
+            timeout=30,
         )
     except Exception as e:
         print("Error, could not end work order in EZOfficeInventory: ", e)
@@ -351,7 +351,7 @@ def add_work_log_to_work_order(work_order_id: int, work_log: dict) -> dict:
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             data=work_log,
-            timeout=10,
+            timeout=30,
         )
     except Exception as e:
         print("Error, could not add work log to work order in EZOfficeInventory: ", e)
@@ -408,7 +408,7 @@ def add_linked_inv_to_work_order(work_order_id: int, linked_inv: dict) -> dict:
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             data=linked_inv,
-            timeout=10,
+            timeout=30,
         )
     except Exception as e:
         print(
@@ -439,7 +439,7 @@ def get_checklists() -> list[dict]:
                 os.environ["EZO_BASE_URL"] + "checklists.api",
                 headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
                 params={"page": page},
-                timeout=10,
+                timeout=30,
             )
         except Exception as e:
             print("Error, could not get checklists from EZOfficeInventory: ", e)

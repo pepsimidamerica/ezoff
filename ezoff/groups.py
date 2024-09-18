@@ -34,7 +34,7 @@ def get_subgroups(group_id: Optional[int]) -> list[dict]:
                 url,
                 headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
                 params=params,
-                timeout=10,
+                timeout=30,
             )
         except Exception as e:
             print("Error, could not get subgroups from EZOfficeInventory: ", e)
