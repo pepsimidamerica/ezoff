@@ -8,6 +8,7 @@ import time
 import requests
 
 from ezoff._auth import Decorators
+from ezoff._helpers import _basic_retry, _fetch_page
 
 
 @Decorators.check_env_vars
@@ -76,6 +77,7 @@ def get_all_inventories() -> list[dict]:
 #     url = os.environ["EZO_BASE_URL"] + "inventory/filter.api"
 
 
+@_basic_retry
 @Decorators.check_env_vars
 def get_inventory_details(inv_asset_num: int) -> dict:
     """
@@ -98,9 +100,14 @@ def get_inventory_details(inv_asset_num: int) -> dict:
             timeout=30,
         )
         response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        print(f"HTTP error: {e.response.status_code} - {e.response.content}")
+        raise Exception(
+            f"Error, could not get inventory details: {e.response.status_code} - {e.response.content}"
+        )
     except requests.exceptions.RequestException as e:
-        print("Error getting inventory details: ", e)
-        raise Exception("Error getting inventory details: ", e)
+        print(f"Error getting inventory details: {e}")
+        raise Exception(f"Error getting inventory details: {e}")
 
     return response.json()
 
@@ -140,8 +147,8 @@ def create_inventory_order(inv_asset_num: int, order: dict) -> dict:
         )
         response.raise_for_status()
     except requests.exceptions.RequestException as e:
-        print("Error creating inventory order: ", e)
-        raise Exception("Error creating inventory order: ", e)
+        print(f"Error creating inventory order: {e}")
+        raise Exception(f"Error creating inventory order: {e}")
 
     return response.json()
 

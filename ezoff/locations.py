@@ -44,26 +44,19 @@ def get_locations(filter: Optional[dict]) -> list[dict]:
                 params=params,
             )
         except requests.exceptions.RequestException as e:
-            print("Error, could not get locations from EZOfficeInventory: ", e)
-            raise Exception(
-                "Error, could not get locations from EZOfficeInventory: " + str(e)
-            )
+            print(f"Error, could not get locations: {e}")
+            raise Exception(f"Error, could not get locations: {e}")
 
         data = response.json()
+
         if "locations" not in data:
-            print(
-                f"Error, could not get locations from EZOfficeInventory: ",
-                response.content,
-            )
-            raise Exception(
-                f"Error, could not get locations from EZOfficeInventory: "
-                + str(response.content)
-            )
+            print(f"Error, could not get locations: {response.content}")
+            raise Exception(f"Error, could not get locations: {response.content}")
 
         all_locations.extend(data["locations"])
 
         if "total_pages" not in data:
-            print("Error, could not get total_pages from EZOfficeInventory: ", data)
+            print("Error, could not get total_pages: ", data)
             break
 
         if page >= data["total_pages"]:
@@ -102,8 +95,8 @@ def get_location_details(location_num: int) -> dict:
             f"Error, could not get location: {e.response.status_code} - {e.response.content}"
         )
     except requests.exceptions.RequestException as e:
-        print(f"Request error occurred: {str(e)}")
-        raise Exception(f"Error, could not get location: {str(e)}")
+        print(f"Request error occurred: {e}")
+        raise Exception(f"Error, could not get location: {e}")
 
     return response.json()
 
@@ -135,8 +128,8 @@ def get_location_item_quantities(location_num: int) -> dict:
             f"Error, could not get location item quantities: {e.response.status_code} - {e.response.content}"
         )
     except requests.exceptions.RequestException as e:
-        print(f"Request error occurred: {str(e)}")
-        raise Exception(f"Error, could not get location item quantities: {str(e)}")
+        print(f"Request error occurred: {e}")
+        raise Exception(f"Error, could not get location item quantities: {e}")
 
     return response.json()
 
@@ -193,8 +186,8 @@ def create_location(location: dict) -> dict:
             f"Error, could not create location: {e.response.status_code} - {e.response.content}"
         )
     except requests.exceptions.RequestException as e:
-        print(f"Request error occurred: {str(e)}")
-        raise Exception(f"Error, could not create location: {str(e)}")
+        print(f"Request error occurred: {e}")
+        raise Exception(f"Error, could not create location: {e}")
 
     return response.json()
 
@@ -223,8 +216,8 @@ def activate_location(location_num: int) -> dict:
             f"Error, could not activate location: {e.response.status_code} - {e.response.content}"
         )
     except requests.exceptions.RequestException as e:
-        print(f"Request error occurred: {str(e)}")
-        raise Exception(f"Error, could not activate location: {str(e)}")
+        print(f"Request error occurred: {e}")
+        raise Exception(f"Error, could not activate location: {e}")
 
     return response.json()
 
@@ -256,8 +249,8 @@ def deactivate_location(location_num: int) -> dict:
             f"Error, could not deactivate location: {e.response.status_code} - {e.response.content}"
         )
     except requests.exceptions.RequestException as e:
-        print(f"Request error occurred: {str(e)}")
-        raise Exception(f"Error, could not deactivate location: {str(e)}")
+        print(f"Request error occurred: {e}")
+        raise Exception(f"Error, could not deactivate location: {e}")
 
     return response.json()
 
@@ -314,7 +307,7 @@ def update_location(location_num: int, location: dict) -> dict:
             f"Error, could not update location: {e.response.status_code} - {e.response.content}"
         )
     except requests.exceptions.RequestException as e:
-        print(f"Request error occurred: {str(e)}")
-        raise Exception(f"Error, could not update location: {str(e)}")
+        print(f"Request error occurred: {e}")
+        raise Exception(f"Error, could not update location: {e}")
 
     return response.json()

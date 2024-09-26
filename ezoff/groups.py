@@ -8,6 +8,7 @@ from typing import Optional
 import requests
 
 from ezoff._auth import Decorators
+from ezoff._helpers import _basic_retry, _fetch_page
 
 
 @Decorators.check_env_vars
@@ -30,35 +31,23 @@ def get_subgroups(group_id: Optional[int]) -> list[dict]:
 
     while True:
         try:
-            response = requests.get(
+            response = _fetch_page(
                 url,
                 headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
                 params=params,
-                timeout=30,
             )
-        except Exception as e:
-            print("Error, could not get subgroups from EZOfficeInventory: ", e)
-            raise Exception(
-                "Error, could not get subgroups from EZOfficeInventory: " + str(e)
-            )
-
-        if response.status_code != 200:
-            print(
-                f"Error {response.status_code}, could not get subgroups from EZOfficeInventory: ",
-                response.content,
-            )
-            break
+        except requests.exceptions.RequestException as e:
+            print(f"Error, could not get subgroups: {e}")
+            raise Exception(f"Error, could not get subgroups: {e}")
 
         data = response.json()
 
         if "sub_groups" not in data:
             print(
-                f"Error, could not get subgroups from EZOfficeInventory: ",
-                response.content,
+                f"Error, could not get subgroups from EZOfficeInventory: {response.content}"
             )
             raise Exception(
-                f"Error, could not get subgroups from EZOfficeInventory: "
-                + str(response.content)
+                f"Error, could not get subgroups from EZOfficeInventory: {response.content}"
             )
 
         all_subgroups.extend(data["sub_groups"])

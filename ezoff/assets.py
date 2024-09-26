@@ -40,8 +40,8 @@ def get_asset_details(asset_id: int):
             f"Error, could not get asset details: {e.response.status_code} - {e.response.content}"
         )
     except requests.exceptions.RequestException as e:
-        print(f"Request error occurred: {str(e)}")
-        raise Exception(f"Error, could not get asset details: {str(e)}")
+        print(f"Request error occurred: {e}")
+        raise Exception(f"Error, could not get asset details: {e}")
 
     return response.json()
 
@@ -62,32 +62,24 @@ def get_all_assets() -> list[dict]:
     all_assets = []
 
     while True:
-        params = {"page": page}
+        params = {
+            "page": page,
+            "include_custom_fields": "true",
+            "show_document_urls": "true",
+            "show_image_urls": "true",
+        }
 
         try:
-            response = requests.get(
+            response = _fetch_page(
                 url,
                 headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
                 params=params,
-                data={
-                    "include_custom_fields": "true",
-                    "show_document_urls": "true",
-                    "show_image_urls": "true",
-                },
-                timeout=30,
             )
-        except Exception as e:
+        except requests.exceptions.RequestException as e:
             print("Error, could not get assets from EZOfficeInventory: ", e)
             raise Exception(
                 "Error, could not get assets from EZOfficeInventory: " + str(e)
             )
-
-        if response.status_code != 200:
-            print(
-                f"Error {response.status_code}, could not get assets from EZOfficeInventory: ",
-                response.content,
-            )
-            break
 
         data = response.json()
 
@@ -134,51 +126,39 @@ def get_filtered_assets(filter: dict) -> list[dict]:
     all_assets = []
 
     while True:
-        params = {"page": page}
+        params = {
+            "page": page,
+            "include_custom_fields": "true",
+            "show_document_urls": "true",
+            "show_image_urls": "true",
+            "show_services_details": "true",
+        }
         params.update(filter)
 
         try:
-            response = requests.get(
+            response = _fetch_page(
                 url,
                 headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
                 params=params,
-                data={
-                    "include_custom_fields": "true",
-                    "show_document_urls": "true",
-                    "show_image_urls": "true",
-                    "show_services_details": "true",
-                },
-                timeout=30,
             )
-        except Exception as e:
-            print("Error, could not get assets from EZOfficeInventory: ", e)
-            raise Exception(
-                "Error, could not get assets from EZOfficeInventory: " + str(e)
-            )
-
-        if response.status_code != 200:
-            print(
-                f"Error {response.status_code}, could not get assets from EZOfficeInventory: ",
-                response.content,
-            )
-            break
+        except requests.exceptions.RequestException as e:
+            print(f"Error, could not get assets: {e}")
+            raise Exception(f"Error, could not get assets: {e}")
 
         data = response.json()
 
         if "assets" not in data:
             print(
-                f"Error, could not get assets from EZOfficeInventory: ",
-                response.content,
+                f"Error, could not get assets from EZOfficeInventory: {response.content}"
             )
             raise Exception(
-                f"Error, could not get assets from EZOfficeInventory: "
-                + str(response.content)
+                f"Error, could not get assets from EZOfficeInventory: {response.content}"
             )
 
         all_assets.extend(data["assets"])
 
         if "total_pages" not in data:
-            print("Error, could not get total_pages from EZOfficeInventory: ", data)
+            print(f"Error, could not get total_pages from EZOfficeInventory: {data}")
             break
 
         if page >= data["total_pages"]:
@@ -393,19 +373,15 @@ def delete_asset(asset_id: int) -> dict:
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             timeout=30,
         )
-    except Exception as e:
-        print("Error, could not delete asset in EZOfficeInventory: ", e)
-        raise Exception("Error, could not delete asset in EZOfficeInventory: " + str(e))
-
-    if response.status_code != 200:
-        print(
-            f"Error {response.status_code}, could not delete asset in EZOfficeInventory: ",
-            response.content,
-        )
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        print(f"HTTP error: {e.response.status_code} - {e.response.content}")
         raise Exception(
-            f"Error {response.status_code}, could not delete asset in EZOfficeInventory: "
-            + str(response.content)
+            f"Error, could not delete asset: {e.response.status_code} - {e.response.content}"
         )
+    except requests.exceptions.RequestException as e:
+        print(f"Request error occurred: {str(e)}")
+        raise Exception(f"Error, could not delete asset: {str(e)}")
 
     return response.json()
 
@@ -442,21 +418,15 @@ def checkin_asset(asset_id: int, checkin: dict) -> dict:
             data=checkin,
             timeout=30,
         )
-    except Exception as e:
-        print("Error, could not checkin asset in EZOfficeInventory: ", e)
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        print(f"HTTP error: {e.response.status_code} - {e.response.content}")
         raise Exception(
-            "Error, could not checkin asset in EZOfficeInventory: " + str(e)
+            f"Error, could not check asset in: {e.response.status_code} - {e.response.content}"
         )
-
-    if response.status_code != 200:
-        print(
-            f"Error {response.status_code}, could not checkin asset in EZOfficeInventory: ",
-            response.content,
-        )
-        raise Exception(
-            f"Error {response.status_code}, could not checkin asset in EZOfficeInventory: "
-            + str(response.content)
-        )
+    except requests.exceptions.RequestException as e:
+        print(f"Request error occurred: {str(e)}")
+        raise Exception(f"Error, could not check asset in: {str(e)}")
 
     return response.json()
 
@@ -497,21 +467,15 @@ def checkout_asset(asset_id: int, user_id: int, checkout: dict) -> dict:
             data=checkout,
             timeout=30,
         )
-    except Exception as e:
-        print("Error, could not checkout asset in EZOfficeInventory: ", e)
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        print(f"HTTP error: {e.response.status_code} - {e.response.content}")
         raise Exception(
-            "Error, could not checkout asset in EZOfficeInventory: " + str(e)
+            f"Error, could not check asset out: {e.response.status_code} - {e.response.content}"
         )
-
-    if response.status_code != 200:
-        print(
-            f"Error {response.status_code}, could not checkout asset in EZOfficeInventory: ",
-            response.content,
-        )
-        raise Exception(
-            f"Error {response.status_code}, could not checkout asset in EZOfficeInventory: "
-            + str(response.content)
-        )
+    except requests.exceptions.RequestException as e:
+        print(f"Request error occurred: {str(e)}")
+        raise Exception(f"Error, could not check asset out: {str(e)}")
 
     return response.json()
 
@@ -557,19 +521,15 @@ def retire_asset(asset_id: int, retire: dict) -> dict:
             data=retire,
             timeout=30,
         )
-    except Exception as e:
-        print("Error, could not retire asset in EZOfficeInventory: ", e)
-        raise Exception("Error, could not retire asset in EZOfficeInventory: " + str(e))
-
-    if response.status_code != 200:
-        print(
-            f"Error {response.status_code}, could not retire asset in EZOfficeInventory: ",
-            response.content,
-        )
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        print(f"HTTP error: {e.response.status_code} - {e.response.content}")
         raise Exception(
-            f"Error {response.status_code}, could not retire asset in EZOfficeInventory: "
-            + str(response.content)
+            f"Error, could not retire asset: {e.response.status_code} - {e.response.content}"
         )
+    except requests.exceptions.RequestException as e:
+        print(f"Request error occurred: {str(e)}")
+        raise Exception(f"Error, could not retire asset: {str(e)}")
 
     return response.json()
 
@@ -598,21 +558,15 @@ def reactivate_asset(asset_id: int, reactivate: dict) -> dict:
             data=reactivate,
             timeout=30,
         )
-    except Exception as e:
-        print("Error, could not reactivate asset in EZOfficeInventory: ", e)
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        print(f"HTTP error: {e.response.status_code} - {e.response.content}")
         raise Exception(
-            "Error, could not reactivate asset in EZOfficeInventory: " + str(e)
+            f"Error, could not reactivate asset: {e.response.status_code} - {e.response.content}"
         )
-
-    if response.status_code != 200:
-        print(
-            f"Error {response.status_code}, could not reactivate asset in EZOfficeInventory: ",
-            response.content,
-        )
-        raise Exception(
-            f"Error {response.status_code}, could not reactivate asset in EZOfficeInventory: "
-            + str(response.content)
-        )
+    except requests.exceptions.RequestException as e:
+        print(f"Request error occurred: {str(e)}")
+        raise Exception(f"Error, could not reactivate asset: {str(e)}")
 
     return response.json()
 
