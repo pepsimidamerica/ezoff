@@ -8,7 +8,8 @@ from typing import Optional
 
 import requests
 
-from ezoff.auth import Decorators
+from ezoff._auth import Decorators
+from ezoff._helpers import _basic_retry, _fetch_page
 
 
 @Decorators.check_env_vars
@@ -37,24 +38,16 @@ def get_locations(filter: Optional[dict]) -> list[dict]:
             params.update(filter)
 
         try:
-            response = requests.get(
+            response = _fetch_page(
                 url,
                 headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
                 params=params,
-                timeout=30,
             )
-        except Exception as e:
+        except requests.exceptions.RequestException as e:
             print("Error, could not get locations from EZOfficeInventory: ", e)
             raise Exception(
                 "Error, could not get locations from EZOfficeInventory: " + str(e)
             )
-
-        if response.status_code != 200:
-            print(
-                f"Error {response.status_code}, could not get locations from EZOfficeInventory: ",
-                response.content,
-            )
-            break
 
         data = response.json()
         if "locations" not in data:
@@ -85,6 +78,7 @@ def get_locations(filter: Optional[dict]) -> list[dict]:
     return all_locations
 
 
+@_basic_retry
 @Decorators.check_env_vars
 def get_location_details(location_num: int) -> dict:
     """
@@ -101,25 +95,20 @@ def get_location_details(location_num: int) -> dict:
             params={"include_custom_fields": "true"},
             timeout=30,
         )
-    except Exception as e:
-        print("Error, could not get location from EZOfficeInventory: ", e)
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        print(f"HTTP error: {e.response.status_code} - {e.response.content}")
         raise Exception(
-            "Error, could not get location from EZOfficeInventory: " + str(e)
+            f"Error, could not get location: {e.response.status_code} - {e.response.content}"
         )
-
-    if response.status_code != 200:
-        print(
-            f"Error {response.status_code}, could not get location from EZOfficeInventory: ",
-            response.content,
-        )
-        raise Exception(
-            f"Error {response.status_code}, could not get location from EZOfficeInventory: "
-            + str(response.content)
-        )
+    except requests.exceptions.RequestException as e:
+        print(f"Request error occurred: {str(e)}")
+        raise Exception(f"Error, could not get location: {str(e)}")
 
     return response.json()
 
 
+@_basic_retry
 @Decorators.check_env_vars
 def get_location_item_quantities(location_num: int) -> dict:
     """
@@ -139,24 +128,15 @@ def get_location_item_quantities(location_num: int) -> dict:
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             timeout=30,
         )
-    except Exception as e:
-        print(
-            "Error, could not get location item quantities from EZOfficeInventory: ", e
-        )
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        print(f"HTTP error: {e.response.status_code} - {e.response.content}")
         raise Exception(
-            "Error, could not get location item quantities from EZOfficeInventory: "
-            + str(e)
+            f"Error, could not get location item quantities: {e.response.status_code} - {e.response.content}"
         )
-
-    if response.status_code != 200:
-        print(
-            f"Error {response.status_code}, could not get location item quantities from EZOfficeInventory: ",
-            response.content,
-        )
-        raise Exception(
-            f"Error {response.status_code}, could not get location item quantities from EZOfficeInventory: "
-            + str(response.content)
-        )
+    except requests.exceptions.RequestException as e:
+        print(f"Request error occurred: {str(e)}")
+        raise Exception(f"Error, could not get location item quantities: {str(e)}")
 
     return response.json()
 
@@ -206,21 +186,15 @@ def create_location(location: dict) -> dict:
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             data=location,
         )
-    except Exception as e:
-        print("Error, could not create location in EZOfficeInventory: ", e)
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        print(f"HTTP error: {e.response.status_code} - {e.response.content}")
         raise Exception(
-            "Error, could not create location in EZOfficeInventory: " + str(e)
+            f"Error, could not create location: {e.response.status_code} - {e.response.content}"
         )
-
-    if response.status_code != 200:
-        print(
-            f"Error {response.status_code}, could not create location in EZOfficeInventory: ",
-            response.content,
-        )
-        raise Exception(
-            f"Error {response.status_code}, could not create location in EZOfficeInventory: "
-            + str(response.content)
-        )
+    except requests.exceptions.RequestException as e:
+        print(f"Request error occurred: {str(e)}")
+        raise Exception(f"Error, could not create location: {str(e)}")
 
     return response.json()
 
@@ -242,21 +216,15 @@ def activate_location(location_num: int) -> dict:
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             timeout=30,
         )
-    except Exception as e:
-        print("Error, could not activate location in EZOfficeInventory: ", e)
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        print(f"HTTP error: {e.response.status_code} - {e.response.content}")
         raise Exception(
-            "Error, could not activate location in EZOfficeInventory: " + str(e)
+            f"Error, could not activate location: {e.response.status_code} - {e.response.content}"
         )
-
-    if response.status_code != 200:
-        print(
-            f"Error {response.status_code}, could not activate location in EZOfficeInventory: ",
-            response.content,
-        )
-        raise Exception(
-            f"Error {response.status_code}, could not activate location in EZOfficeInventory: "
-            + str(response.content)
-        )
+    except requests.exceptions.RequestException as e:
+        print(f"Request error occurred: {str(e)}")
+        raise Exception(f"Error, could not activate location: {str(e)}")
 
     return response.json()
 
@@ -281,21 +249,15 @@ def deactivate_location(location_num: int) -> dict:
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             timeout=30,
         )
-    except Exception as e:
-        print("Error, could not deactivate location in EZOfficeInventory: ", e)
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        print(f"HTTP error: {e.response.status_code} - {e.response.content}")
         raise Exception(
-            "Error, could not deactivate location in EZOfficeInventory: " + str(e)
+            f"Error, could not deactivate location: {e.response.status_code} - {e.response.content}"
         )
-
-    if response.status_code != 200:
-        print(
-            f"Error {response.status_code}, could not deactivate location in EZOfficeInventory: ",
-            response.content,
-        )
-        raise Exception(
-            f"Error {response.status_code}, could not deactivate location in EZOfficeInventory: "
-            + str(response.content)
-        )
+    except requests.exceptions.RequestException as e:
+        print(f"Request error occurred: {str(e)}")
+        raise Exception(f"Error, could not deactivate location: {str(e)}")
 
     return response.json()
 
@@ -345,20 +307,14 @@ def update_location(location_num: int, location: dict) -> dict:
             data=location,
             timeout=30,
         )
-    except Exception as e:
-        print("Error, could not update location in EZOfficeInventory: ", e)
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        print(f"HTTP error: {e.response.status_code} - {e.response.content}")
         raise Exception(
-            "Error, could not update location in EZOfficeInventory: " + str(e)
+            f"Error, could not update location: {e.response.status_code} - {e.response.content}"
         )
-
-    if response.status_code != 200:
-        print(
-            f"Error {response.status_code}, could not update location in EZOfficeInventory: ",
-            response.content,
-        )
-        raise Exception(
-            f"Error {response.status_code}, could not update location in EZOfficeInventory: "
-            + str(response.content)
-        )
+    except requests.exceptions.RequestException as e:
+        print(f"Request error occurred: {str(e)}")
+        raise Exception(f"Error, could not update location: {str(e)}")
 
     return response.json()

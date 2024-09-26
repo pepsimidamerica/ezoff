@@ -7,7 +7,7 @@ import time
 
 import requests
 
-from ezoff.auth import Decorators
+from ezoff._auth import Decorators
 
 
 @Decorators.check_env_vars

@@ -7,9 +7,11 @@ import time
 
 import requests
 
-from ezoff.auth import Decorators
+from ezoff._auth import Decorators
+from ezoff._helpers import _basic_retry, _fetch_page
 
 
+@_basic_retry
 @Decorators.check_env_vars
 def get_asset_details(asset_id: int):
     """
@@ -31,21 +33,15 @@ def get_asset_details(asset_id: int):
             },
             timeout=30,
         )
-    except Exception as e:
-        print("Error, could not get asset details from EZOfficeInventory: ", e)
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        print(f"HTTP error: {e.response.status_code} - {e.response.content}")
         raise Exception(
-            "Error, could not get asset details from EZOfficeInventory: " + str(e)
+            f"Error, could not get asset details: {e.response.status_code} - {e.response.content}"
         )
-
-    if response.status_code != 200:
-        print(
-            f"Error {response.status_code}, could not get asset details from EZOfficeInventory: ",
-            response.content,
-        )
-        raise Exception(
-            f"Error {response.status_code}, could not get asset details from EZOfficeInventory: "
-            + str(response.content)
-        )
+    except requests.exceptions.RequestException as e:
+        print(f"Request error occurred: {str(e)}")
+        raise Exception(f"Error, could not get asset details: {str(e)}")
 
     return response.json()
 
@@ -320,19 +316,15 @@ def create_asset(asset: dict) -> dict:
             data=asset,
             timeout=30,
         )
-    except Exception as e:
-        print("Error, could not create asset in EZOfficeInventory: ", e)
-        raise Exception("Error, could not create asset in EZOfficeInventory: " + str(e))
-
-    if response.status_code != 200:
-        print(
-            f"Error {response.status_code}, could not create asset in EZOfficeInventory: ",
-            response.content,
-        )
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        print(f"HTTP error: {e.response.status_code} - {e.response.content}")
         raise Exception(
-            f"Error {response.status_code}, could not create asset in EZOfficeInventory: "
-            + str(response.content)
+            f"Error, could not create asset: {e.response.status_code} - {e.response.content}"
         )
+    except requests.exceptions.RequestException as e:
+        print(f"Request error occurred: {str(e)}")
+        raise Exception(f"Error, could not create asset: {str(e)}")
 
     return response.json()
 
@@ -373,19 +365,15 @@ def update_asset(asset_id: int, asset: dict) -> dict:
             data=asset,
             timeout=30,
         )
-    except Exception as e:
-        print("Error, could not update asset in EZOfficeInventory: ", e)
-        raise Exception("Error, could not update asset in EZOfficeInventory: " + str(e))
-
-    if response.status_code != 200:
-        print(
-            f"Error {response.status_code}, could not update asset in EZOfficeInventory: ",
-            response.content,
-        )
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        print(f"HTTP error: {e.response.status_code} - {e.response.content}")
         raise Exception(
-            f"Error {response.status_code}, could not update asset in EZOfficeInventory: "
-            + str(response.content)
+            f"Error, could not update asset: {e.response.status_code} - {e.response.content}"
         )
+    except requests.exceptions.RequestException as e:
+        print(f"Request error occurred: {str(e)}")
+        raise Exception(f"Error, could not update asset: {str(e)}")
 
     return response.json()
 
