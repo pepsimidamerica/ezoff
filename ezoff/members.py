@@ -9,6 +9,7 @@ from typing import Optional
 import requests
 
 from ezoff._auth import Decorators
+from ezoff._helpers import _basic_retry, _fetch_page
 
 
 @Decorators.check_env_vars
@@ -90,6 +91,7 @@ def get_members(filter: Optional[dict]) -> list[dict]:
     return all_members
 
 
+@_basic_retry
 @Decorators.check_env_vars
 def get_member_details(member_id: int) -> dict:
     """
@@ -106,19 +108,14 @@ def get_member_details(member_id: int) -> dict:
             params={"include_custom_fields": "true"},
             timeout=30,
         )
-    except Exception as e:
-        print("Error, could not get member from EZOfficeInventory: ", e)
-        raise Exception("Error, could not get member from EZOfficeInventory: " + str(e))
-
-    if response.status_code != 200:
-        print(
-            f"Error {response.status_code}, could not get member from EZOfficeInventory: ",
-            response.content,
-        )
+    except requests.exceptions.HTTPError as e:
+        print(f"HTTP error: {e.response.status_code} - {e.response.content}")
         raise Exception(
-            f"Error {response.status_code}, could not get member from EZOfficeInventory: "
-            + str(response.content)
+            f"Error, could not get member details: {e.response.status_code} - {e.response.content}"
         )
+    except requests.exceptions.RequestException as e:
+        print(f"Error getting inventory history: {e}")
+        raise Exception(f"Error getting inventory history: {e}")
 
     return response.json()
 
@@ -179,21 +176,12 @@ def create_member(member: dict) -> dict:
             data=member,
             timeout=30,
         )
-    except Exception as e:
-        print("Error, could not create member in EZOfficeInventory: ", e)
+    except requests.exceptions.HTTPError as e:
         raise Exception(
-            "Error, could not create member in EZOfficeInventory: " + str(e)
+            f"Error, could not create member: {e.response.status_code} - {e.response.content}"
         )
-
-    if response.status_code != 200:
-        print(
-            f"Error {response.status_code}, could not create member in EZOfficeInventory: ",
-            response.content,
-        )
-        raise Exception(
-            f"Error {response.status_code}, could not create member in EZOfficeInventory: "
-            + str(response.content)
-        )
+    except requests.exceptions.RequestException as e:
+        raise Exception(f"Error creating member: {e}")
 
     return response.json()
 
@@ -235,21 +223,12 @@ def update_member(member_id: int, member: dict) -> dict:
             data=member,
             timeout=30,
         )
-    except Exception as e:
-        print("Error, could not update member in EZOfficeInventory: ", e)
+    except requests.exceptions.HTTPError as e:
         raise Exception(
-            "Error, could not update member in EZOfficeInventory: " + str(e)
+            f"Error, could not update member: {e.response.status_code} - {e.response.content}"
         )
-
-    if response.status_code != 200:
-        print(
-            f"Error {response.status_code}, could not update member in EZOfficeInventory: ",
-            response.content,
-        )
-        raise Exception(
-            f"Error {response.status_code}, could not update member in EZOfficeInventory: "
-            + str(response.content)
-        )
+    except requests.exceptions.RequestException as e:
+        raise Exception(f"Error updating member: {e}")
 
     return response.json()
 
@@ -269,21 +248,12 @@ def deactivate_member(member_id: int) -> dict:
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             timeout=30,
         )
-    except Exception as e:
-        print("Error, could not deactivate member in EZOfficeInventory: ", e)
+    except requests.exceptions.HTTPError as e:
         raise Exception(
-            "Error, could not deactivate member in EZOfficeInventory: " + str(e)
+            f"Error, could not deactivate member: {e.response.status_code} - {e.response.content}"
         )
-
-    if response.status_code != 200:
-        print(
-            f"Error {response.status_code}, could not deactivate member in EZOfficeInventory: ",
-            response.content,
-        )
-        raise Exception(
-            f"Error {response.status_code}, could not deactivate member in EZOfficeInventory: "
-            + str(response.content)
-        )
+    except requests.exceptions.RequestException as e:
+        raise Exception(f"Error deactivating member: {e}")
 
     return response.json()
 
@@ -303,21 +273,12 @@ def activate_member(member_id: int) -> dict:
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             timeout=30,
         )
-    except Exception as e:
-        print("Error, could not activate member in EZOfficeInventory: ", e)
+    except requests.exceptions.HTTPError as e:
         raise Exception(
-            "Error, could not activate member in EZOfficeInventory: " + str(e)
+            f"Error, could not activate member: {e.response.status_code} - {e.response.content}"
         )
-
-    if response.status_code != 200:
-        print(
-            f"Error {response.status_code}, could not activate member in EZOfficeInventory: ",
-            response.content,
-        )
-        raise Exception(
-            f"Error {response.status_code}, could not activate member in EZOfficeInventory: "
-            + str(response.content)
-        )
+    except requests.exceptions.RequestException as e:
+        raise Exception(f"Error activating member: {e}")
 
     return response.json()
 
@@ -338,41 +299,26 @@ def get_custom_roles() -> list[dict]:
 
     while True:
         try:
-            response = requests.get(
+            response = _fetch_page(
                 url,
                 headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
                 params={"page": pages},
-                timeout=30,
             )
-        except Exception as e:
-            print("Error, could not get custom roles from EZOfficeInventory: ", e)
+        except requests.exceptions.HTTPError as e:
             raise Exception(
-                "Error, could not get custom roles from EZOfficeInventory: " + str(e)
+                f"Error, could not update member: {e.response.status_code} - {e.response.content}"
             )
-
-        if response.status_code != 200:
-            print(
-                f"Error {response.status_code}, could not get custom roles from EZOfficeInventory: ",
-                response.content,
-            )
-            break
+        except requests.exceptions.RequestException as e:
+            raise Exception(f"Error updating member: {e}")
 
         data = response.json()
 
         if "custom_roles" not in data:
-            print(
-                f"Error, could not get custom roles from EZOfficeInventory: ",
-                response.content,
-            )
-            raise Exception(
-                f"Error, could not get custom roles from EZOfficeInventory: "
-                + str(response.content)
-            )
+            raise Exception(f"Error, could not get custom roles: {response.content}")
 
         all_custom_roles.extend(data["custom_roles"])
 
         if "total_pages" not in data:
-            print("Error, could not get total_pages from EZOfficeInventory: ", data)
             break
 
         if pages >= data["total_pages"]:
@@ -397,41 +343,26 @@ def get_teams() -> list[dict]:
 
     while True:
         try:
-            response = requests.get(
+            response = _fetch_page(
                 url,
                 headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
                 params={"page": page},
-                timeout=30,
             )
-        except Exception as e:
-            print("Error, could not get teams from EZOfficeInventory: ", e)
+        except requests.exceptions.HTTPError as e:
             raise Exception(
-                "Error, could not get teams from EZOfficeInventory: " + str(e)
+                f"Error, could not get teams: {e.response.status_code} - {e.response.content}"
             )
-
-        if response.status_code != 200:
-            print(
-                f"Error {response.status_code}, could not get teams from EZOfficeInventory: ",
-                response.content,
-            )
-            break
+        except requests.exceptions.RequestException as e:
+            raise Exception(f"Error getting teams: {e}")
 
         data = response.json()
 
         if "teams" not in data:
-            print(
-                f"Error, could not get teams from EZOfficeInventory: ",
-                response.content,
-            )
-            raise Exception(
-                f"Error, could not get teams from EZOfficeInventory: "
-                + str(response.content)
-            )
+            raise Exception(f"Error, could not get teams: {response.content}")
 
         all_teams.extend(data["teams"])
 
         if "total_pages" not in data:
-            print("Error, could not get total_pages from EZOfficeInventory: ", data)
             break
 
         if page >= data["total_pages"]:

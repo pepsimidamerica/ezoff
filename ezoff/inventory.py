@@ -188,9 +188,14 @@ def get_inventory_history(inv_asset_num: int) -> list[dict]:
                 timeout=30,
             )
             response.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            print(f"HTTP error: {e.response.status_code} - {e.response.content}")
+            raise Exception(
+                f"Error, could not get inventory history: {e.response.status_code} - {e.response.content}"
+            )
         except requests.exceptions.RequestException as e:
-            print("Error getting inventory history: ", e)
-            raise Exception("Error getting inventory history: ", e)
+            print(f"Error getting inventory history: {e}")
+            raise Exception(f"Error getting inventory history: {e}")
 
         data = response.json()
 
