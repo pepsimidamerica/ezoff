@@ -8,6 +8,7 @@ from typing import Literal, Optional
 import requests
 
 from ezoff._auth import Decorators
+from ezoff._helpers import _basic_retry, _fetch_page
 
 
 @Decorators.check_env_vars
@@ -59,41 +60,27 @@ def get_work_orders(filter: Optional[dict]) -> dict:
             params.update(filter)
 
         try:
-            response = requests.get(
+            response = _fetch_page(
                 url,
                 headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
                 params=params,
-                timeout=30,
             )
-        except Exception as e:
-            print("Error, could not get work orders from EZOfficeInventory: ", e)
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as e:
             raise Exception(
-                "Error, could not get work orders from EZOfficeInventory: " + str(e)
+                f"Error, could not get work orders: {e.response.status_code} - {e.response.content}"
             )
-
-        if response.status_code != 200:
-            print(
-                f"Error {response.status_code}, could not get work orders from EZOfficeInventory: ",
-                response.content,
-            )
-            break
+        except requests.exceptions.RequestException as e:
+            raise Exception(f"Error, could not get work orders: {e}")
 
         data = response.json()
 
         if "work_orders" not in data:
-            print(
-                f"Error, could not get work orders from EZOfficeInventory: ",
-                response.content,
-            )
-            raise Exception(
-                f"Error, could not get work orders from EZOfficeInventory: "
-                + str(response.content)
-            )
+            raise Exception(f"Error, could not get work orders: {response.content}")
 
         all_work_orders.update(data["work_orders"])
 
         if "total_pages" not in data:
-            print("Error, could not get total_pages from EZOfficeInventory: ", data)
             break
 
         if page >= data["total_pages"]:
@@ -104,6 +91,7 @@ def get_work_orders(filter: Optional[dict]) -> dict:
     return all_work_orders
 
 
+@_basic_retry
 @Decorators.check_env_vars
 def get_work_order_details(work_order_id: int) -> dict:
     """
@@ -119,25 +107,18 @@ def get_work_order_details(work_order_id: int) -> dict:
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             timeout=30,
         )
-    except Exception as e:
-        print("Error, could not get work order from EZOfficeInventory: ", e)
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
         raise Exception(
-            "Error, could not get work order from EZOfficeInventory: " + str(e)
+            f"Error, could not get work order details: {e.response.status_code} - {e.response.content}"
         )
-
-    if response.status_code != 200:
-        print(
-            f"Error {response.status_code}, could not get work order from EZOfficeInventory: ",
-            response.content,
-        )
-        raise Exception(
-            f"Error, could not get work order from EZOfficeInventory: "
-            + str(response.content)
-        )
+    except requests.exceptions.RequestException as e:
+        raise Exception(f"Error, could not get work order details: {e}")
 
     return response.json()
 
 
+@_basic_retry
 @Decorators.check_env_vars
 def get_work_order_types() -> list[dict]:
     """
@@ -155,31 +136,16 @@ def get_work_order_types() -> list[dict]:
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             timeout=30,
         )
-    except Exception as e:
-        print("Error, could not get work order types from EZOfficeInventory: ", e)
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
         raise Exception(
-            "Error, could not get work order types from EZOfficeInventory: " + str(e)
+            f"Error, could not get work order types: {e.response.status_code} - {e.response.content}"
         )
-
-    if response.status_code != 200:
-        print(
-            f"Error {response.status_code}, could not get work order types from EZOfficeInventory: ",
-            response.content,
-        )
-        raise Exception(
-            f"Error, could not get work order types from EZOfficeInventory: "
-            + str(response.content)
-        )
+    except requests.exceptions.RequestException as e:
+        raise Exception(f"Error, could not get work order types: {e}")
 
     if "work_order_types" not in response.json():
-        print(
-            f"Error, could not get work order types from EZOfficeInventory: ",
-            response.content,
-        )
-        raise Exception(
-            f"Error, could not get work order types from EZOfficeInventory: "
-            + str(response.content)
-        )
+        raise Exception(f"Error, could not get work order types: {response.content}")
 
     return response.json()["work_order_types"]
 
@@ -242,11 +208,13 @@ def create_work_order(work_order: dict) -> dict:
             data=work_order,
             timeout=30,
         )
-    except Exception as e:
-        print("Error, could not create work order in EZOfficeInventory: ", e)
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
         raise Exception(
-            "Error, could not create work order in EZOfficeInventory: " + str(e)
+            f"Error, could not create work order: {e.response.status_code} - {e.response.content}"
         )
+    except requests.exceptions.RequestException as e:
+        raise Exception(f"Error, could not create work order: {e}")
 
     return response.json()
 
@@ -271,11 +239,13 @@ def start_work_order(work_order_id: int) -> dict:
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             timeout=30,
         )
-    except Exception as e:
-        print("Error, could not start work order in EZOfficeInventory: ", e)
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
         raise Exception(
-            "Error, could not start work order in EZOfficeInventory: " + str(e)
+            f"Error, could not start work order: {e.response.status_code} - {e.response.content}"
         )
+    except requests.exceptions.RequestException as e:
+        raise Exception(f"Error, could not start work order: {e}")
 
     return response.json()
 
@@ -300,11 +270,13 @@ def end_work_order(work_order_id: int) -> dict:
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             timeout=30,
         )
-    except Exception as e:
-        print("Error, could not end work order in EZOfficeInventory: ", e)
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
         raise Exception(
-            "Error, could not end work order in EZOfficeInventory: " + str(e)
+            f"Error, could not end work order: {e.response.status_code} - {e.response.content}"
         )
+    except requests.exceptions.RequestException as e:
+        raise Exception(f"Error, could not end work order: {e}")
 
     return response.json()
 
@@ -353,12 +325,13 @@ def add_work_log_to_work_order(work_order_id: int, work_log: dict) -> dict:
             data=work_log,
             timeout=30,
         )
-    except Exception as e:
-        print("Error, could not add work log to work order in EZOfficeInventory: ", e)
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
         raise Exception(
-            "Error, could not add work log to work order in EZOfficeInventory: "
-            + str(e)
+            f"Error, could not add log to work order: {e.response.status_code} - {e.response.content}"
         )
+    except requests.exceptions.RequestException as e:
+        raise Exception(f"Error, could not add log to work order: {e}")
 
     return response.json()
 
@@ -410,15 +383,13 @@ def add_linked_inv_to_work_order(work_order_id: int, linked_inv: dict) -> dict:
             data=linked_inv,
             timeout=30,
         )
-    except Exception as e:
-        print(
-            "Error, could not add linked inventory items to work order in EZOfficeInventory: ",
-            e,
-        )
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
         raise Exception(
-            "Error, could not add linked inventory items to work order in EZOfficeInventory: "
-            + str(e)
+            f"Error, could not add linked inv to work order: {e.response.status_code} - {e.response.content}"
         )
+    except requests.exceptions.RequestException as e:
+        raise Exception(f"Error, could not add linked inv to work order: {e}")
 
     return response.json()
 
@@ -435,41 +406,27 @@ def get_checklists() -> list[dict]:
 
     while True:
         try:
-            response = requests.get(
+            response = _fetch_page(
                 os.environ["EZO_BASE_URL"] + "checklists.api",
                 headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
                 params={"page": page},
-                timeout=30,
             )
-        except Exception as e:
-            print("Error, could not get checklists from EZOfficeInventory: ", e)
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as e:
             raise Exception(
-                "Error, could not get checklists from EZOfficeInventory: " + str(e)
+                f"Error, could not get checklists: {e.response.status_code} - {e.response.content}"
             )
-
-        if response.status_code != 200:
-            print(
-                f"Error {response.status_code}, could not get checklists from EZOfficeInventory: ",
-                response.content,
-            )
-            break
+        except requests.exceptions.RequestException as e:
+            raise Exception(f"Error, could not get checklists: {e}")
 
         data = response.json()
 
         if "checklists" not in data:
-            print(
-                f"Error, could not get checklists from EZOfficeInventory: ",
-                response.content,
-            )
-            raise Exception(
-                f"Error, could not get checklists from EZOfficeInventory: "
-                + str(response.content)
-            )
+            raise Exception(f"Error, could not get checklists: {response.content}")
 
         all_checklists.extend(data["checklists"])
 
         if "total_pages" not in data:
-            print("Error, could not get total_pages from EZOfficeInventory: ", data)
             break
 
         if page >= data["total_pages"]:

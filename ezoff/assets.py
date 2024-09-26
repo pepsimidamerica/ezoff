@@ -83,9 +83,7 @@ def get_all_assets() -> list[dict]:
         data = response.json()
 
         if "assets" not in data:
-            raise Exception(
-                f"Error, could not get assets from EZOfficeInventory: {response.content}"
-            )
+            raise Exception(f"Error, could not get assets: {response.content}")
 
         all_assets.extend(data["assets"])
 
@@ -570,9 +568,7 @@ def get_asset_history(asset_id: int) -> list[dict]:
         data = response.json()
 
         if "history" not in data:
-            raise Exception(
-                f"Error, could not get asset history from EZOfficeInventory: {response.content}"
-            )
+            raise Exception(f"Error, could not get asset history: {response.content}")
 
         all_history.extend(data["history"])
 
