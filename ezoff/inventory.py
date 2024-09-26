@@ -28,7 +28,7 @@ def get_all_inventories() -> list[dict]:
         params = {"page": page}
 
         try:
-            response = requests.get(
+            response = _fetch_page(
                 url,
                 headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
                 params=params,
@@ -38,11 +38,13 @@ def get_all_inventories() -> list[dict]:
                     "show_image_urls": "true",
                     "show_document_details": "true",
                 },
-                timeout=30,
             )
             response.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            raise Exception(
+                f"Error, could not get inventory details: {e.response.status_code} - {e.response.content}"
+            )
         except requests.exceptions.RequestException as e:
-            print("Error getting inventories: ", e)
             raise Exception("Error getting inventories: ", e)
 
         data = response.json()
@@ -101,12 +103,10 @@ def get_inventory_details(inv_asset_num: int) -> dict:
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
-        print(f"HTTP error: {e.response.status_code} - {e.response.content}")
         raise Exception(
             f"Error, could not get inventory details: {e.response.status_code} - {e.response.content}"
         )
     except requests.exceptions.RequestException as e:
-        print(f"Error getting inventory details: {e}")
         raise Exception(f"Error getting inventory details: {e}")
 
     return response.json()
@@ -147,7 +147,6 @@ def create_inventory_order(inv_asset_num: int, order: dict) -> dict:
         )
         response.raise_for_status()
     except requests.exceptions.RequestException as e:
-        print(f"Error creating inventory order: {e}")
         raise Exception(f"Error creating inventory order: {e}")
 
     return response.json()

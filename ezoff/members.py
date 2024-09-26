@@ -43,40 +43,26 @@ def get_members(filter: Optional[dict]) -> list[dict]:
             params.update(filter)
 
         try:
-            response = requests.get(
+            response = _fetch_page(
                 url,
                 headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
                 params=params,
-                timeout=30,
             )
-        except Exception as e:
-            print("Error, could not get members from EZOfficeInventory: ", e)
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as e:
             raise Exception(
-                "Error, could not get members from EZOfficeInventory: " + str(e)
+                f"Error, could not get members: {e.response.status_code} - {e.response.content}"
             )
-
-        if response.status_code != 200:
-            print(
-                f"Error {response.status_code}, could not get members from EZOfficeInventory: ",
-                response.content,
-            )
-            break
+        except requests.exceptions.RequestException as e:
+            raise Exception(f"Error, could not get members: {e}")
 
         data = response.json()
         if "members" not in data:
-            print(
-                f"Error, could not get members from EZOfficeInventory: ",
-                response.content,
-            )
-            raise Exception(
-                f"Error, could not get members from EZOfficeInventory: "
-                + str(response.content)
-            )
+            raise Exception(f"Error, could not get members: {response.content}")
 
         all_members.extend(data["members"])
 
         if "total_pages" not in data:
-            print("Error, could not get total_pages from EZOfficeInventory: ", data)
             break
 
         if page >= data["total_pages"]:
@@ -174,6 +160,7 @@ def create_member(member: dict) -> dict:
             data=member,
             timeout=30,
         )
+        response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         raise Exception(
             f"Error, could not create member: {e.response.status_code} - {e.response.content}"
@@ -221,6 +208,7 @@ def update_member(member_id: int, member: dict) -> dict:
             data=member,
             timeout=30,
         )
+        response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         raise Exception(
             f"Error, could not update member: {e.response.status_code} - {e.response.content}"
@@ -246,6 +234,7 @@ def deactivate_member(member_id: int) -> dict:
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             timeout=30,
         )
+        response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         raise Exception(
             f"Error, could not deactivate member: {e.response.status_code} - {e.response.content}"
@@ -271,6 +260,7 @@ def activate_member(member_id: int) -> dict:
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             timeout=30,
         )
+        response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         raise Exception(
             f"Error, could not activate member: {e.response.status_code} - {e.response.content}"

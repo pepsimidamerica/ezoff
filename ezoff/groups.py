@@ -36,19 +36,18 @@ def get_subgroups(group_id: Optional[int]) -> list[dict]:
                 headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
                 params=params,
             )
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            raise Exception(
+                f"Error, could not get subgroups: {e.response.status_code} - {e.response.content}"
+            )
         except requests.exceptions.RequestException as e:
-            print(f"Error, could not get subgroups: {e}")
             raise Exception(f"Error, could not get subgroups: {e}")
 
         data = response.json()
 
         if "sub_groups" not in data:
-            print(
-                f"Error, could not get subgroups from EZOfficeInventory: {response.content}"
-            )
-            raise Exception(
-                f"Error, could not get subgroups from EZOfficeInventory: {response.content}"
-            )
+            raise Exception(f"Error, could not get subgroups: {response.content}")
 
         all_subgroups.extend(data["sub_groups"])
 
