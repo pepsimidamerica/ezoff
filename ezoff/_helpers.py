@@ -20,10 +20,10 @@ _basic_retry = retry(
 
 
 @_basic_retry
-def _fetch_page(url, headers, params):
+def _fetch_page(url, headers, params=None, data=None):
     """
     Wrapper around requests.get that retries on RequestException
     """
-    response = requests.get(url, headers=headers, params=params, timeout=30)
+    response = requests.get(url, headers=headers, params=params, data=data, timeout=30)
     response.raise_for_status()
     return response

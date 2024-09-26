@@ -109,13 +109,11 @@ def get_member_details(member_id: int) -> dict:
             timeout=30,
         )
     except requests.exceptions.HTTPError as e:
-        print(f"HTTP error: {e.response.status_code} - {e.response.content}")
         raise Exception(
             f"Error, could not get member details: {e.response.status_code} - {e.response.content}"
         )
     except requests.exceptions.RequestException as e:
-        print(f"Error getting inventory history: {e}")
-        raise Exception(f"Error getting inventory history: {e}")
+        raise Exception(f"Error getting member details: {e}")
 
     return response.json()
 
