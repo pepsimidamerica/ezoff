@@ -1,5 +1,6 @@
 """
 Helper functions for ezoff
+ezoff makes use of the tenacity library to retry requests that fail due to network issues.
 """
 
 import requests

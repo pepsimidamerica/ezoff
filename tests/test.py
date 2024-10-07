@@ -12,5 +12,5 @@ sys.path.insert(0, "")
 
 from ezoff import *
 
-res = get_locations(None)
+res = get_group(356045)
 pass

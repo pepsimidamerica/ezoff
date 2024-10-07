@@ -1,23 +1,31 @@
 # ezoff
 
-Python package for interacting with the EZOffice API
+Python package for interacting with the EZOffice API.
+
+Note: a [v2 of the API](https://www.ezofficeinventory.com/api-docs/index.html) exists. Working on moving existing functions over from the v1 I was aware of to the v2.
 
 ## Installation
+
+Package is published to [PyPI](https://pypi.org/project/ezoff/) so installation should be as simple as below:
 
 `pip install ezoff`
 
 ## Usage
 
-Several environment variables are required for ezo to function.
+Two environment variables are required for ezoff to function.
 
-| Required? | Env Variable | Description |
-| --------- | ------------ | ----------- |
-| EZO_BASE_URL | Yes | Should be https://{companyname}.ezofficeinventory.com/ |
-| EZO_TOKEN | Yes | The access token used to authenticate requests |
+| Env Variable | Description |
+| ------------ | ----------- |
+| EZO_BASE_URL | Should be https://{companyname}.ezofficeinventory.com/ |
+| EZO_TOKEN | The access token used to authenticate requests |
 
-## Project Structure
+An API access token can be created in the EZOffice tenant settings under the "Integrations" heading.
 
-Project is split up into several files depending on what area of the EZOffice API is being dealt with. Purely for organizational purposes.
+## Package Structure
+
+The ezoff package is split up into several files depending on what area of the EZOffice API is being dealt with. Purely for organizational purposes.
+
+Below is a listing of functions in ezoff. It is not yet exhaustive in terms of what the underlying API can do. But it covers some of the functionality that I expect is most commonly used.
 
 ### Assets
 
@@ -44,6 +52,8 @@ Contains functions for the following:
 
 Contains functions for the following:
 
+- get groups
+- get a specific group
 - get subgroups
 
 ### Locations
