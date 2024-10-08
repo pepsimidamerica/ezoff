@@ -99,6 +99,7 @@ def get_subgroups(group_id: Optional[int]) -> list[dict]:
     """
     Get subgroups
     Optionally takes a group_id to get subgroups of a specific group
+    NOTE: Doesn't seem avaialable in API V2, getting a 404 at /groups/:group_id/sub_groups
     """
 
     url = os.environ["EZO_BASE_URL"] + "groups/get_sub_groups.api"

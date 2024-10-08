@@ -10,6 +10,12 @@ import requests
 from ezoff._auth import Decorators
 from ezoff._helpers import _basic_retry, _fetch_page
 
+ezo_headers = {
+    "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+}
+
 
 @Decorators.check_env_vars
 def get_all_inventories() -> list[dict]:
