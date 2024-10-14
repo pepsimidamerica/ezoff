@@ -141,6 +141,7 @@ def create_member(member: dict) -> dict:
         "user[fax]",
         "user[login_enabled]",
         "user[subscribed_to_emails]",
+        "user[display_picture]",
         "skip_confirmation_email",
     ]
 
@@ -190,6 +191,7 @@ def update_member(member_id: int, member: dict) -> dict:
         "user[phone_number]",
         "user[fax]",
         "skip_confirmation_email",
+        "user[display_picture]",
     ]
 
     # Check for custom attributes
@@ -202,7 +204,7 @@ def update_member(member_id: int, member: dict) -> dict:
     url = os.environ["EZO_BASE_URL"] + "members/" + str(member_id) + ".api"
 
     try:
-        response = requests.put(
+        response = requests.patch(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             data=member,
