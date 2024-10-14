@@ -435,3 +435,61 @@ def get_checklists() -> list[dict]:
         page += 1
 
     return all_checklists
+
+
+@Decorators.check_env_vars
+def create_service(asset_id: int, service: dict) -> dict:
+    """
+    Creates a service record against a given asset
+    https://ezo.io/ezofficeinventory/developers/#api-create-service
+
+    :param asset_id: The ID of the asset to create the service record against
+    :param service: A dictionary containing the service record details
+    """
+
+    # Required fields
+    if "service[end_date]" not in service:
+        raise ValueError("service must have 'service[end_date]' key")
+    if "service_end_time" not in service:
+        raise ValueError("service must have 'service_end_time' key")
+    if "service_type_name" not in service:
+        raise ValueError("service must have 'service_type_name' key")
+    if "service[description]" not in service:
+        raise ValueError("service must have 'service[description]' key")
+
+    # Remove any keys that are not valid
+    valid_keys = [
+        "service[start_date]",
+        "service_start_time",
+        "service[end_date]",
+        "service_end_time",
+        "service_type_name",
+        "service[description]",
+        "inventory_ids",
+    ]
+
+    service = {
+        k: v
+        for k, v in service.items()
+        if k in valid_keys or k.startswith("linked_inventory_items")
+    }
+
+    url = os.environ["EZO_BASE_URL"] + "assets/" + str(asset_id) + "/services.api"
+
+    try:
+        response = requests.post(
+            url,
+            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+            params={"create_service_ticket_only": "true"},
+            data=service,
+            timeout=30,
+        )
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        raise Exception(
+            f"Error, could not create service: {e.response.status_code} - {e.response.content}"
+        )
+    except requests.exceptions.RequestException as e:
+        raise Exception(f"Error, could not create service: {e}")
+
+    return response.json()
