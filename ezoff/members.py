@@ -183,15 +183,24 @@ def update_member(member_id: int, member: dict) -> dict:
     valid_keys = [
         "user[email]",
         "user[employee_id]",
+        "user[employee_identification_number]",
         "user[role_id]",
         "user[team_id]",
         "user[user_listing_id]",
         "user[first_name]",
         "user[last_name]",
+        "user[address_name]",
+        "user[address]",
+        "user[address_line_2]",
+        "user[city]",
+        "user[state]",
+        "user[country]",
         "user[phone_number]",
         "user[fax]",
-        "skip_confirmation_email",
+        "user[login_enabled]",
+        "user[subscribed_to_emails]",
         "user[display_picture]",
+        "skip_confirmation_email",
     ]
 
     # Check for custom attributes
