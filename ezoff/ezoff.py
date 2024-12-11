@@ -7,4 +7,5 @@ from .groups import *
 from .inventory import *
 from .locations import *
 from .members import *
+from .projects import *
 from .workorders import *
