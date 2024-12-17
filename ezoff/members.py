@@ -176,6 +176,10 @@ def create_member(member: dict) -> dict:
 def update_member(member_id: int, member: dict) -> dict:
     """
     Update a member
+    Note: If updating a customer that has an email, you should include the email
+    in the member dict. If you don't, it will get removed for some reason. Not sure
+    why as I'm using patch. So presumably should only be touching the keys that
+    are specified.
     https://ezo.io/ezofficeinventory/developers/#api-update-member
     """
 
