@@ -142,6 +142,15 @@ def create_member(member: dict) -> dict:
         "user[login_enabled]",
         "user[subscribed_to_emails]",
         "user[display_picture]",
+        "user[unsubscribed_by_id]",
+        "user[authorization_amount]",
+        "user[vendor_id]",
+        "user[time_zone]",
+        "user[hourly_rate]",
+        "user[offboarding_date]",
+        "user[location_id]",
+        "user[default_address_id]",
+        "user[description]",
         "skip_confirmation_email",
     ]
 
@@ -204,6 +213,15 @@ def update_member(member_id: int, member: dict) -> dict:
         "user[login_enabled]",
         "user[subscribed_to_emails]",
         "user[display_picture]",
+        "user[unsubscribed_by_id]",
+        "user[authorization_amount]",
+        "user[vendor_id]",
+        "user[time_zone]",
+        "user[hourly_rate]",
+        "user[offboarding_date]",
+        "user[location_id]",
+        "user[default_address_id]",
+        "user[description]",
         "skip_confirmation_email",
     ]
 
