@@ -160,10 +160,13 @@ def create_work_order(work_order: dict) -> dict:
     # Required fields
     if "task[title]" not in work_order:
         raise ValueError("work_order must have 'task[title]' key")
-    if "task[task_type]" not in work_order:
-        raise ValueError("work_order must have 'task[task_type]' key")
+    
+    if "task[task_type]" not in work_order and "task[task_type_id]" not in work_order:
+        raise ValueError("work_order must have 'task[task_type]' or 'task[task_type_id]' key")
+    
     if "due_date" not in work_order:
         raise ValueError("work_order must have 'due_date' key")
+    
         # Also check that the date is in the correct format mm/dd/yyyy
         try:
             datetime.strptime(work_order["due_date"], "%m/%d/%Y")
@@ -187,7 +190,9 @@ def create_work_order(work_order: dict) -> dict:
         "inventory_ids",
         "checklist_ids",
         "associated_assets",
-        "custom_field_names",
+        "custom_field_names",        
+        "task[project_id]",
+        "task[location_id]",
     ]
 
     work_order = {
