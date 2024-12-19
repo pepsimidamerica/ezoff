@@ -6,6 +6,7 @@ import os
 from typing import Literal, Optional
 
 import requests
+from datetime import datetime
 
 from ezoff._auth import Decorators
 from ezoff._helpers import _basic_retry, _fetch_page
@@ -167,11 +168,11 @@ def create_work_order(work_order: dict) -> dict:
     if "due_date" not in work_order:
         raise ValueError("work_order must have 'due_date' key")
     
-        # Also check that the date is in the correct format mm/dd/yyyy
-        try:
-            datetime.strptime(work_order["due_date"], "%m/%d/%Y")
-        except ValueError:
-            raise ValueError("work_order['due_date'] must be in the format mm/dd/yyyy")
+    # Also check that the date is in the correct format mm/dd/yyyy
+    try:
+        datetime.strptime(work_order["due_date"], "%m/%d/%Y")
+    except ValueError:
+        raise ValueError("work_order['due_date'] must be in the format mm/dd/yyyy")
 
     # Remove any keys that are not valid
     valid_keys = [
