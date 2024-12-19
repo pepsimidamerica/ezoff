@@ -142,6 +142,15 @@ def create_member(member: dict) -> dict:
         "user[login_enabled]",
         "user[subscribed_to_emails]",
         "user[display_picture]",
+        "user[unsubscribed_by_id]",
+        "user[authorization_amount]",
+        "user[vendor_id]",
+        "user[time_zone]",
+        "user[hourly_rate]",
+        "user[offboarding_date]",
+        "user[location_id]",
+        "user[default_address_id]",
+        "user[description]",
         "skip_confirmation_email",
     ]
 
@@ -176,6 +185,10 @@ def create_member(member: dict) -> dict:
 def update_member(member_id: int, member: dict) -> dict:
     """
     Update a member
+    Note: If updating a customer that has an email, you should include the email
+    in the member dict. If you don't, it will get removed for some reason. Not sure
+    why as I'm using patch. So presumably should only be touching the keys that
+    are specified.
     https://ezo.io/ezofficeinventory/developers/#api-update-member
     """
 
@@ -200,6 +213,15 @@ def update_member(member_id: int, member: dict) -> dict:
         "user[login_enabled]",
         "user[subscribed_to_emails]",
         "user[display_picture]",
+        "user[unsubscribed_by_id]",
+        "user[authorization_amount]",
+        "user[vendor_id]",
+        "user[time_zone]",
+        "user[hourly_rate]",
+        "user[offboarding_date]",
+        "user[location_id]",
+        "user[default_address_id]",
+        "user[description]",
         "skip_confirmation_email",
     ]
 
