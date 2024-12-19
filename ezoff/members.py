@@ -77,6 +77,88 @@ def get_members(filter: Optional[dict]) -> list[dict]:
     return all_members
 
 
+@Decorators.check_env_vars
+def get_filtered_members(filter: dict) -> list[dict]:
+    """
+    Get members via filtering.
+    """
+
+    valid_keys = [
+        "filters[role][value]",
+        "filters[team][value]",
+        "filters[department][value]",
+        "filters[login][value]",
+        "filters[manager][value]",
+        "filters[location][value]",
+        "filters[active][value]",
+        "filters[inactive][value]",
+        "filters[external][value]",
+        "filters[inactive_members_with_items][value]",
+        "filters[inactive_members_with_pending_associations][value]",
+        "filters[off_boarding_due_in][value]",
+        "filters[off_boarding_overdue][value]",
+        "filters[created_during][value]",
+        "filters[creation_source][value]",
+        "filters[last_logged_in_during][value]",
+        "filters[last_sync_source][value]",
+        "filters[synced_during][value]",
+    ]
+
+    # Remove any keys that are not valid
+    filter = {k: v for k, v in filter.items() if k in valid_keys}
+
+    # If no filter keys are provided, return all members
+    if not filter:
+        return get_members(None)
+
+    url = os.environ["EZO_BASE_URL"] + "members/filter"
+
+    page = 1
+    all_members = []
+
+    while True:
+        params = {"page": page, "include_custom_fields": "true"}
+        params.update(filter)
+
+        try:
+            response = _fetch_page(
+                url,
+                headers={
+                    "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
+                    "Accept": "application/json",
+                },
+                params=params,
+            )
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            raise Exception(
+                f"Error, could not get members: {e.response.status_code} - {e.response.content}"
+            )
+        except requests.exceptions.RequestException as e:
+            raise Exception(f"Error, could not get members: {e}")
+
+        data = response.json()
+
+        if "data" not in data:
+            raise Exception(f"Error, could not get members: {response.content}")
+
+        all_members.extend(data["data"])
+
+        if "total_pages" not in data["meta"]:
+            break
+
+        if page >= data["meta"]["total_pages"]:
+            break
+
+        page += 1
+
+        # Potentially running into rate limiting issues with this endpoint
+        # Sleep for a second to avoid this
+        time.sleep(1)
+
+    return all_members
+
+
 @_basic_retry
 @Decorators.check_env_vars
 def get_member_details(member_id: int) -> dict:

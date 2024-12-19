@@ -12,16 +12,6 @@ sys.path.insert(0, "")
 
 from ezoff import *
 
-res = create_service(
-    14753,
-    {
-        "service[start_date]": "01/01/2018",
-        "service_start_time": "08:00",
-        "service[end_date]": "01/09/2018",
-        "service_end_time": "15:15",
-        "service_type_name": "Other",
-        "service[description]": "This is a test service",
-    },
-)
+res = ezoff.get_filtered_members({"filters[location][value]": 148121})
 print(res)
 pass
