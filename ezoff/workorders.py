@@ -193,6 +193,8 @@ def create_work_order(work_order: dict) -> dict:
         "custom_field_names",        
         "task[project_id]",
         "task[location_id]",
+        "task[custom_attributes][Short Problem Description]",
+        "task[description]",
     ]
 
     work_order = {
