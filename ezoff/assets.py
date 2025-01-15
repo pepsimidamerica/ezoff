@@ -169,6 +169,8 @@ def search_for_asset(search_term: str) -> list[dict]:
     May not return all assets that match the search term. Better to use
     get_filtered_assets if you want to return all assets that match a filter.
     https://ezo.io/ezofficeinventory/developers/#api-search-name
+
+    Prefixing the search term with @ results in a search on the Asset Identification Number.
     """
 
     url = os.environ["EZO_BASE_URL"] + "search.api"
@@ -203,18 +205,26 @@ def search_for_asset(search_term: str) -> list[dict]:
 
         data = response.json()
 
-        if "assets" not in data:
+        # Results contains multiple assets.
+        if "assets" in data:
+            all_assets.extend(data["assets"])
+
+            if "total_pages" not in data:
+                break
+
+            if page >= data["total_pages"]:
+                break
+
+            page += 1
+        
+        # Results contains a single asset.
+        elif "asset" in data:
+            asset_list = []
+            asset_list.append(data["asset"])
+            return asset_list
+
+        else:
             raise Exception(f"Error, could not get search results: {response.content}")
-
-        all_assets.extend(data["assets"])
-
-        if "total_pages" not in data:
-            break
-
-        if page >= data["total_pages"]:
-            break
-
-        page += 1
 
     return all_assets
 
