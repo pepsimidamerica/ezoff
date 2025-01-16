@@ -1,0 +1,15 @@
+from enum import Enum
+
+
+class AssetException(Exception):
+    """Parent class for exceptions related to EZ-Office Fixed Assets."""
+
+    def __init__(self, asset_id: str):
+        super().__init__("")
+        self.asset_id = asset_id
+
+
+class AssetNotFound(AssetException):
+
+    def __str__(self):
+        return f"Asset {self.asset_id} not found in EZ-Office."

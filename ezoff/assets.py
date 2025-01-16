@@ -7,6 +7,7 @@ import time
 
 import requests
 
+from ezoff.exceptions import *
 from ezoff._auth import Decorators
 from ezoff._helpers import _basic_retry, _fetch_page
 
@@ -216,7 +217,7 @@ def search_for_asset(search_term: str) -> list[dict]:
                 break
 
             page += 1
-        
+
         # Results contains a single asset.
         elif "asset" in data:
             asset_list = []
@@ -542,6 +543,41 @@ def reactivate_asset(asset_id: int, reactivate: dict) -> dict:
         )
     except requests.exceptions.RequestException as e:
         raise Exception(f"Error, could not reactivate asset: {e}")
+
+    return response.json()
+
+
+@_basic_retry
+@Decorators.check_env_vars
+def verification_request(asset_id: int) -> dict:
+    """
+    Creates a verification request for a single asset.
+    https://ezo.io/ezofficeinventory/developers/#api-verification
+
+    Args:
+        asset_id (int): The asset ID to verify.
+
+    Raises:
+        AssetNotFound: Asset ID was not found in EZ-Office.
+    """
+
+    url = (
+        os.environ["EZO_BASE_URL"]
+        + "assets/"
+        + str(asset_id)
+        + "/verification_requests.api"
+    )
+
+    try:
+        response = requests.post(
+            url,
+            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+            timeout=30,
+        )
+        response.raise_for_status()
+
+    except (requests.exceptions.HTTPError, requests.exceptions.RequestException) as e:
+        raise AssetNotFound(asset_id=str(asset_id))
 
     return response.json()
 
