@@ -10,6 +10,7 @@ from datetime import datetime
 
 from ezoff._auth import Decorators
 from ezoff._helpers import _basic_retry, _fetch_page
+from .exceptions import ChecklistLinkError
 
 
 @Decorators.check_env_vars
@@ -161,13 +162,15 @@ def create_work_order(work_order: dict) -> dict:
     # Required fields
     if "task[title]" not in work_order:
         raise ValueError("work_order must have 'task[title]' key")
-    
+
     if "task[task_type]" not in work_order and "task[task_type_id]" not in work_order:
-        raise ValueError("work_order must have 'task[task_type]' or 'task[task_type_id]' key")
-    
+        raise ValueError(
+            "work_order must have 'task[task_type]' or 'task[task_type_id]' key"
+        )
+
     if "due_date" not in work_order:
         raise ValueError("work_order must have 'due_date' key")
-    
+
     # Also check that the date is in the correct format mm/dd/yyyy
     try:
         datetime.strptime(work_order["due_date"], "%m/%d/%Y")
@@ -191,7 +194,7 @@ def create_work_order(work_order: dict) -> dict:
         "inventory_ids",
         "checklist_ids",
         "associated_assets",
-        "custom_field_names",        
+        "custom_field_names",
         "task[project_id]",
         "task[location_id]",
         "task[custom_attributes][Short Problem Description]",
@@ -499,5 +502,50 @@ def create_service(asset_id: int, service: dict) -> dict:
         )
     except requests.exceptions.RequestException as e:
         raise Exception(f"Error, could not create service: {e}")
+
+    return response.json()
+
+
+def add_checklist_to_work_order(
+    service_call_id: int, checklist_id: int, asset_id: int
+) -> dict:
+    """
+    Add a single checklist to an existing service call.
+
+    Args:
+        service_call_id (int): User facing ID of service call.
+        checklist_id (int): Internal ID of checklist to link with service call.
+        asset_id (int): Internal ID of asset to assign this checklist to.
+
+    Raises:
+        ChecklistLinkError: General error thrown when link checklist API call fails.
+    """
+
+    url = (
+        os.environ["EZO_BASE_URL"]
+        + "tasks/"
+        + str(service_call_id)
+        + "/add_checklists.json"
+    )
+    data = {"checklist_ids": str(checklist_id), "asset_id": str(asset_id)}
+
+    try:
+        response = requests.post(
+            url,
+            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+            data=data,
+            timeout=30,
+        )
+        response.raise_for_status()
+
+    except requests.exceptions.HTTPError as e:
+        raise ChecklistLinkError(
+            f"Error, could not link checklist to service call: {e.response.status_code} - {e.response.content}"
+        )
+
+    except requests.exceptions.RequestException as e:
+        raise ChecklistLinkError(
+            f"Error, could not link checklist to service call: {e}"
+        )
 
     return response.json()
