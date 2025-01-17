@@ -199,6 +199,7 @@ def create_work_order(work_order: dict) -> dict:
         "task[location_id]",
         "task[custom_attributes][Short Problem Description]",
         "task[description]",
+        "task[supervisor_id]",
     ]
 
     work_order = {
