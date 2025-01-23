@@ -4,7 +4,7 @@ This module contains functions to interact with work orders in EZOfficeInventory
 
 import os
 from typing import Literal, Optional
-
+from datetime import date
 import requests
 from datetime import datetime
 
@@ -547,6 +547,50 @@ def add_checklist_to_work_order(
     except requests.exceptions.RequestException as e:
         raise ChecklistLinkError(
             f"Error, could not link checklist to service call: {e}"
+        )
+
+    return response.json()
+
+
+def update_work_order_assigned_to(
+    service_call_id: int, assigned_to_id: str, due_date: date
+) -> dict:
+    """
+    Updates assigned to and due date field on an existing service call.
+
+    Args:
+        service_call_id (int): User facing ID of service call.
+        due_date: New due date of service call.
+
+    Raises:
+        
+    """
+
+    url = (
+        os.environ["EZO_BASE_URL"]
+        + "tasks/"
+        + str(service_call_id)
+        + ".api"
+    )
+    data = {"task[assigned_to_id]": assigned_to_id, "due_date": due_date.strftime('%m/%d/%Y')}
+
+    try:
+        response = requests.patch(
+            url,
+            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+            data=data,
+            timeout=30,
+        )
+        response.raise_for_status()
+
+    except requests.exceptions.HTTPError as e:
+        raise ChecklistLinkError(
+            f"Error, could not update service call: {e.response.status_code} - {e.response.content}"
+        )
+
+    except requests.exceptions.RequestException as e:
+        raise ChecklistLinkError(
+            f"Error, could not update service call: {e}"
         )
 
     return response.json()
