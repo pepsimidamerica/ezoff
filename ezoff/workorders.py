@@ -77,7 +77,7 @@ def get_work_orders(filter: Optional[dict]) -> dict:
         data = response.json()
 
         if "work_orders" not in data:
-            raise Exception(f"Error, could not get work orders: {response.content}")
+            raise NoDataReturned(f"No work orders found: {response.content}")
 
         all_work_orders.update(data["work_orders"])
 

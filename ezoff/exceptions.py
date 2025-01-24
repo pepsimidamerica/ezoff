@@ -19,5 +19,9 @@ class ChecklistLinkError(Exception):
     pass
 
 
+class NoDataReturned(Exception):
+    pass
+
+
 class WorkOrderUpdateError(Exception):
     pass
