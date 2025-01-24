@@ -14,5 +14,10 @@ class AssetNotFound(AssetException):
     def __str__(self):
         return f"Asset {self.asset_id} not found in EZ-Office."
 
+
 class ChecklistLinkError(Exception):
+    pass
+
+
+class WorkOrderUpdateError(Exception):
     pass
