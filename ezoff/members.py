@@ -233,6 +233,7 @@ def create_member(member: dict) -> dict:
         "user[location_id]",
         "user[default_address_id]",
         "user[description]",
+        "user[department]",
         "skip_confirmation_email",
     ]
 
@@ -304,6 +305,7 @@ def update_member(member_id: int, member: dict) -> dict:
         "user[location_id]",
         "user[default_address_id]",
         "user[description]",
+        "user[department]",
         "skip_confirmation_email",
     ]
 
