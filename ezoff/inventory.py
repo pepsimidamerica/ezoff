@@ -99,7 +99,7 @@ def get_inventory_details(inv_asset_num: int) -> dict:
                 "show_image_urls": "true",
                 "show_document_details": "true",
             },
-            timeout=30,
+            timeout=60,
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -143,7 +143,7 @@ def create_inventory_order(inv_asset_num: int, order: dict) -> dict:
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             data=order,
-            timeout=30,
+            timeout=60,
         )
         response.raise_for_status()
     except requests.exceptions.RequestException as e:
@@ -184,7 +184,7 @@ def get_inventory_history(inv_asset_num: int) -> list[dict]:
                 url,
                 headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
                 params=params,
-                timeout=30,
+                timeout=60,
             )
             response.raise_for_status()
         except requests.exceptions.HTTPError as e:

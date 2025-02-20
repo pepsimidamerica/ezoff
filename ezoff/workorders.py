@@ -106,7 +106,7 @@ def get_work_order_details(work_order_id: int) -> dict:
         response = requests.get(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            timeout=30,
+            timeout=60,
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -135,7 +135,7 @@ def get_work_order_types() -> list[dict]:
         response = requests.get(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            timeout=30,
+            timeout=60,
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -217,7 +217,7 @@ def create_work_order(work_order: dict) -> dict:
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             data=work_order,
-            timeout=30,
+            timeout=60,
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -248,7 +248,7 @@ def start_work_order(work_order_id: int) -> dict:
         response = requests.post(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            timeout=30,
+            timeout=60,
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -279,7 +279,7 @@ def end_work_order(work_order_id: int) -> dict:
         response = requests.post(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            timeout=30,
+            timeout=60,
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -334,7 +334,7 @@ def add_work_log_to_work_order(work_order_id: int, work_log: dict) -> dict:
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             data=work_log,
-            timeout=30,
+            timeout=60,
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -392,7 +392,7 @@ def add_linked_inv_to_work_order(work_order_id: int, linked_inv: dict) -> dict:
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             data=linked_inv,
-            timeout=30,
+            timeout=60,
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -493,7 +493,7 @@ def create_service(asset_id: int, service: dict) -> dict:
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             params={"create_service_ticket_only": "true"},
             data=service,
-            timeout=30,
+            timeout=60,
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -534,7 +534,7 @@ def add_checklist_to_work_order(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             data=data,
-            timeout=30,
+            timeout=60,
         )
         response.raise_for_status()
 
@@ -581,7 +581,7 @@ def update_work_order(work_order_id: int, filter: dict) -> dict:
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             params=filter,
-            timeout=30,
+            timeout=60,
         )
         response.raise_for_status()
 

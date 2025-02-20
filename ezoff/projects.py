@@ -23,7 +23,7 @@ def project_link_asset(options: dict) -> dict:
     # Required fields
     if "seqs" not in options:
         raise ValueError("asset must have 'fixed_asset[name]' key")
-    
+
     if "project_id" not in options:
         raise ValueError("asset must have 'fixed_asset[group_id]' key")
 
@@ -44,7 +44,7 @@ def project_link_asset(options: dict) -> dict:
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             data=options,
-            timeout=30,
+            timeout=60,
         )
         response.raise_for_status()
 

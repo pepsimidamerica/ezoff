@@ -88,7 +88,7 @@ def get_location_details(location_num: int) -> dict:
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             params={"include_custom_fields": "true"},
-            timeout=30,
+            timeout=60,
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -119,7 +119,7 @@ def get_location_item_quantities(location_num: int) -> dict:
         response = requests.get(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            timeout=30,
+            timeout=60,
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -203,7 +203,7 @@ def activate_location(location_num: int) -> dict:
         response = requests.patch(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            timeout=30,
+            timeout=60,
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -234,7 +234,7 @@ def deactivate_location(location_num: int) -> dict:
         response = requests.patch(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            timeout=30,
+            timeout=60,
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -291,7 +291,7 @@ def update_location(location_num: int, location: dict) -> dict:
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             data=location,
-            timeout=30,
+            timeout=60,
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:

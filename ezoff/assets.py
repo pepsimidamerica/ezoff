@@ -32,7 +32,7 @@ def get_asset_details(asset_id: int):
                 "show_image_urls": "true",
                 "show_services_details": "true",
             },
-            timeout=30,
+            timeout=60,
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -279,7 +279,7 @@ def create_asset(asset: dict) -> dict:
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             data=asset,
-            timeout=30,
+            timeout=60,
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -326,7 +326,7 @@ def update_asset(asset_id: int, asset: dict) -> dict:
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             data=asset,
-            timeout=30,
+            timeout=60,
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -353,7 +353,7 @@ def delete_asset(asset_id: int) -> dict:
         response = requests.delete(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            timeout=30,
+            timeout=60,
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -397,7 +397,7 @@ def checkin_asset(asset_id: int, checkin: dict) -> dict:
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             data=checkin,
-            timeout=30,
+            timeout=60,
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -445,7 +445,7 @@ def checkout_asset(asset_id: int, user_id: int, checkout: dict) -> dict:
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             params={"user_id": user_id},
             data=checkout,
-            timeout=30,
+            timeout=60,
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -498,7 +498,7 @@ def retire_asset(asset_id: int, retire: dict) -> dict:
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             data=retire,
-            timeout=30,
+            timeout=60,
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -534,7 +534,7 @@ def reactivate_asset(asset_id: int, reactivate: dict) -> dict:
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             data=reactivate,
-            timeout=30,
+            timeout=60,
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -572,7 +572,7 @@ def verification_request(asset_id: int) -> dict:
         response = requests.post(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            timeout=30,
+            timeout=60,
         )
         response.raise_for_status()
 
@@ -652,7 +652,7 @@ def get_items_for_token_input(q: str) -> list[dict]:
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             params={"include_id": "true", "q": q},
-            timeout=30,
+            timeout=60,
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:

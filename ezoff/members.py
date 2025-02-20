@@ -174,7 +174,7 @@ def get_member_details(member_id: int) -> dict:
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             params={"include_custom_fields": "true"},
-            timeout=30,
+            timeout=60,
         )
     except requests.exceptions.HTTPError as e:
         raise Exception(
@@ -251,7 +251,7 @@ def create_member(member: dict) -> dict:
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             data=member,
-            timeout=30,
+            timeout=60,
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -323,7 +323,7 @@ def update_member(member_id: int, member: dict) -> dict:
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             data=member,
-            timeout=30,
+            timeout=60,
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -349,7 +349,7 @@ def deactivate_member(member_id: int) -> dict:
         response = requests.put(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            timeout=30,
+            timeout=60,
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -375,7 +375,7 @@ def activate_member(member_id: int) -> dict:
         response = requests.put(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            timeout=30,
+            timeout=60,
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
