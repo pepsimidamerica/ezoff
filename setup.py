@@ -8,7 +8,7 @@ with open("README.md", "r") as f:
 
 setup(
     name="ezoff",
-    version="0.1.24",
+    version="0.1.25",
     description="Python package that acts as a wrapper for the EZOffice API.",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -16,6 +16,11 @@ setup(
     author_email="jmaynor@pepsimidamerica.com",
     url="https://github.com/pepsimidamerica/ezoff",
     packages=find_packages(),
+    classifiers=[
+        "Programming Language :: Python :: 3",
+        "License :: OSI Approved :: The Unlicense (Unlicense)",
+        "Operating System :: OS Independent",
+    ],
     python_requires=">=3.10",
     install_requires=required,
 )
