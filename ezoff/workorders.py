@@ -245,7 +245,7 @@ def start_work_order(work_order_id: int) -> dict:
     )
 
     try:
-        response = requests.post(
+        response = requests.patch(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             timeout=60,
@@ -276,7 +276,7 @@ def end_work_order(work_order_id: int) -> dict:
     )
 
     try:
-        response = requests.post(
+        response = requests.patch(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             timeout=60,
@@ -591,7 +591,9 @@ def update_work_order(work_order_id: int, filter: dict) -> dict:
         )
 
     except requests.exceptions.RequestException as e:
-        raise WorkOrderUpdateError(f"Error, could not update work order {work_order_id}: {e}")
+        raise WorkOrderUpdateError(
+            f"Error, could not update work order {work_order_id}: {e}"
+        )
 
     return response.json()
 
