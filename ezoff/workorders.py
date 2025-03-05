@@ -605,6 +605,7 @@ def update_work_order_routing(
     start_dttm: datetime,
     due_dttm: datetime,
     supervisor_id: str = None,
+    reviewer_id: str = None,
 ) -> dict:
     """Update the assigned to user and start/end time of a workorder.
     Intended for use by an external routing system.
@@ -616,6 +617,7 @@ def update_work_order_routing(
         start_dttm (date): Start datetime of the work order.
         due_dttm (date): Due datetime of the work order.
         supervisor_id (str): Supervisor ID to assign the work order.
+        reviewer_id (str): Reviewer ID to assign the work order.
 
     Returns:
         dict: Response from the EZ Office API endpoint.
@@ -631,6 +633,9 @@ def update_work_order_routing(
 
     if supervisor_id is not None:
         filter["task[supervisor_id]"] = supervisor_id
+
+    if reviewer_id is not None:
+        filter["task[reviewer_id]"] = reviewer_id
 
     result = update_work_order(work_order_id=work_order_id, filter=filter)
 
