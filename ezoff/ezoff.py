@@ -10,3 +10,4 @@ from .locations import *
 from .members import *
 from .projects import *
 from .workorders import *
+from .checklist import *
