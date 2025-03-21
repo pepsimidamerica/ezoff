@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import List, Dict, Optional, Any
-from datetime import datetime
+from datetime import datetime, date
 from enum import Enum
 
 
@@ -17,22 +17,63 @@ class ChecklistV2(BaseModel):
 
 
 class MemberV2(BaseModel):
-    name: str
-    first_name: Optional[str] = Field(default=None)
-    last_name: Optional[str] = Field(default=None)
-    employee_identification_number: str
-    fax: Optional[str] = Field(default=None)
-    email: Optional[str] = Field(default=None)
-    phone_number: int
-    # time_zone:
-    address: Optional[str] = Field(default=None)
-    city: Optional[str] = Field(default=None)
-    state: Optional[str] = Field(default=None)
+    account_name: Optional[str] = Field(default=None)
+    address_name: Optional[str] = Field(default=None)
+    alert_type: Optional[str] = Field(default=None)
+    auto_sync_with_ldap: Optional[bool] = Field(default=None)
+    billing_address_id: Optional[int] = Field(default=None)
+    category_id: Optional[int] = Field(default=None)
+    collect_tax: Optional[str] = Field(default=None)
+    comments_count: Optional[int] = Field(default=None)
+    company_default_payment_terms: Optional[bool] = Field(default=None)
+    contact_owner: Optional[str] = Field(default=None)
+    contact_type: Optional[str] = Field(default=None)
     country: Optional[str] = Field(default=None)
-    zip_code: Optional[str] = Field(default=None)
-    description: Optional[str] = Field(default=None)
-    display_picture_url: Optional[str] = Field(default=None)
+    created_at: datetime
+    created_by_id: Optional[int] = Field(default=None)
+    creation_source: Optional[str] = Field(default=None)
+    credit_memo_amount: Optional[float] = Field(default=None)
+    custom_fields: Optional[List[dict]] = Field(default=[])
+    deactivated_at: Optional[datetime] = Field(default=None)
+    default_address_id: Optional[int] = Field(default=None)
+    default_triage_setting_id: Optional[int] = Field(default=None)
     department: Optional[str] = Field(default=None)
+    description: Optional[str] = Field(default=None)
+    documents_count: Optional[int] = Field(default=None)
+    email: Optional[str] = Field(default=None)
+    employee_id: Optional[str] = Field(default=None)
+    employee_identification_number: Optional[str] = Field(default=None)
+    fax: Optional[str] = Field(default=None)
+    full_name: Optional[str] = Field(default=None)
+    hourly_rate: Optional[float] = Field(default=None)
+    id: int
+    inactive_by_id: Optional[int] = Field(default=None)
+    jira_account_id: Optional[str] = Field(default=None)
+    last_sync_date: Optional[datetime] = Field(default=None)
+    last_sync_source: Optional[str] = Field(default=None)
+    manager_id: Optional[int] = Field(default=None)
+    offboarding_date: Optional[date] = Field(default=None)
+    otp_required_for_login: Optional[bool] = Field(default=None)
+    password_changed_at: Optional[datetime] = Field(default=None)
+    payment_term_id: Optional[int] = Field(default=None)
+    phone_number: Optional[str] = Field(default=None)
+    role_id: Optional[int] = Field(default=None)
+    salesforce_id: Optional[int] = Field(default=None)
+    secure_code: Optional[str] = Field(default=None)
+    services_count: Optional[int] = Field(default=None)
+    settings_access: Optional[bool] = Field(default=None)
+    show_announcement: Optional[bool] = Field(default=None)
+    show_app_updates: Optional[bool] = Field(default=None)
+    status: int
+    stock_asset_current_checkout_view: Optional[bool] = Field(default=None)
+    subscribed_to_emails: Optional[bool] = Field(default=None)
+    team_id: Optional[int] = Field(default=None)
+    time_zone: Optional[str] = Field(default=None)
+    unseen_app_updates_count: Optional[int] = Field(default=None)
+    unsubscribed_by_id: Optional[int] = Field(default=None)
+    updated_at: Optional[datetime] = Field(default=None)
+    user_listing_id: Optional[int] = Field(default=None)
+    zendesk_account_id: Optional[int] = Field(default=None)
 
 
 class WorkOrderV2(BaseModel):

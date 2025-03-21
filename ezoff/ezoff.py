@@ -12,4 +12,5 @@ from .members import *
 from .projects import *
 from .workorders import *
 from .v2_checklist import *
+from .v2_members import *
 from .v2_workorders import *
