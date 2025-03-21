@@ -23,5 +23,9 @@ class NoDataReturned(Exception):
     pass
 
 
+class WorkOrderNotFound(Exception):
+    pass
+
+
 class WorkOrderUpdateError(Exception):
     pass
