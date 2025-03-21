@@ -1,6 +1,12 @@
 from pydantic import BaseModel, Field
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 from datetime import datetime
+from enum import Enum
+
+
+class CustomFieldID(Enum):
+    DEPOT = 739
+    EST_SVC_MINUTES = 728
 
 
 class ChecklistV2(BaseModel):
@@ -18,7 +24,7 @@ class MemberV2(BaseModel):
     fax: Optional[str] = Field(default=None)
     email: Optional[str] = Field(default=None)
     phone_number: int
-    # time_zone: 
+    # time_zone:
     address: Optional[str] = Field(default=None)
     city: Optional[str] = Field(default=None)
     state: Optional[str] = Field(default=None)
@@ -27,6 +33,7 @@ class MemberV2(BaseModel):
     description: Optional[str] = Field(default=None)
     display_picture_url: Optional[str] = Field(default=None)
     department: Optional[str] = Field(default=None)
+
 
 class WorkOrderV2(BaseModel):
     approver_id: Optional[int] = Field(default=None)
@@ -85,3 +92,17 @@ class WorkOrderV2(BaseModel):
     work_logs_cost: float
     work_type_name: Optional[str] = Field(default=None)
     zendesk_ticket_id: Optional[int]
+
+    # Custom fields
+    depot: Optional[str] = Field(default=None)
+    depot_id: Optional[int] = Field(default=None)
+
+    def model_post_init(self, __context: Any) -> None:
+
+        # Parse custom fields.
+        for field in self.custom_fields:
+
+            # Assign Depot and Depot ID
+            if "id" in field and field["id"] == CustomFieldID.DEPOT.value:
+                self.depot = field["value"]
+                self.depot_id = int(field["value"][:2])
