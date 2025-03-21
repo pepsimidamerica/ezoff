@@ -22,23 +22,12 @@ def get_work_orders_v2_pd(filter: Optional[dict]) -> Dict[int, WorkOrderV2]:
     Get filtered work orders.
     Returns dictionary of pydantic objects keyed by work order id.
     """
-    # use_saved = True
-
-    # if use_saved:
-    #     with open('tasks.pkl', 'rb') as f:
-    #         wo_dict = pickle.load(f)
-
-    # else:
-    #     wo_dict = get_work_orders_v2(filter=filter)      
-    #     with open('tasks.pkl', 'wb') as f:
-    #         pickle.dump(wo_dict, f)
-
     wo_dict = get_work_orders_v2(filter=filter)
     work_orders = {}
 
     for wo in wo_dict:
         try:
-            work_orders[wo['id']] = WorkOrderV2(**wo)
+            work_orders[wo["id"]] = WorkOrderV2(**wo)
 
         except Exception as e:
             print(str(e))
@@ -47,13 +36,12 @@ def get_work_orders_v2_pd(filter: Optional[dict]) -> Dict[int, WorkOrderV2]:
 
     return work_orders
 
-
+@_basic_retry
 @Decorators.check_env_vars
 def get_work_orders_v2(filter: Optional[dict]) -> List[dict]:
     """
     Get filtered work orders.
     """
-
     if filter is not None:
         # Remove any keys that are not valid
         valid_keys = [
@@ -119,3 +107,47 @@ def get_work_orders_v2(filter: Optional[dict]) -> List[dict]:
         page += 1
 
     return all_work_orders
+
+
+@Decorators.check_env_vars
+def get_work_order_v2_pd(work_order_id: int) -> WorkOrderV2:
+    """
+    Get a single work order.
+    Returns a pydantic object.
+    """
+    wo_dict = get_work_order_v2(work_order_id=work_order_id)
+
+    return WorkOrderV2(**wo_dict['work_order'])
+
+
+@_basic_retry
+@Decorators.check_env_vars
+def get_work_order_v2(work_order_id: int) -> dict:
+    """
+    Get a single work order.
+    """
+    url = os.environ["EZO_BASE_URL"] + f"api/v2/work_orders/{work_order_id}"
+    headers = {
+        "Accept": "application/json",
+        "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
+        "Cache-Control": "no-cache",
+        "Host": "pepsimidamerica.ezofficeinventory.com",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Connection": "keep-alive",
+    }
+
+    try:
+        response = requests.get(
+            url,
+            headers=headers,
+            timeout=60,
+        )
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        raise Exception(
+            f"Error, could not get work order details: {e.response.status_code} - {e.response.content}"
+        )
+    except requests.exceptions.RequestException as e:
+        raise Exception(f"Error, could not get work order details: {e}")
+
+    return response.json()
