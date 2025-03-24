@@ -145,5 +145,6 @@ class WorkOrderV2(BaseModel):
 
             # Assign Depot and Depot ID
             if "id" in field and field["id"] == CustomFieldID.DEPOT.value:
-                self.depot = field["value"]
-                self.depot_id = int(field["value"][:2])
+                if self.depot:
+                    self.depot = field["value"]
+                    self.depot_id = int(field["value"][:2])

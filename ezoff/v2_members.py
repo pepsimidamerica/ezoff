@@ -146,7 +146,8 @@ def get_member_v2(member_id: int) -> dict:
                 "id": 238602,
                 "status": 1,
                 "created_at": datetime.now(),
-                "full_name": "API User",                
+                "full_name": "API User",
+                "email": "clambert@pepsimidamerica.com",
             }
         }
 

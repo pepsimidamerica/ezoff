@@ -30,6 +30,7 @@ def get_work_orders_v2_pd(filter: Optional[dict]) -> Dict[int, WorkOrderV2]:
             work_orders[wo["id"]] = WorkOrderV2(**wo)
 
         except Exception as e:
+            print('Error in get_work_orders_v2_pd()')
             print(str(e))
             pprint(wo)
             exit(0)
