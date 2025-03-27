@@ -22,15 +22,25 @@ def get_asset_details(asset_id: int):
 
     url = os.environ["EZO_BASE_URL"] + "assets/" + str(asset_id) + ".api"
 
+    headers = {
+        "Accept": "application/json",
+        "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
+        "Cache-Control": "no-cache",
+        "Host": "pepsimidamerica.ezofficeinventory.com",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Connection": "keep-alive",
+    }
+
     try:
         response = requests.get(
             url,
-            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+            headers=headers,
             data={
                 "include_custom_fields": "true",
                 "show_document_urls": "true",
                 "show_image_urls": "true",
-                "show_services_details": "true",
+                # show_services_details began throwing HTTP 500 errors on 3/27/2025.
+                # "show_services_details": "true",
             },
             timeout=60,
         )
