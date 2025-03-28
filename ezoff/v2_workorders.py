@@ -46,10 +46,25 @@ def get_work_orders_v2(filter: Optional[dict]) -> List[dict]:
     if filter is not None:
         # Remove any keys that are not valid
         valid_keys = [
-            "filters[reviewer_id]",
-            "filters[State]",
             "filters[priority]",
+            "filters[created_on]",
+            "filters[due_date]",
+            "filters[expected_start_date]",
+            "filters[repetition_end_date]",
+            "filters[repetition_start_date]",
+            "filters[state]",
+            "filters[assigned_to_type]",
             "filters[assigned_to_id]",
+            "filters[created_by_id]",
+            "filters[reviewer_id]",
+            "filters[supervisor_id]",
+            "filters[asset_id]",
+            "filters[work_type_id]",
+            "filters[preventive]",
+            "filters[recurring]",
+            "filters[review_pending_on_me]",
+            "filters[scheduled]",
+            "filters[location_id]",
         ]
 
         filter = {k: v for k, v in filter.items() if k in valid_keys}
