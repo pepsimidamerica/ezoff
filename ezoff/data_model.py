@@ -139,12 +139,10 @@ class WorkOrderV2(BaseModel):
     depot_id: Optional[int] = Field(default=None)
 
     def model_post_init(self, __context: Any) -> None:
-
         # Parse custom fields.
         for field in self.custom_fields:
-
             # Assign Depot and Depot ID
             if "id" in field and field["id"] == CustomFieldID.DEPOT.value:
-                if self.depot is None:
+                if field["value"] is not None:
                     self.depot = field["value"]
                     self.depot_id = int(field["value"][:2])
