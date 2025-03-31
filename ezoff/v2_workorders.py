@@ -160,10 +160,10 @@ def get_work_order_v2(work_order_id: int) -> dict:
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
-        raise Exception(
+        raise WorkOrderNotFound(
             f"Error, could not get work order details: {e.response.status_code} - {e.response.content}"
         )
     except requests.exceptions.RequestException as e:
-        raise Exception(f"Error, could not get work order details: {e}")
+        raise WorkOrderNotFound(f"Error, could not get work order details: {e}")
 
     return response.json()

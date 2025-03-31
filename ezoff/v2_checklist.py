@@ -61,12 +61,12 @@ def get_checklists_v2() -> dict:
             response.raise_for_status()
 
         except requests.exceptions.HTTPError as e:
-            raise Exception(
+            raise ChecklistNotFound(
                 f"Error, could not get checklists: {e.response.status_code} - {e.response.content}"
             )
         
         except requests.exceptions.RequestException as e:
-            raise Exception(f"Error, could not get checklists: {e}")
+            raise ChecklistNotFound(f"Error, could not get checklists: {e}")
 
         data = response.json()
 

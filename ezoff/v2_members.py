@@ -96,11 +96,11 @@ def get_members_v2(filter: Optional[dict]) -> List[dict]:
             response.raise_for_status()
 
         except requests.exceptions.HTTPError as e:
-            raise WorkOrderNotFound(
+            raise MemberNotFound(
                 f"Error, could not get members: {e.response.status_code} - {e.response.content}"
             )
         except requests.exceptions.RequestException as e:
-            raise WorkOrderNotFound(f"Error, could not get members: {e}")
+            raise MemberNotFound(f"Error, could not get members: {e}")
 
         data = response.json()
 
@@ -169,10 +169,10 @@ def get_member_v2(member_id: int) -> dict:
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
-        raise Exception(
+        raise MemberNotFound(
             f"Error, could not get member details: {e.response.status_code} - {e.response.content}"
         )
     except requests.exceptions.RequestException as e:
-        raise Exception(f"Error, could not get member details: {e}")
+        raise MemberNotFound(f"Error, could not get member details: {e}")
 
     return response.json()

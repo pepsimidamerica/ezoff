@@ -19,6 +19,18 @@ class ChecklistLinkError(Exception):
     pass
 
 
+class ChecklistNotFound(Exception):
+    pass
+
+
+class LocationNotFound(Exception):
+    pass
+
+
+class MemberNotFound(Exception):
+    pass
+
+
 class NoDataReturned(Exception):
     pass
 
