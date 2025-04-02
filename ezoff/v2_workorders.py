@@ -7,6 +7,7 @@ from typing import Literal, Optional, List
 from datetime import date, datetime
 import requests
 from pprint import pprint
+import json
 
 from ezoff._auth import Decorators
 from ezoff._helpers import _basic_retry, _fetch_page
@@ -165,5 +166,48 @@ def get_work_order_v2(work_order_id: int) -> dict:
         )
     except requests.exceptions.RequestException as e:
         raise WorkOrderNotFound(f"Error, could not get work order details: {e}")
+
+    return response.json()
+
+
+
+@Decorators.check_env_vars
+def update_work_order_v2(work_order_id: int, work_order: dict) -> dict:
+    """
+    Update an work order.
+    
+    """
+
+    headers = {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
+        "Cache-Control": "no-cache",
+        "Host": "pepsimidamerica.ezofficeinventory.com",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Connection": "keep-alive",
+        "Content-Length": "75",
+    }
+    url = f"{os.environ['EZO_BASE_URL']}api/v2/work_orders/{str(work_order_id)}/"
+
+    try:
+        pprint(work_order)
+
+        response = requests.put(
+            url,
+            headers=headers,
+            data=json.dumps(work_order),
+            timeout=60,
+        )
+
+        print(response.request.body)
+
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        raise WorkOrderNotFound(
+            f"Error, could not update work order: {e.response.status_code} - {e.response.content}"
+        )
+    except requests.exceptions.RequestException as e:
+        raise WorkOrderNotFound(f"Error, could not update work order: {str(e)}")
 
     return response.json()
