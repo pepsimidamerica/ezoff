@@ -31,12 +31,13 @@ def get_work_orders_v2_pd(filter: Optional[dict]) -> Dict[int, WorkOrderV2]:
             work_orders[wo["id"]] = WorkOrderV2(**wo)
 
         except Exception as e:
-            print('Error in get_work_orders_v2_pd()')
+            print("Error in get_work_orders_v2_pd()")
             print(str(e))
             pprint(wo)
             exit(0)
 
     return work_orders
+
 
 @_basic_retry
 @Decorators.check_env_vars
@@ -134,7 +135,7 @@ def get_work_order_v2_pd(work_order_id: int) -> WorkOrderV2:
     """
     wo_dict = get_work_order_v2(work_order_id=work_order_id)
 
-    return WorkOrderV2(**wo_dict['work_order'])
+    return WorkOrderV2(**wo_dict["work_order"])
 
 
 @_basic_retry
@@ -170,12 +171,10 @@ def get_work_order_v2(work_order_id: int) -> dict:
     return response.json()
 
 
-
 @Decorators.check_env_vars
 def update_work_order_v2(work_order_id: int, work_order: dict) -> dict:
     """
-    Update an work order.
-    
+    Updates a work order.
     """
 
     headers = {
@@ -191,17 +190,12 @@ def update_work_order_v2(work_order_id: int, work_order: dict) -> dict:
     url = f"{os.environ['EZO_BASE_URL']}api/v2/work_orders/{str(work_order_id)}/"
 
     try:
-        pprint(work_order)
-
         response = requests.put(
             url,
             headers=headers,
             data=json.dumps(work_order),
             timeout=60,
         )
-
-        print(response.request.body)
-
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         raise WorkOrderNotFound(
