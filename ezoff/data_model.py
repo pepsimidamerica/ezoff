@@ -7,6 +7,76 @@ from enum import Enum
 class CustomFieldID(Enum):
     DEPOT = 739
     EST_SVC_MINUTES = 728
+    RENT_CODE = 70600
+
+
+class RentCode(Enum):
+    RENT = "Rent"
+    LOAN = "Loan"
+
+
+class AssetV2(BaseModel):
+    active_sub_checkout: Optional[Any] = Field(default=None)
+    arbitration: int
+    audit_pending: bool
+    bulk_import_id: Optional[int] = Field(default=None)
+    checkin_due_on: Optional[datetime] = Field(default=None)
+    checkout_on: Optional[datetime] = Field(default=None)
+    comments_count: int
+    cost_price: float
+    created_at: Optional[datetime] = Field(default=None)
+    custom_fields: Optional[list] = Field(default=[])
+    custom_substate_id: Optional[int] = Field(default=None)
+    depreciation_calculation_required: bool
+    description: Optional[str] = Field(default="")
+    display_image: str
+    documents_count: int
+    group_id: int
+    id: int
+    identifier: str
+    item_audit_id: Optional[int] = Field(default=None)
+    last_assigned_to_id: Optional[int] = Field(default=None)
+    last_checked_in_at: Optional[datetime] = Field(default=None)
+    last_checked_out_at: Optional[datetime] = Field(default=None)
+    last_history_id: Optional[int] = Field(default=None)
+    latest_contract_id: Optional[int] = Field(default=None)
+    location_id: Optional[int] = Field(default=None)
+    manufacturer: Optional[str] = Field(default="")
+    name: str
+    package_id: Optional[int] = Field(default=None)
+    pending_verification: bool
+    primary_user: Optional[int] = Field(default=None)
+    product_model_number: Optional[str] = Field(default="")
+    purchase_order_id: Optional[int] = Field(default=None)
+    purchased_on: Optional[date] = Field(default=None)
+    retire_comments: Optional[str] = Field(default="")
+    retire_reason_id: Optional[int] = Field(default=None)
+    retired_by_id: Optional[int] = Field(default=None)
+    retired_on: Optional[datetime] = Field(default=None)
+    salvage_value: str
+    services_count: Optional[int] = Field(default=None)
+    state: str
+    sub_checked_out_to_id: Optional[int] = Field(default=None)
+    sub_group_id: Optional[int] = Field(default=None)
+    sunshine_id: Optional[int] = Field(default=None)
+    synced_with_jira_at: Optional[date] = Field(default=None)
+    updated_at: Optional[datetime] = Field(default=None)
+    vendor_id: Optional[int] = Field(default=None)
+
+    # Custom fields
+    rent_code: Optional[RentCode] = Field(default=None)
+
+    def model_post_init(self, __context: Any) -> None:
+        # Parse custom fields.
+        for field in self.custom_fields:
+            # Assign Rent/Loan Code
+            if "id" in field and field["id"] == CustomFieldID.RENT_CODE.value:
+                if (
+                    field["value"] is not None
+                    and isinstance(field["value"], list)
+                    and len(field["value"]) > 0
+                ):
+                    self.rent_code = RentCode(field["value"][0])
 
 
 class ChecklistV2(BaseModel):

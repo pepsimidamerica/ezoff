@@ -163,3 +163,4 @@ config.json
 locations.pkl
 ezoff/test.py
 test.py
+get_assets_v2.pkl
