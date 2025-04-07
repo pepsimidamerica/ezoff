@@ -7,10 +7,11 @@ from enum import Enum
 class CustomFieldID(Enum):
     DEPOT = 739
     EST_SVC_MINUTES = 728
-    RENT_CODE = 70600
+    RENT_LOAN = 70600
+    RENT_CODE = 70626
 
 
-class RentCode(Enum):
+class RentLoan(Enum):
     RENT = "Rent"
     LOAN = "Loan"
 
@@ -64,19 +65,29 @@ class AssetV2(BaseModel):
     vendor_id: Optional[int] = Field(default=None)
 
     # Custom fields
-    rent_code: Optional[RentCode] = Field(default=None)
+    rent_loan: Optional[RentLoan] = Field(default=None)
+    rent_code: Optional[str] = Field(default=None)
 
     def model_post_init(self, __context: Any) -> None:
         # Parse custom fields.
         for field in self.custom_fields:
-            # Assign Rent/Loan Code
+            # Assign Rent/Loan
+            if "id" in field and field["id"] == CustomFieldID.RENT_LOAN.value:
+                if (
+                    field["value"] is not None
+                    and isinstance(field["value"], list)
+                    and len(field["value"]) > 0
+                ):
+                    self.rent_loan = RentLoan(field["value"][0])
+                    
+            # Assign Rent Code
             if "id" in field and field["id"] == CustomFieldID.RENT_CODE.value:
                 if (
                     field["value"] is not None
                     and isinstance(field["value"], list)
                     and len(field["value"]) > 0
                 ):
-                    self.rent_code = RentCode(field["value"][0])
+                    self.rent_code = field["value"][0]
 
 
 class ChecklistV2(BaseModel):

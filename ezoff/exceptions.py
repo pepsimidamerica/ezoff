@@ -15,6 +15,10 @@ class AssetNotFound(AssetException):
         return f"Asset {self.asset_id} not found in EZ-Office."
 
 
+class AssetDuplicateIdentificationNumber(Exception):
+    pass
+
+
 class ChecklistLinkError(Exception):
     pass
 

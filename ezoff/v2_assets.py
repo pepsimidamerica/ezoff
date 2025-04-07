@@ -27,12 +27,15 @@ def get_asset_v2_pma(pma_asset_id: int) -> AssetV2:
         AssetV2: Pydantic EZ Office Asset Object.
     """
     filter = {"filters": {"identifier": pma_asset_id}}
-    asset_dict = get_assets_v2(filter=filter)
+    asset_dict = get_assets_v2_pd(filter=filter)
 
     # There "should" always be at most 1 asset returned by the above API call.
+    if len(asset_dict) > 1:
+        raise AssetDuplicateIdentificationNumber(f"Multiple EZ Office assets assigned to identification number: {pma_asset_id}")
+
     for asset in asset_dict:
         try:
-            return AssetV2(**asset)
+            return asset_dict[asset]
 
         except Exception as e:
             print("Error in get_asset_v2_pma()")
@@ -51,7 +54,7 @@ def get_assets_v2_pd(filter: Optional[dict]) -> Dict[int, WorkOrderV2]:
     assets = {}
 
     # use_saved = True
-    # Use saved pickle when running in debug mode.
+    # # Use saved pickle when running in debug mode.
     # if use_saved:
     #     print("Using saved fixed assets in get_assets_v2_pd().")
     #     with open("get_assets_v2.pkl", "rb") as f:
