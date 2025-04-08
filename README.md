@@ -1,13 +1,10 @@
 # ezoff
-
-Python package for interacting with the EZOffice API
+Python package for interacting with the EZOffice API. Includes support for v1 and v2 EZ Office API endpoints.
 
 ## Installation
-
 `pip install ezoff`
 
 ## Usage
-
 Several environment variables are required for ezo to function.
 
 | Required? | Env Variable | Description |
@@ -16,13 +13,11 @@ Several environment variables are required for ezo to function.
 | EZO_TOKEN | Yes | The access token used to authenticate requests |
 
 ## Project Structure
-
 Project is split up into several files depending on what area of the EZOffice API is being dealt with. Purely for organizational purposes.
 
+## Ez Office API V1 Endpoints
 ### Assets
-
 Contains functions for the following:
-
 - get all asssets
 - get filtered assets
 - search for an asset
@@ -34,22 +29,17 @@ Contains functions for the following:
 - get an asset's history
 
 ### Inventories
-
 - get inventories
 - get inventory details
 - create inventory order
 - get inventory history
 
 ### Groups
-
 Contains functions for the following:
-
 - get subgroups
 
 ### Locations
-
 Contains functions for the following:
-
 - get locations
 - get location details
 - get item quantities in location
@@ -59,9 +49,7 @@ Contains functions for the following:
 - update a location
 
 ### Members
-
 Contains functions for the following:
-
 - get members
 - get a member's details
 - create a member
@@ -72,9 +60,7 @@ Contains functions for the following:
 - get teams
 
 ### Work Orders
-
 Contains functions for the following:
-
 - get work orders
 - get work order details
 - get work order types
@@ -84,6 +70,34 @@ Contains functions for the following:
 - add work log to a work order
 - add linked inventory to a work order
 - get checklists
+
+## Ez Office V2 API
+Most V2 endpoint methods support the return of pydantic objects.
+
+### Assets V2
+Contains functions for the following:
+- get all asssets
+- get asset by identification number
+
+### Checklist V2
+Contains functions for the following:
+- get all checklists
+
+### Locations V2
+Contains functions for the following:
+- get all locations
+- get single location
+
+### Members V2
+Contains functions for the following:
+- get filtered members
+- get single member
+
+### Work Orders V2
+Contains functions for the following:
+- get filtered work orders
+- get single work order
+- update work order
 
 ## Notes
 

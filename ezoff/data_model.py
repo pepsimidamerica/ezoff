@@ -9,6 +9,11 @@ class CustomFieldID(Enum):
     EST_SVC_MINUTES = 728
     RENT_LOAN = 70600
     RENT_CODE = 70626
+    TAX_JURISDICTION = 738
+    NAT_ACCOUNT = 739
+    CANTEEONE_CODE = 740
+    PARENT_CUST_CODE = 771
+    EXCLUDE_RENT_FEES = 823
 
 
 class RentLoan(Enum):
@@ -79,7 +84,7 @@ class AssetV2(BaseModel):
                     and len(field["value"]) > 0
                 ):
                     self.rent_loan = RentLoan(field["value"][0])
-                    
+
             # Assign Rent Code
             if "id" in field and field["id"] == CustomFieldID.RENT_CODE.value:
                 if (
@@ -95,6 +100,61 @@ class ChecklistV2(BaseModel):
     name: str
     created_by_id: int
     line_items: list
+
+
+class LocationV2(BaseModel):
+    apply_default_return_date_to_child_locations: bool
+    checkout_indefinitely: bool
+    city: Optional[str] = Field(default=None)
+    comments_count: int
+    country: Optional[str] = Field(default="")
+    created_at: Optional[datetime] = Field(default=None)
+    custom_fields: list
+    default_return_duration: Optional[int] = Field(default=None)
+    default_return_duration_unit: Optional[str] = Field(default=None)
+    default_return_time: Optional[datetime] = Field(default=None)
+    description: Optional[str] = Field(default=None)
+    documents_count: int
+    hidden_on_webstore: bool
+    id: int
+    identification_number: Optional[str] = Field(default=None)
+    latitude: Optional[float] = Field(default=None)
+    longitude: Optional[float] = Field(default=None)
+    manual_coordinates_provided: bool
+    name: str
+    parent_id: Optional[int] = Field(default=None)
+    secure_code: str
+    state: Optional[str] = Field(default=None)
+    status: str
+    street1: Optional[str] = Field(default=None)
+    street2: Optional[str] = Field(default=None)
+    updated_at: Optional[datetime] = Field(default=None)
+    visible_on_webstore: bool
+    zip_code: Optional[str] = Field(default=None)
+
+    # Custom fields
+    parent_cust_code: Optional[str] = Field(default=None)
+    exclude_rent_fees: Optional[bool] = Field(default=None)
+
+    def model_post_init(self, __context: Any) -> None:
+        # Parse custom fields.
+        for field in self.custom_fields:
+
+            # Assign 'Exclude Rent Fees'
+            if "id" in field and field["id"] == CustomFieldID.EXCLUDE_RENT_FEES.value:
+                if field["value"] is not None and isinstance(field["value"], str):
+                    if field["value"].lower() == "yes":
+                        self.exclude_rent_fees = True
+                    else:
+                        self.exclude_rent_fees = False
+
+            # Assign 'Parent Customer Code'
+            if "id" in field and field["id"] == CustomFieldID.PARENT_CUST_CODE.value:
+                if field["value"] is not None and isinstance(field["value"], str):
+                    self.parent_cust_code = field["value"]
+
+        # Clear out custom field list, to save space.
+        self.custom_fields = None
 
 
 class MemberV2(BaseModel):

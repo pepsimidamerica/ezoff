@@ -17,7 +17,7 @@ from .data_model import *
 
 
 @Decorators.check_env_vars
-def get_asset_v2_pma(pma_asset_id: int) -> AssetV2:
+def get_asset_v2_pma(identification_number: int) -> AssetV2:
     """Get an EZ Office asset by its identification number.
 
     Args:
@@ -26,12 +26,12 @@ def get_asset_v2_pma(pma_asset_id: int) -> AssetV2:
     Returns:
         AssetV2: Pydantic EZ Office Asset Object.
     """
-    filter = {"filters": {"identifier": pma_asset_id}}
+    filter = {"filters": {"identifier": identification_number}}
     asset_dict = get_assets_v2_pd(filter=filter)
 
     # There "should" always be at most 1 asset returned by the above API call.
     if len(asset_dict) > 1:
-        raise AssetDuplicateIdentificationNumber(f"Multiple EZ Office assets assigned to identification number: {pma_asset_id}")
+        raise AssetDuplicateIdentificationNumber(f"Multiple EZ Office assets assigned to identification number: {identification_number}")
 
     for asset in asset_dict:
         try:
@@ -52,18 +52,6 @@ def get_assets_v2_pd(filter: Optional[dict]) -> Dict[int, WorkOrderV2]:
     """
     asset_dict = get_assets_v2(filter=filter)
     assets = {}
-
-    # use_saved = True
-    # # Use saved pickle when running in debug mode.
-    # if use_saved:
-    #     print("Using saved fixed assets in get_assets_v2_pd().")
-    #     with open("get_assets_v2.pkl", "rb") as f:
-    #         asset_dict = pickle.load(f)
-    # else:
-    #     print("Getting assets in get_assets_v2_pd().")
-    #     asset_dict = get_assets_v2(filter=filter)
-    #     with open("get_assets_v2.pkl", "wb") as f:
-    #         pickle.dump(asset_dict, f)
 
     for asset in asset_dict:
         try:
