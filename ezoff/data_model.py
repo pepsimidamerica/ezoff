@@ -103,13 +103,13 @@ class ChecklistV2(BaseModel):
 
 
 class LocationV2(BaseModel):
-    apply_default_return_date_to_child_locations: bool
-    checkout_indefinitely: bool
+    apply_default_return_date_to_child_locations: Optional[bool] = Field(default=None)
+    checkout_indefinitely: Optional[bool] = Field(default=None)
     city: Optional[str] = Field(default=None)
     comments_count: int
     country: Optional[str] = Field(default="")
     created_at: Optional[datetime] = Field(default=None)
-    custom_fields: list
+    custom_fields: Optional[list] = Field(default=[])
     default_return_duration: Optional[int] = Field(default=None)
     default_return_duration_unit: Optional[str] = Field(default=None)
     default_return_time: Optional[datetime] = Field(default=None)
@@ -120,7 +120,7 @@ class LocationV2(BaseModel):
     identification_number: Optional[str] = Field(default=None)
     latitude: Optional[float] = Field(default=None)
     longitude: Optional[float] = Field(default=None)
-    manual_coordinates_provided: bool
+    manual_coordinates_provided: Optional[bool] = Field(default=None)
     name: str
     parent_id: Optional[int] = Field(default=None)
     secure_code: str
