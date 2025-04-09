@@ -14,6 +14,7 @@ class CustomFieldID(Enum):
     CANTEEONE_CODE = 740
     PARENT_CUST_CODE = 771
     EXCLUDE_RENT_FEES = 823
+    ASSET_SERIAL_NO = 66133
 
 
 class RentLoan(Enum):
@@ -69,12 +70,14 @@ class AssetV2(BaseModel):
     updated_at: Optional[datetime] = Field(default=None)
     vendor_id: Optional[int] = Field(default=None)
 
-    # Custom fields
+    # Custom fields, parsed from the custom_fields attribute.
     rent_loan: Optional[RentLoan] = Field(default=None)
     rent_code: Optional[str] = Field(default=None)
+    serial_number: Optional[str] = Field(default=None)
 
     def model_post_init(self, __context: Any) -> None:
-        # Parse custom fields.
+        """Parse custom fields."""
+
         for field in self.custom_fields:
             # Assign Rent/Loan
             if "id" in field and field["id"] == CustomFieldID.RENT_LOAN.value:
@@ -93,6 +96,11 @@ class AssetV2(BaseModel):
                     and len(field["value"]) > 0
                 ):
                     self.rent_code = field["value"][0]
+
+            # Assign Serial Number
+            if "id" in field and field["id"] == CustomFieldID.ASSET_SERIAL_NO.value:
+                if field["value"] is not None and isinstance(field["value"], str):
+                    self.serial_number = field["value"]
 
 
 class ChecklistV2(BaseModel):
