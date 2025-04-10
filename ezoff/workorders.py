@@ -571,6 +571,7 @@ def update_work_order(work_order_id: int, filter: dict) -> dict:
         "start_time",
         "expected_start_date",
         "expected_start_time",
+        "task[supervisor_id]",
     ]
     filter = {k: v for k, v in filter.items() if k in valid_keys}
 
@@ -633,6 +634,7 @@ def update_work_order_routing(
 
     if supervisor_id is not None:
         filter["task[supervisor_id]"] = supervisor_id
+        print(f'Updating work order supervisor to: {supervisor_id}')
 
     if reviewer_id is not None:
         filter["task[reviewer_id]"] = reviewer_id
