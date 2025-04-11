@@ -45,45 +45,41 @@ def get_work_orders_v2(filter: Optional[dict]) -> List[dict]:
     """
     Get filtered work orders.
     """
-    if filter is not None:
-        # Remove any keys that are not valid
-        valid_keys = [
-            "filters[priority]",
-            "filters[created_on]",
-            "filters[due_date]",
-            "filters[expected_start_date]",
-            "filters[repetition_end_date]",
-            "filters[repetition_start_date]",
-            "filters[state]",
-            "filters[assigned_to_type]",
-            "filters[assigned_to_id]",
-            "filters[created_by_id]",
-            "filters[reviewer_id]",
-            "filters[supervisor_id]",
-            "filters[asset_id]",
-            "filters[work_type_id]",
-            "filters[preventive]",
-            "filters[recurring]",
-            "filters[review_pending_on_me]",
-            "filters[scheduled]",
-            "filters[location_id]",
-        ]
+    # if filter is not None:
+    #     # Remove any keys that are not valid
+    #     valid_keys = [
+    #         "filters[priority]",
+    #         "filters[created_on]",
+    #         "filters[due_date]",
+    #         "filters[expected_start_date]",
+    #         "filters[repetition_end_date]",
+    #         "filters[repetition_start_date]",
+    #         "filters[state]",
+    #         "filters[assigned_to_type]",
+    #         "filters[assigned_to_id]",
+    #         "filters[created_by_id]",
+    #         "filters[reviewer_id]",
+    #         "filters[supervisor_id]",
+    #         "filters[asset_id]",
+    #         "filters[work_type_id]",
+    #         "filters[preventive]",
+    #         "filters[recurring]",
+    #         "filters[review_pending_on_me]",
+    #         "filters[scheduled]",
+    #         "filters[location_id]",
+    #     ]
 
-        filter = {k: v for k, v in filter.items() if k in valid_keys}
+    #     filter = {k: v for k, v in filter.items() if k in valid_keys}
 
     url = os.environ["EZO_BASE_URL"] + "api/v2/work_orders"
-
-    print(f"Filter: {filter}")
+    # filter = {'filters': filter}
 
     page = 1
     per_page = 100
     all_work_orders = []
 
     while True:
-        params = {"page": page, "per_page": per_page}
-
-        # if filter is not None:
-        #     params.update(filter)
+        params = {"page": page}
 
         headers = {
             "Accept": "application/json",
@@ -92,6 +88,7 @@ def get_work_orders_v2(filter: Optional[dict]) -> List[dict]:
             "Host": "pepsimidamerica.ezofficeinventory.com",
             "Accept-Encoding": "gzip, deflate, br",
             "Connection": "keep-alive",
+            "Content-Type": "application/json",
         }
 
         try:
@@ -99,7 +96,7 @@ def get_work_orders_v2(filter: Optional[dict]) -> List[dict]:
                 url,
                 headers=headers,
                 params=params,                
-                data=json.dumps(filter),
+                data=json.dumps({'filters': filter}),
             )
             response.raise_for_status()
 
