@@ -82,8 +82,8 @@ def get_work_orders_v2(filter: Optional[dict]) -> List[dict]:
     while True:
         params = {"page": page, "per_page": per_page}
 
-        if filter is not None:
-            params.update(filter)
+        # if filter is not None:
+        #     params.update(filter)
 
         headers = {
             "Accept": "application/json",
@@ -98,7 +98,8 @@ def get_work_orders_v2(filter: Optional[dict]) -> List[dict]:
             response = _fetch_page(
                 url,
                 headers=headers,
-                params=params,
+                params=params,                
+                data=json.dumps(filter),
             )
             response.raise_for_status()
 
