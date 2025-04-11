@@ -95,7 +95,7 @@ def get_loctions_v2() -> List[dict]:
 
 
 @Decorators.check_env_vars
-def get_location_v2_pd(location_id: int) -> MemberV2:
+def get_location_v2_pd(location_id: int) -> LocationV2:
     """
     Get a single location.
     Returns a pydantic object.
