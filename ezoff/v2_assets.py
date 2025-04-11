@@ -31,7 +31,9 @@ def get_asset_v2_pma(identification_number: int) -> AssetV2:
 
     # There "should" always be at most 1 asset returned by the above API call.
     if len(asset_dict) > 1:
-        raise AssetDuplicateIdentificationNumber(f"Multiple EZ Office assets assigned to identification number: {identification_number}")
+        raise AssetDuplicateIdentificationNumber(
+            f"Multiple EZ Office assets assigned to identification number: {identification_number}"
+        )
 
     for asset in asset_dict:
         try:
@@ -118,3 +120,47 @@ def get_assets_v2(filter: Optional[dict]) -> List[dict]:
         url = data["metadata"]["next_page"]
 
     return all_assets
+
+
+@Decorators.check_env_vars
+def get_asset_v2_pd(asset_id: int) -> MemberV2:
+    """
+    Get a single location.
+    Returns a pydantic object.
+    """
+    asset_dict = get_asset_v2(asset_id=asset_id)
+    return AssetV2(**asset_dict["asset"])
+
+
+@_basic_retry
+@Decorators.check_env_vars
+def get_asset_v2(asset_id: int) -> dict:
+    """
+    Get a single location.
+    """
+    url = os.environ["EZO_BASE_URL"] + f"api/v2/assets/{asset_id}"
+    headers = {
+        "Accept": "application/json",
+        "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
+        "Cache-Control": "no-cache",
+        "Host": "pepsimidamerica.ezofficeinventory.com",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Connection": "keep-alive",
+    }
+
+    try:
+        response = requests.get(
+            url,
+            headers=headers,
+            timeout=60,
+        )
+        response.raise_for_status()
+
+    except requests.exceptions.HTTPError as e:
+        raise LocationNotFound(
+            f"Error, could not get asset details: {e.response.status_code} - {e.response.content}"
+        )
+    except requests.exceptions.RequestException as e:
+        raise LocationNotFound(f"Error, could not get asset details: {e}")
+
+    return response.json()
