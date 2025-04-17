@@ -234,7 +234,7 @@ class WorkOrderV2(BaseModel):
     completed_on: Optional[str] = Field(default=None)
     create_one_task_for_all_items: bool
     create_recurring_service_zendesk_tickets: bool
-    created_at: str
+    created_at: Optional[datetime] = Field(default=None)
     created_by_id: Optional[int] = Field(default=None)
     creation_source: Optional[str] = Field(default=None)
     custom_fields: Optional[List[dict]]
