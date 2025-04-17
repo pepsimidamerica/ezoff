@@ -14,7 +14,44 @@ from ezoff._helpers import _basic_retry, _fetch_page
 from .exceptions import *
 from .data_model import *
 
-import pickle
+
+@Decorators.check_env_vars
+def complete_work_order_v2(work_order_id: int, completed_on_dttm: datetime) -> dict:
+    """
+    Completes a work order.
+    """
+
+    headers = {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
+        "Cache-Control": "no-cache",
+        "Host": "pepsimidamerica.ezofficeinventory.com",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Connection": "keep-alive",
+        "Content-Length": "75",
+    }
+    url = (
+        f"{os.environ['EZO_BASE_URL']}api/v2/work_orders/{work_order_id}/mark_complete"
+    )
+    payload = {"work_order": {"completed_on_date": completed_on_dttm.strftime('%Y-%m-%dT%H:%M:%SZ')}}
+
+    try:
+        response = requests.patch(
+            url,
+            headers=headers,
+            data=json.dumps(payload),
+            timeout=60,
+        )
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        raise WorkOrderNotFound(
+            f"Error, could not complete work order: {e.response.status_code} - {e.response.content}"
+        )
+    except requests.exceptions.RequestException as e:
+        raise WorkOrderNotFound(f"Error, could not complete work order: {str(e)}")
+
+    return response.json()
 
 
 @Decorators.check_env_vars
@@ -45,37 +82,9 @@ def get_work_orders_v2(filter: Optional[dict]) -> List[dict]:
     """
     Get filtered work orders.
     """
-    # if filter is not None:
-    #     # Remove any keys that are not valid
-    #     valid_keys = [
-    #         "filters[priority]",
-    #         "filters[created_on]",
-    #         "filters[due_date]",
-    #         "filters[expected_start_date]",
-    #         "filters[repetition_end_date]",
-    #         "filters[repetition_start_date]",
-    #         "filters[state]",
-    #         "filters[assigned_to_type]",
-    #         "filters[assigned_to_id]",
-    #         "filters[created_by_id]",
-    #         "filters[reviewer_id]",
-    #         "filters[supervisor_id]",
-    #         "filters[asset_id]",
-    #         "filters[work_type_id]",
-    #         "filters[preventive]",
-    #         "filters[recurring]",
-    #         "filters[review_pending_on_me]",
-    #         "filters[scheduled]",
-    #         "filters[location_id]",
-    #     ]
-
-    #     filter = {k: v for k, v in filter.items() if k in valid_keys}
 
     url = os.environ["EZO_BASE_URL"] + "api/v2/work_orders"
-    # filter = {'filters': filter}
-
     page = 1
-    per_page = 100
     all_work_orders = []
 
     while True:
@@ -95,8 +104,8 @@ def get_work_orders_v2(filter: Optional[dict]) -> List[dict]:
             response = _fetch_page(
                 url,
                 headers=headers,
-                params=params,                
-                data=json.dumps({'filters': filter}),
+                params=params,
+                data=json.dumps({"filters": filter}),
             )
             response.raise_for_status()
 
@@ -165,6 +174,45 @@ def get_work_order_v2(work_order_id: int) -> dict:
         )
     except requests.exceptions.RequestException as e:
         raise WorkOrderNotFound(f"Error, could not get work order details: {e}")
+
+    return response.json()
+
+
+@Decorators.check_env_vars
+def remove_checklist_work_order_v2(work_order_id: int, checklist_id: int) -> dict:
+    """
+    Removes a checklist from a work order.
+    """
+
+    headers = {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
+        "Cache-Control": "no-cache",
+        "Host": "pepsimidamerica.ezofficeinventory.com",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Connection": "keep-alive",
+        "Content-Length": "75",
+    }
+    url = f"{os.environ['EZO_BASE_URL']}api/v2/work_orders/{work_order_id}/remove_checklist"
+    payload = {"work_order": {"checklist_id": checklist_id}}
+
+    try:
+        response = requests.delete(
+            url,
+            headers=headers,
+            data=json.dumps(payload),
+            timeout=60,
+        )
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        raise WorkOrderNotFound(
+            f"Error, could not remove checklist from work order: {e.response.status_code} - {e.response.content}"
+        )
+    except requests.exceptions.RequestException as e:
+        raise WorkOrderNotFound(
+            f"Error, could not remove checklist from work order: {str(e)}"
+        )
 
     return response.json()
 
