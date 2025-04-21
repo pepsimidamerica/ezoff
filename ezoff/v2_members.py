@@ -7,6 +7,7 @@ from typing import Literal, Optional, List
 from datetime import date, datetime
 import requests
 from pprint import pprint
+import json
 
 from ezoff._auth import Decorators
 from ezoff._helpers import _basic_retry, _fetch_page
@@ -43,29 +44,11 @@ def get_members_v2(filter: Optional[dict]) -> List[dict]:
     """
     Get filtered members.
     """
-    if filter is not None:
-        # Remove any keys that are not valid
-        valid_keys = [
-            "filters[creation_source]",
-            "filters[last_sync_source]",
-            "filters[department]",
-            "filters[manager_id]",
-            "filters[role_id]",
-            "filters[team_id]",
-            "filters[location_id]",
-            "filters[all]",
-            "filters[login_enabled]",
-            "filters[external]",
-            "filters[inactive]",
-            "filters[inactive_members_with_items]",
-            "filters[inactive_members_with_pending_associations]",
-            "filters[off_boarding_overdue]",
-            "filters[off_boarding_due_in]",
-            "filters[created_during]",
-            "filters[last_logged_in_during]",
-            "filters[synced_during]",
-        ]
-        filter = {k: v for k, v in filter.items() if k in valid_keys}
+
+    if filter:
+        payload = json.dumps(filter)
+    else:
+        payload = None
 
     url = os.environ["EZO_BASE_URL"] + "api/v2/members"
     page = 1
@@ -75,9 +58,6 @@ def get_members_v2(filter: Optional[dict]) -> List[dict]:
     while True:
         params = {"page": page, "per_page": per_page}
 
-        if filter is not None:
-            params.update(filter)
-
         headers = {
             "Accept": "application/json",
             "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
@@ -85,6 +65,7 @@ def get_members_v2(filter: Optional[dict]) -> List[dict]:
             "Host": "pepsimidamerica.ezofficeinventory.com",
             "Accept-Encoding": "gzip, deflate, br",
             "Connection": "keep-alive",
+            "Content-Type": "application/json",
         }
 
         try:
@@ -92,6 +73,7 @@ def get_members_v2(filter: Optional[dict]) -> List[dict]:
                 url,
                 headers=headers,
                 params=params,
+                data=payload,
             )
             response.raise_for_status()
 

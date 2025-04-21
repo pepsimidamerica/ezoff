@@ -17,12 +17,12 @@ from .data_model import *
 
 
 @Decorators.check_env_vars
-def get_loctions_v2_pd() -> Dict[int, WorkOrderV2]:
+def get_loctions_v2_pd(filter: Optional[dict]) -> Dict[int, WorkOrderV2]:
     """
     Get locations.
     Returns dictionary of pydantic objects keyed by location sequence number.
     """
-    locations_dict = get_loctions_v2()
+    locations_dict = get_loctions_v2(filter=filter)
     locations = {}
 
     for location in locations_dict:
@@ -40,7 +40,7 @@ def get_loctions_v2_pd() -> Dict[int, WorkOrderV2]:
 
 @_basic_retry
 @Decorators.check_env_vars
-def get_loctions_v2() -> List[dict]:
+def get_loctions_v2(filter: Optional[dict]) -> List[dict]:
     """
     Get locations.
     The only filter option (state) listed in the API docs does not function and has been ommitted.
@@ -59,11 +59,17 @@ def get_loctions_v2() -> List[dict]:
         "Content-Type": "application/json",
     }
 
+    if filter:
+        payload = json.dumps(filter)
+    else:
+        payload = None
+
     while True:
         try:
             response = _fetch_page(
                 url,
                 headers=headers,
+                data=payload,
             )
             response.raise_for_status()
 

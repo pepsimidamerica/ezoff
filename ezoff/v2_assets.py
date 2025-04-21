@@ -125,7 +125,7 @@ def get_assets_v2(filter: Optional[dict]) -> List[dict]:
 @Decorators.check_env_vars
 def get_asset_v2_pd(asset_id: int) -> AssetV2:
     """
-    Get a single location.
+    Get a single asset.
     Returns a pydantic object.
     """
     asset_dict = get_asset_v2(asset_id=asset_id)
@@ -136,7 +136,7 @@ def get_asset_v2_pd(asset_id: int) -> AssetV2:
 @Decorators.check_env_vars
 def get_asset_v2(asset_id: int) -> dict:
     """
-    Get a single location.
+    Get a single asset.
     """
     url = os.environ["EZO_BASE_URL"] + f"api/v2/assets/{asset_id}"
     headers = {

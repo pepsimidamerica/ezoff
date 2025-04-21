@@ -87,6 +87,10 @@ def get_work_orders_v2(filter: Optional[dict]) -> List[dict]:
     page = 1
     all_work_orders = []
 
+    # Add the 'filter' key if it doesn't already exist in the filter dict.
+    if filter is not None and "filters" not in filter:
+        filter = {"filters": filter}
+
     while True:
         params = {"page": page}
 
@@ -105,7 +109,7 @@ def get_work_orders_v2(filter: Optional[dict]) -> List[dict]:
                 url,
                 headers=headers,
                 params=params,
-                data=json.dumps({"filters": filter}),
+                data=json.dumps(filter),
             )
             response.raise_for_status()
 
