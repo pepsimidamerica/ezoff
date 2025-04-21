@@ -47,7 +47,7 @@ def get_asset_v2_pma(identification_number: int) -> AssetV2:
 
 
 @Decorators.check_env_vars
-def get_assets_v2_pd(filter: Optional[dict]) -> Dict[int, WorkOrderV2]:
+def get_assets_v2_pd(filter: Optional[dict]) -> Dict[int, AssetV2]:
     """
     Get filtered fixed assets.
     Returns dictionary of pydantic objects keyed by asset id.
