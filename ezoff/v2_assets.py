@@ -123,7 +123,7 @@ def get_assets_v2(filter: Optional[dict]) -> List[dict]:
 
 
 @Decorators.check_env_vars
-def get_asset_v2_pd(asset_id: int) -> MemberV2:
+def get_asset_v2_pd(asset_id: int) -> AssetV2:
     """
     Get a single location.
     Returns a pydantic object.
