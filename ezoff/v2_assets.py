@@ -164,3 +164,40 @@ def get_asset_v2(asset_id: int) -> dict:
         raise LocationNotFound(f"Error, could not get asset details: {e}")
 
     return response.json()
+
+
+@Decorators.check_env_vars
+def update_asset_v2(asset_id: int, payload: dict) -> dict:
+    """
+    Updates a fixed asset.
+    """
+
+    headers = {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
+        "Cache-Control": "no-cache",
+        "Host": "pepsimidamerica.ezofficeinventory.com",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Connection": "keep-alive",
+        "Content-Length": "75",
+    }
+    url = f"{os.environ['EZO_BASE_URL']}api/v2/assets/{str(asset_id)}"
+
+    try:
+        response = requests.put(
+            url,
+            headers=headers,
+            data=json.dumps(payload),
+            timeout=60,
+        )
+        response.raise_for_status()
+
+    except requests.exceptions.HTTPError as e:
+        raise AssetNotFound(
+            f"Error, could not update asset: {e.response.status_code} - {e.response.content}"
+        )
+    except requests.exceptions.RequestException as e:
+        raise AssetNotFound(f"Error, could not update asset: {str(e)}")
+
+    return response.json()
