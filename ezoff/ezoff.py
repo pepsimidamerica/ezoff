@@ -2,6 +2,7 @@
 Module for interacting with the EZOffice Inventory API
 """
 
+from .ezo_cache import *
 from .data_model import *
 from .assets import *
 from .exceptions import *

@@ -160,8 +160,6 @@ cython_debug/
 #.idea/
 
 config.json
-locations.pkl
 ezoff/test.py
 test.py
-get_assets_v2.pkl
-get_loctions_v2.pkl
+*.pkl
