@@ -7,8 +7,7 @@ from enum import Enum
 class CustomFieldID(Enum):
     DEPOT = 739
     EST_SVC_MINUTES = 728
-    RENT_LOAN = 70600
-    RENT_CODE = 70626
+    RENT_FLAG = 70779
     TAX_JURISDICTION = 738
     NAT_ACCOUNT = 739
     CANTEEONE_CODE = 740
@@ -71,31 +70,24 @@ class AssetV2(BaseModel):
     vendor_id: Optional[int] = Field(default=None)
 
     # Custom fields, parsed from the custom_fields attribute.
-    rent_loan: Optional[RentLoan] = Field(default=None)
-    rent_code: Optional[str] = Field(default=None)
+    rent: Optional[bool] = Field(default=None)
     serial_number: Optional[str] = Field(default=None)
 
     def model_post_init(self, __context: Any) -> None:
         """Parse custom fields."""
 
         for field in self.custom_fields:
-            # Assign Rent/Loan
-            if "id" in field and field["id"] == CustomFieldID.RENT_LOAN.value:
-                if (
-                    field["value"] is not None
-                    and isinstance(field["value"], list)
-                    and len(field["value"]) > 0
-                ):
-                    self.rent_loan = RentLoan(field["value"][0])
 
-            # Assign Rent Code
-            if "id" in field and field["id"] == CustomFieldID.RENT_CODE.value:
+            # Assign Rent Flag
+            if "id" in field and field["id"] == CustomFieldID.RENT_FLAG.value:
                 if (
                     field["value"] is not None
                     and isinstance(field["value"], list)
-                    and len(field["value"]) > 0
                 ):
-                    self.rent_code = field["value"][0]
+                    if len(field["value"]) > 0:
+                        self.rent = True
+                    else:
+                        self.rent = False
 
             # Assign Serial Number
             if "id" in field and field["id"] == CustomFieldID.ASSET_SERIAL_NO.value:
