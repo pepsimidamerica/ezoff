@@ -16,6 +16,49 @@ from .data_model import *
 
 
 @Decorators.check_env_vars
+def add_work_order_component_v2(
+    work_order_id: int, components: List[Component]
+) -> dict:
+    """
+    Adds a component to a work order.
+    """
+
+    headers = {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
+        "Cache-Control": "no-cache",
+        "Host": "pepsimidamerica.ezofficeinventory.com",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Connection": "keep-alive",
+        "Content-Length": "75",
+    }
+    url = (
+        f"{os.environ['EZO_BASE_URL']}api/v2/work_orders/{work_order_id}/add_components"
+    )
+    payload = {"work_order": {"components": []}}
+    for component in components:
+        payload["work_order"]["components"].append(component.model_dump())
+
+    try:
+        response = requests.post(
+            url,
+            headers=headers,
+            data=json.dumps(payload),
+            timeout=60,
+        )
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        raise WorkOrderUpdateError(
+            f"Error, could not create work order: {e.response.status_code} - {e.response.content}"
+        )
+    except requests.exceptions.RequestException as e:
+        raise WorkOrderUpdateError(f"Error, could not create work order: {str(e)}")
+
+    return response.json()
+
+
+@Decorators.check_env_vars
 def complete_work_order_v2(work_order_id: int, completed_on_dttm: datetime) -> dict:
     """
     Completes a work order.
@@ -34,7 +77,11 @@ def complete_work_order_v2(work_order_id: int, completed_on_dttm: datetime) -> d
     url = (
         f"{os.environ['EZO_BASE_URL']}api/v2/work_orders/{work_order_id}/mark_complete"
     )
-    payload = {"work_order": {"completed_on_date": completed_on_dttm.strftime('%Y-%m-%dT%H:%M:%SZ')}}
+    payload = {
+        "work_order": {
+            "completed_on_date": completed_on_dttm.strftime("%Y-%m-%dT%H:%M:%SZ")
+        }
+    }
 
     try:
         response = requests.patch(
@@ -50,6 +97,43 @@ def complete_work_order_v2(work_order_id: int, completed_on_dttm: datetime) -> d
         )
     except requests.exceptions.RequestException as e:
         raise WorkOrderNotFound(f"Error, could not complete work order: {str(e)}")
+
+    return response.json()
+
+
+@Decorators.check_env_vars
+def create_work_order_v2(work_order: dict) -> dict:
+    """
+    Creates a work order.
+    """
+
+    headers = {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
+        "Cache-Control": "no-cache",
+        "Host": "pepsimidamerica.ezofficeinventory.com",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Connection": "keep-alive",
+        "Content-Length": "75",
+    }
+    url = f"{os.environ['EZO_BASE_URL']}api/v2/work_orders"
+    payload = {"work_order": work_order}
+
+    try:
+        response = requests.post(
+            url,
+            headers=headers,
+            data=json.dumps(payload),
+            timeout=60,
+        )
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        raise WorkOrderUpdateError(
+            f"Error, could not create work order: {e.response.status_code} - {e.response.content}"
+        )
+    except requests.exceptions.RequestException as e:
+        raise WorkOrderUpdateError(f"Error, could not create work order: {str(e)}")
 
     return response.json()
 

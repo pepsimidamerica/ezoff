@@ -4,6 +4,12 @@ from datetime import datetime, date
 from enum import Enum
 
 
+class ResourceType(Enum):
+    """Ez Office component (resource) type."""
+
+    ASSET = "Asset"
+
+
 class CustomFieldID(Enum):
     DEPOT = 739
     EST_SVC_MINUTES = 728
@@ -80,10 +86,7 @@ class AssetV2(BaseModel):
 
             # Assign Rent Flag
             if "id" in field and field["id"] == CustomFieldID.RENT_FLAG.value:
-                if (
-                    field["value"] is not None
-                    and isinstance(field["value"], list)
-                ):
+                if field["value"] is not None and isinstance(field["value"], list):
                     if len(field["value"]) > 0:
                         self.rent = True
                     else:
@@ -100,6 +103,14 @@ class ChecklistV2(BaseModel):
     name: str
     created_by_id: int
     line_items: list
+
+
+class Component(BaseModel):
+    resource_id: int
+    resource_type: ResourceType
+
+    class Config:  
+        use_enum_values = True 
 
 
 class LocationV2(BaseModel):
