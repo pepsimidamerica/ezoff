@@ -2,14 +2,18 @@
 Covers everything related to fixed assets in EZOffice
 """
 
+import logging
 import os
 import time
+from datetime import datetime
 
 import requests
 
-from ezoff.exceptions import *
 from ezoff._auth import Decorators
 from ezoff._helpers import _basic_retry, _fetch_page
+from ezoff.exceptions import *
+
+logger = logging.getLogger(__name__)
 
 
 @_basic_retry
@@ -46,11 +50,13 @@ def get_asset_details(asset_id: int):
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
-        raise Exception(
+        logger.error(
             f"Error, could not get asset details: {e.response.status_code} - {e.response.content}"
         )
+        raise
     except requests.exceptions.RequestException as e:
-        raise Exception(f"Error, could not get asset details: {e}")
+        logger.error(f"Error, could not get asset details: {e}")
+        raise
 
     return response.json()
 
@@ -85,15 +91,18 @@ def get_all_assets() -> list[dict]:
                 params=params,
             )
         except requests.exceptions.HTTPError as e:
-            raise Exception(
+            logger.error(
                 f"Error, could not get assets: {e.response.status_code} - {e.response.content}"
             )
+            raise
         except requests.exceptions.RequestException as e:
-            raise Exception(f"Error, could not get assets: {e}")
+            logger.error(f"Error, could not get assets: {e}")
+            raise
 
         data = response.json()
 
         if "assets" not in data:
+            logger.error(f"Error, could not get assets: {response.content}")
             raise Exception(f"Error, could not get assets: {response.content}")
 
         all_assets.extend(data["assets"])
@@ -144,15 +153,18 @@ def get_filtered_assets(filter: dict) -> list[dict]:
                 params=params,
             )
         except requests.exceptions.HTTPError as e:
-            raise Exception(
+            logger.error(
                 f"Error, could not get assets: {e.response.status_code} - {e.response.content}"
             )
+            raise
         except requests.exceptions.RequestException as e:
-            raise Exception(f"Error, could not get assets: {e}")
+            logger.error(f"Error, could not get assets: {e}")
+            raise
 
         data = response.json()
 
         if "assets" not in data:
+            logger.error(f"Error, could not get assets: {response.content}")
             raise Exception(f"Error, could not get assets: {response.content}")
 
         all_assets.extend(data["assets"])
@@ -208,11 +220,13 @@ def search_for_asset(search_term: str) -> list[dict]:
                 data=data,
             )
         except requests.exceptions.HTTPError as e:
-            raise Exception(
+            logger.error(
                 f"Error, could not get search results: {e.response.status_code} - {e.response.content}"
             )
+            raise
         except requests.exceptions.RequestException as e:
-            raise Exception(f"Error, could not get search results: {e}")
+            logger.error(f"Error, could not get search results: {e}")
+            raise
 
         data = response.json()
 
@@ -235,6 +249,7 @@ def search_for_asset(search_term: str) -> list[dict]:
             return asset_list
 
         else:
+            logger.error(f"Error, could not get search results: {response.content}")
             raise Exception(f"Error, could not get search results: {response.content}")
 
     return all_assets
@@ -254,13 +269,13 @@ def create_asset(asset: dict) -> dict:
         raise ValueError("asset must have 'fixed_asset[group_id]' key")
     if "fixed_asset[purchased_on]" not in asset:
         raise ValueError("asset must have 'fixed_asset[purchased_on]' key")
-        # Also check that the date is in the correct format mm/dd/yyyy
-        try:
-            datetime.strptime(asset["fixed_asset[purchased_on]"], "%m/%d/%Y")
-        except ValueError:
-            raise ValueError(
-                "asset['fixed_asset[purchased_on]'] must be in the format mm/dd/yyyy"
-            )
+    # Also check that the date is in the correct format mm/dd/yyyy
+    try:
+        datetime.strptime(asset["fixed_asset[purchased_on]"], "%m/%d/%Y")
+    except ValueError:
+        raise ValueError(
+            "asset['fixed_asset[purchased_on]'] must be in the format mm/dd/yyyy"
+        )
 
     # Remove any keys that are not valid
     valid_keys = [
@@ -293,11 +308,13 @@ def create_asset(asset: dict) -> dict:
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
-        raise Exception(
+        logger.error(
             f"Error, could not create asset: {e.response.status_code} - {e.response.content}"
         )
+        raise
     except requests.exceptions.RequestException as e:
-        raise Exception(f"Error, could not create asset: {e}")
+        logger.error(f"Error, could not create asset: {e}")
+        raise
 
     return response.json()
 
@@ -340,11 +357,13 @@ def update_asset(asset_id: int, asset: dict) -> dict:
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
-        raise Exception(
+        logger.error(
             f"Error, could not update asset: {e.response.status_code} - {e.response.content}"
         )
+        raise
     except requests.exceptions.RequestException as e:
-        raise Exception(f"Error, could not update asset: {str(e)}")
+        logger.error(f"Error, could not update asset: {str(e)}")
+        raise
 
     return response.json()
 
@@ -367,11 +386,13 @@ def delete_asset(asset_id: int) -> dict:
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
-        raise Exception(
+        logger.error(
             f"Error, could not delete asset: {e.response.status_code} - {e.response.content}"
         )
+        raise
     except requests.exceptions.RequestException as e:
-        raise Exception(f"Error, could not delete asset: {e}")
+        logger.error(f"Error, could not delete asset: {e}")
+        raise
 
     return response.json()
 
@@ -411,11 +432,13 @@ def checkin_asset(asset_id: int, checkin: dict) -> dict:
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
-        raise Exception(
+        logger.error(
             f"Error, could not check asset in: {e.response.status_code} - {e.response.content}"
         )
+        raise
     except requests.exceptions.RequestException as e:
-        raise Exception(f"Error, could not check asset in: {e}")
+        logger.error(f"Error, could not check asset in: {e}")
+        raise
 
     return response.json()
 
@@ -459,11 +482,13 @@ def checkout_asset(asset_id: int, user_id: int, checkout: dict) -> dict:
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
-        raise Exception(
+        logger.error(
             f"Error, could not check asset out: {e.response.status_code} - {e.response.content}"
         )
+        raise
     except requests.exceptions.RequestException as e:
-        raise Exception(f"Error, could not check asset out: {e}")
+        logger.error(f"Error, could not check asset out: {e}")
+        raise
 
     return response.json()
 
@@ -484,13 +509,13 @@ def retire_asset(asset_id: int, retire: dict) -> dict:
         raise ValueError("retire must have 'fixed_asset[retire_reason_id]' key")
     if "fixed_asset[retired_on]" not in retire:
         raise ValueError("retire must have 'fixed_asset[retired_on]' key")
-        # Also check that the date is in the correct format mm/dd/yyyy
-        try:
-            datetime.strptime(retire["fixed_asset[retired_on]"], "%m/%d/%Y")
-        except ValueError:
-            raise ValueError(
-                "retire['fixed_asset[retired_on]'] must be in the format mm/dd/yyyy"
-            )
+    # Also check that the date is in the correct format mm/dd/yyyy
+    try:
+        datetime.strptime(retire["fixed_asset[retired_on]"], "%m/%d/%Y")
+    except ValueError:
+        raise ValueError(
+            "retire['fixed_asset[retired_on]'] must be in the format mm/dd/yyyy"
+        )
 
     # Remove any keys that are not valid
     valid_keys = [
@@ -512,11 +537,13 @@ def retire_asset(asset_id: int, retire: dict) -> dict:
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
-        raise Exception(
+        logger.error(
             f"Error, could not retire asset: {e.response.status_code} - {e.response.content}"
         )
+        raise
     except requests.exceptions.RequestException as e:
-        raise Exception(f"Error, could not retire asset: {e}")
+        logger.error(f"Error, could not retire asset: {e}")
+        raise
 
     return response.json()
 
@@ -548,11 +575,13 @@ def reactivate_asset(asset_id: int, reactivate: dict) -> dict:
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
-        raise Exception(
+        logger.error(
             f"Error, could not reactivate asset: {e.response.status_code} - {e.response.content}"
         )
+        raise
     except requests.exceptions.RequestException as e:
-        raise Exception(f"Error, could not reactivate asset: {e}")
+        logger.error(f"Error, could not reactivate asset: {e}")
+        raise
 
     return response.json()
 
@@ -587,6 +616,7 @@ def verification_request(asset_id: int) -> dict:
         response.raise_for_status()
 
     except (requests.exceptions.HTTPError, requests.exceptions.RequestException) as e:
+        logger.error(f"Error, could not create verification request: {e}")
         raise AssetNotFound(asset_id=str(asset_id))
 
     return response.json()
@@ -615,15 +645,18 @@ def get_asset_history(asset_id: int) -> list[dict]:
             )
             response.raise_for_status()
         except requests.exceptions.HTTPError as e:
-            raise Exception(
+            logger.error(
                 f"Error, could not get asset history: {e.response.status_code} - {e.response.content}"
             )
+            raise
         except requests.exceptions.RequestException as e:
-            raise Exception(f"Error getting asset history: {e}")
+            logger.error(f"Error getting asset history: {e}")
+            raise
 
         data = response.json()
 
         if "history" not in data:
+            logger.error(f"Error, could not get asset history: {response.content}")
             raise Exception(f"Error, could not get asset history: {response.content}")
 
         all_history.extend(data["history"])
@@ -666,10 +699,12 @@ def get_items_for_token_input(q: str) -> list[dict]:
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
-        raise Exception(
+        logger.error(
             f"Error, could not get item token: {e.response.status_code} - {e.response.content}"
         )
+        raise
     except requests.exceptions.RequestException as e:
-        raise Exception(f"Error getting item token: {e}")
+        logger.error(f"Error getting item token: {e}")
+        raise
 
     return response.json()

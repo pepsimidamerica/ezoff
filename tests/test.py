@@ -1,7 +1,4 @@
-import os
 import sys
-from datetime import datetime, timedelta
-from pprint import pprint
 
 from dotenv import load_dotenv
 
@@ -10,8 +7,8 @@ load_dotenv()
 
 sys.path.insert(0, "")
 
-from ezoff import *
+from ezoff import get_filtered_assets
 
-res = ezoff.get_filtered_members({"filters[location][value]": 148121})
+res = get_filtered_assets({"status": "possessions_of", "filter_param_val": 244382})
 print(res)
 pass
