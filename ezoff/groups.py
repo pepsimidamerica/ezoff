@@ -2,13 +2,16 @@
 Covers everything related to groups and subgroups in EZOfficeInventory
 """
 
+import logging
 import os
 from typing import Optional
 
 import requests
 
 from ezoff._auth import Decorators
-from ezoff._helpers import _basic_retry, _fetch_page
+from ezoff._helpers import _fetch_page
+
+logger = logging.getLogger(__name__)
 
 
 @Decorators.check_env_vars
@@ -38,15 +41,18 @@ def get_subgroups(group_id: Optional[int]) -> list[dict]:
             )
             response.raise_for_status()
         except requests.exceptions.HTTPError as e:
-            raise Exception(
+            logger.error(
                 f"Error, could not get subgroups: {e.response.status_code} - {e.response.content}"
             )
+            raise
         except requests.exceptions.RequestException as e:
-            raise Exception(f"Error, could not get subgroups: {e}")
+            logger.error(f"Error, could not get subgroups: {e}")
+            raise
 
         data = response.json()
 
         if "sub_groups" not in data:
+            logger.error(f"Error, could not get subgroups: {response.content}")
             raise Exception(f"Error, could not get subgroups: {response.content}")
 
         all_subgroups.extend(data["sub_groups"])
