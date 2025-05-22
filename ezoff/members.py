@@ -2,6 +2,7 @@
 This module contains functions for interacting with members/roles/user setup in EZOfficeInventory
 """
 
+import logging
 import os
 import time
 from typing import Optional
@@ -10,6 +11,8 @@ import requests
 
 from ezoff._auth import Decorators
 from ezoff._helpers import _basic_retry, _fetch_page
+
+logger = logging.getLogger(__name__)
 
 
 @Decorators.check_env_vars
@@ -50,14 +53,17 @@ def get_members(filter: Optional[dict]) -> list[dict]:
             )
             response.raise_for_status()
         except requests.exceptions.HTTPError as e:
-            raise Exception(
+            logger.error(
                 f"Error, could not get members: {e.response.status_code} - {e.response.content}"
             )
+            raise
         except requests.exceptions.RequestException as e:
-            raise Exception(f"Error, could not get members: {e}")
+            logger.error(f"Error, could not get members: {e}")
+            raise
 
         data = response.json()
         if "members" not in data:
+            logger.error(f"Error, could not get members: {data}")
             raise Exception(f"Error, could not get members: {response.content}")
 
         all_members.extend(data["members"])
@@ -131,15 +137,18 @@ def get_filtered_members(filter: dict) -> list[dict]:
             )
             response.raise_for_status()
         except requests.exceptions.HTTPError as e:
-            raise Exception(
+            logger.error(
                 f"Error, could not get members: {e.response.status_code} - {e.response.content}"
             )
+            raise
         except requests.exceptions.RequestException as e:
-            raise Exception(f"Error, could not get members: {e}")
+            logger.error(f"Error, could not get members: {e}")
+            raise
 
         data = response.json()
 
         if "data" not in data:
+            logger.error(f"Error, could not get members: {data}")
             raise Exception(f"Error, could not get members: {response.content}")
 
         all_members.extend(data["data"])
@@ -177,11 +186,13 @@ def get_member_details(member_id: int) -> dict:
             timeout=60,
         )
     except requests.exceptions.HTTPError as e:
-        raise Exception(
+        logger.error(
             f"Error, could not get member details: {e.response.status_code} - {e.response.content}"
         )
+        raise
     except requests.exceptions.RequestException as e:
-        raise Exception(f"Error getting member details: {e}")
+        logger.error(f"Error getting member details: {e}")
+        raise
 
     return response.json()
 
@@ -255,11 +266,13 @@ def create_member(member: dict) -> dict:
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
-        raise Exception(
+        logger.error(
             f"Error, could not create member: {e.response.status_code} - {e.response.content}"
         )
+        raise
     except requests.exceptions.RequestException as e:
-        raise Exception(f"Error creating member: {e}")
+        logger.error(f"Error creating member: {e}")
+        raise
 
     return response.json()
 
@@ -327,11 +340,13 @@ def update_member(member_id: int, member: dict) -> dict:
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
-        raise Exception(
+        logger.error(
             f"Error, could not update member: {e.response.status_code} - {e.response.content}"
         )
+        raise
     except requests.exceptions.RequestException as e:
-        raise Exception(f"Error updating member: {e}")
+        logger.error(f"Error updating member: {e}")
+        raise
 
     return response.json()
 
@@ -353,11 +368,13 @@ def deactivate_member(member_id: int) -> dict:
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
-        raise Exception(
+        logger.error(
             f"Error, could not deactivate member: {e.response.status_code} - {e.response.content}"
         )
+        raise
     except requests.exceptions.RequestException as e:
-        raise Exception(f"Error deactivating member: {e}")
+        logger.error(f"Error deactivating member: {e}")
+        raise
 
     return response.json()
 
@@ -379,11 +396,13 @@ def activate_member(member_id: int) -> dict:
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
-        raise Exception(
+        logger.error(
             f"Error, could not activate member: {e.response.status_code} - {e.response.content}"
         )
+        raise
     except requests.exceptions.RequestException as e:
-        raise Exception(f"Error activating member: {e}")
+        logger.error(f"Error activating member: {e}")
+        raise
 
     return response.json()
 
@@ -410,15 +429,18 @@ def get_custom_roles() -> list[dict]:
                 params={"page": pages},
             )
         except requests.exceptions.HTTPError as e:
-            raise Exception(
+            logger.error(
                 f"Error, could not update member: {e.response.status_code} - {e.response.content}"
             )
+            raise
         except requests.exceptions.RequestException as e:
-            raise Exception(f"Error updating member: {e}")
+            logger.error(f"Error updating member: {e}")
+            raise
 
         data = response.json()
 
         if "custom_roles" not in data:
+            logger.error(f"Error, could not get custom roles: {data}")
             raise Exception(f"Error, could not get custom roles: {response.content}")
 
         all_custom_roles.extend(data["custom_roles"])
@@ -454,15 +476,18 @@ def get_teams() -> list[dict]:
                 params={"page": page},
             )
         except requests.exceptions.HTTPError as e:
-            raise Exception(
+            logger.error(
                 f"Error, could not get teams: {e.response.status_code} - {e.response.content}"
             )
+            raise
         except requests.exceptions.RequestException as e:
-            raise Exception(f"Error getting teams: {e}")
+            logger.error(f"Error getting teams: {e}")
+            raise
 
         data = response.json()
 
         if "teams" not in data:
+            logger.error(f"Error, could not get teams: {data}")
             raise Exception(f"Error, could not get teams: {response.content}")
 
         all_teams.extend(data["teams"])
