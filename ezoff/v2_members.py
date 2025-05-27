@@ -2,23 +2,24 @@
 This module contains functions to interact with the members v2 API in EZOfficeInventory.
 """
 
-import os
-from typing import Literal, Optional, List
-from datetime import date, datetime
-import requests
-from pprint import pprint
 import json
+import logging
+import os
+from datetime import datetime
+from typing import Optional
+
+import requests
 
 from ezoff._auth import Decorators
 from ezoff._helpers import _basic_retry, _fetch_page
-from .exceptions import *
-from .data_model import *
+from ezoff.data_model import MemberV2
+from ezoff.exceptions import MemberNotFound, NoDataReturned
 
-import pickle
+logger = logging.getLogger(__name__)
 
 
 @Decorators.check_env_vars
-def get_members_v2_pd(filter: Optional[dict]) -> Dict[int, MemberV2]:
+def get_members_v2_pd(filter: Optional[dict]) -> dict[int, MemberV2]:
     """
     Get filtered work orders.
     Returns dictionary of pydantic objects keyed by work order id.
@@ -31,16 +32,17 @@ def get_members_v2_pd(filter: Optional[dict]) -> Dict[int, MemberV2]:
             members[member["id"]] = MemberV2(**member)
 
         except Exception as e:
-            print(str(e))
-            pprint(member)
-            exit(0)
+            logger.error(
+                f"Error in get_members_v2_pd() for member {member.get('id', 'unknown')}: {str(e)}"
+            )
+            raise
 
     return members
 
 
 @_basic_retry
 @Decorators.check_env_vars
-def get_members_v2(filter: Optional[dict]) -> List[dict]:
+def get_members_v2(filter: Optional[dict]) -> list[dict]:
     """
     Get filtered members.
     """
@@ -78,15 +80,20 @@ def get_members_v2(filter: Optional[dict]) -> List[dict]:
             response.raise_for_status()
 
         except requests.exceptions.HTTPError as e:
+            logger.error(
+                f"Error, could not get members: {e.response.status_code} - {e.response.content}"
+            )
             raise MemberNotFound(
                 f"Error, could not get members: {e.response.status_code} - {e.response.content}"
             )
         except requests.exceptions.RequestException as e:
+            logger.error(f"Error, could not get members: {str(e)}")
             raise MemberNotFound(f"Error, could not get members: {e}")
 
         data = response.json()
 
         if "members" not in data:
+            logger.error(f"No members found: {response.content}")
             raise NoDataReturned(f"No members found: {response.content}")
 
         members = members + data["members"]
@@ -151,10 +158,14 @@ def get_member_v2(member_id: int) -> dict:
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
+        logger.error(
+            f"Error, could not get member details: {e.response.status_code} - {e.response.content}"
+        )
         raise MemberNotFound(
             f"Error, could not get member details: {e.response.status_code} - {e.response.content}"
         )
     except requests.exceptions.RequestException as e:
+        logger.error(f"Error, could not get member details: {e}")
         raise MemberNotFound(f"Error, could not get member details: {e}")
 
     return response.json()

@@ -2,22 +2,28 @@
 This module contains functions to interact with the fixed asset v2 API in EZOfficeInventory.
 """
 
-import os
-from typing import Literal, Optional, List
-from datetime import date, datetime
-import requests
-from pprint import pprint
 import json
-import pickle
+import logging
+import os
+from typing import Optional
+
+import requests
 
 from ezoff._auth import Decorators
 from ezoff._helpers import _basic_retry, _fetch_page
-from .exceptions import *
-from .data_model import *
+from ezoff.data_model import AssetV2
+from ezoff.exceptions import (
+    AssetDuplicateIdentificationNumber,
+    AssetNotFound,
+    LocationNotFound,
+    NoDataReturned,
+)
+
+logger = logging.getLogger(__name__)
 
 
 @Decorators.check_env_vars
-def get_asset_v2_pma(identification_number: int) -> AssetV2:
+def get_asset_v2_pma(identification_number: int) -> AssetV2 | None:
     """Get an EZ Office asset by its identification number.
 
     Args:
@@ -31,6 +37,9 @@ def get_asset_v2_pma(identification_number: int) -> AssetV2:
 
     # There "should" always be at most 1 asset returned by the above API call.
     if len(asset_dict) > 1:
+        logger.error(
+            f"Multiple EZ Office assets assigned to identification number: {identification_number}"
+        )
         raise AssetDuplicateIdentificationNumber(
             f"Multiple EZ Office assets assigned to identification number: {identification_number}"
         )
@@ -40,14 +49,14 @@ def get_asset_v2_pma(identification_number: int) -> AssetV2:
             return asset_dict[asset]
 
         except Exception as e:
-            print("Error in get_asset_v2_pma()")
-            print(str(e))
-            pprint(asset)
-            exit(0)
+            logger.error(
+                f"Error in get_asset_v2_pma() for identification number {identification_number}: {str(e)}"
+            )
+            raise
 
 
 @Decorators.check_env_vars
-def get_assets_v2_pd(filter: Optional[dict]) -> Dict[int, AssetV2]:
+def get_assets_v2_pd(filter: Optional[dict]) -> dict[int, AssetV2]:
     """
     Get filtered fixed assets.
     Returns dictionary of pydantic objects keyed by asset id.
@@ -60,17 +69,16 @@ def get_assets_v2_pd(filter: Optional[dict]) -> Dict[int, AssetV2]:
             assets[asset["id"]] = AssetV2(**asset)
 
         except Exception as e:
-            print("Error in get_assets_v2_pd()")
-            print(str(e))
-            pprint(asset)
-            exit(0)
+            logger.error(
+                f"Error in get_assets_v2_pd() for asset {asset.get('id', 'unknown')}: {str(e)}"
+            )
+            raise
 
     return assets
 
 
-@_basic_retry
 @Decorators.check_env_vars
-def get_assets_v2(filter: Optional[dict]) -> List[dict]:
+def get_assets_v2(filter: Optional[dict]) -> list[dict]:
     """
     Get filtered fixed assets.
     """
@@ -96,15 +104,20 @@ def get_assets_v2(filter: Optional[dict]) -> List[dict]:
             response.raise_for_status()
 
         except requests.exceptions.HTTPError as e:
+            logger.error(
+                f"Error, could not get fixed assets: {e.response.status_code} - {e.response.content}"
+            )
             raise AssetNotFound(
                 f"Error, could not get fixed assets: {e.response.status_code} - {e.response.content}"
             )
         except requests.exceptions.RequestException as e:
+            logger.error(f"Error, could not get fixed assets: {str(e)}")
             raise AssetNotFound(f"Error, could not get fixed assets: {e}")
 
         data = response.json()
 
         if "assets" not in data:
+            logger.error(f"No fixed assets found: {response.content}")
             raise NoDataReturned(f"No fixed assets found: {response.content}")
 
         all_assets = all_assets + data["assets"]
@@ -157,10 +170,14 @@ def get_asset_v2(asset_id: int) -> dict:
         response.raise_for_status()
 
     except requests.exceptions.HTTPError as e:
+        logger.error(
+            f"Error, could not get asset details: {e.response.status_code} - {e.response.content}"
+        )
         raise LocationNotFound(
             f"Error, could not get asset details: {e.response.status_code} - {e.response.content}"
         )
     except requests.exceptions.RequestException as e:
+        logger.error(f"Error, could not get asset details: {e}")
         raise LocationNotFound(f"Error, could not get asset details: {e}")
 
     return response.json()
@@ -194,10 +211,14 @@ def update_asset_v2(asset_id: int, payload: dict) -> dict:
         response.raise_for_status()
 
     except requests.exceptions.HTTPError as e:
+        logger.error(
+            f"Error, could not update asset: {e.response.status_code} - {e.response.content}"
+        )
         raise AssetNotFound(
             f"Error, could not update asset: {e.response.status_code} - {e.response.content}"
         )
     except requests.exceptions.RequestException as e:
+        logger.error(f"Error, could not update asset: {e}")
         raise AssetNotFound(f"Error, could not update asset: {str(e)}")
 
     return response.json()

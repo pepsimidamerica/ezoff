@@ -2,22 +2,23 @@
 This module contains functions to interact with the locations v2 API in EZOfficeInventory.
 """
 
-import os
-from typing import Literal, Optional, List
-from datetime import date, datetime
-import requests
-from pprint import pprint
 import json
-import pickle
+import logging
+import os
+from typing import Optional
+
+import requests
 
 from ezoff._auth import Decorators
 from ezoff._helpers import _basic_retry, _fetch_page
-from .exceptions import *
-from .data_model import *
+from ezoff.data_model import LocationV2, WorkOrderV2
+from ezoff.exceptions import LocationNotFound, NoDataReturned
+
+logger = logging.getLogger(__name__)
 
 
 @Decorators.check_env_vars
-def get_loctions_v2_pd(filter: Optional[dict]) -> Dict[int, WorkOrderV2]:
+def get_loctions_v2_pd(filter: Optional[dict]) -> dict[int, WorkOrderV2]:
     """
     Get locations.
     Returns dictionary of pydantic objects keyed by location sequence number.
@@ -30,17 +31,17 @@ def get_loctions_v2_pd(filter: Optional[dict]) -> Dict[int, WorkOrderV2]:
             locations[location["id"]] = LocationV2(**location)
 
         except Exception as e:
-            print("Error in get_loctions_v2_pd()")
-            print(str(e))
-            pprint(location)
-            exit(0)
+            logger.error(
+                f"Error in get_loctions_v2_pd() for location {location.get('id', 'unknown')}: {str(e)}"
+            )
+            raise
 
     return locations
 
 
 @_basic_retry
 @Decorators.check_env_vars
-def get_loctions_v2(filter: Optional[dict]) -> List[dict]:
+def get_loctions_v2(filter: Optional[dict]) -> list[dict]:
     """
     Get locations.
     The only filter option (state) listed in the API docs does not function and has been ommitted.
@@ -74,15 +75,20 @@ def get_loctions_v2(filter: Optional[dict]) -> List[dict]:
             response.raise_for_status()
 
         except requests.exceptions.HTTPError as e:
+            logger.error(
+                f"Error in get_loctions_v2() for filter {filter}: {e.response.status_code} - {e.response.content}"
+            )
             raise LocationNotFound(
                 f"Error, could not get locations: {e.response.status_code} - {e.response.content}"
             )
         except requests.exceptions.RequestException as e:
+            logger.error(f"Error, could not get locations: {e}")
             raise LocationNotFound(f"Error, could not get locations: {e}")
 
         data = response.json()
 
         if "locations" not in data:
+            logger.error(f"No locations found: {response.content}")
             raise NoDataReturned(f"No locations found: {response.content}")
 
         all_locations = all_locations + data["locations"]
@@ -135,10 +141,14 @@ def get_location_v2(location_id: int) -> dict:
         response.raise_for_status()
 
     except requests.exceptions.HTTPError as e:
+        logger.error(
+            f"Error, could not get location details: {e.response.status_code} - {e.response.content}"
+        )
         raise LocationNotFound(
             f"Error, could not get location details: {e.response.status_code} - {e.response.content}"
         )
     except requests.exceptions.RequestException as e:
+        logger.error(f"Error, could not get location details: {e}")
         raise LocationNotFound(f"Error, could not get location details: {e}")
 
     return response.json()

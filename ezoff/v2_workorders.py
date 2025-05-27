@@ -2,22 +2,25 @@
 This module contains functions to interact with the work orders v2 API in EZOfficeInventory.
 """
 
-import os
-from typing import Literal, Optional, List
-from datetime import date, datetime
-import requests
-from pprint import pprint
 import json
+import logging
+import os
+from datetime import datetime
+from typing import List, Optional
+
+import requests
 
 from ezoff._auth import Decorators
 from ezoff._helpers import _basic_retry, _fetch_page
-from .exceptions import *
-from .data_model import *
+from ezoff.data_model import Component, WorkOrderV2
+from ezoff.exceptions import NoDataReturned, WorkOrderNotFound, WorkOrderUpdateError
+
+logger = logging.getLogger(__name__)
 
 
 @Decorators.check_env_vars
 def add_work_order_component_v2(
-    work_order_id: int, components: List[Component]
+    work_order_id: int, components: list[Component]
 ) -> dict:
     """
     Adds a component to a work order.
@@ -49,10 +52,14 @@ def add_work_order_component_v2(
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
+        logger.error(
+            f"Error, could not create work order: {e.response.status_code} - {e.response.content}"
+        )
         raise WorkOrderUpdateError(
             f"Error, could not create work order: {e.response.status_code} - {e.response.content}"
         )
     except requests.exceptions.RequestException as e:
+        logger.error(f"Error, could not create work order: {str(e)}")
         raise WorkOrderUpdateError(f"Error, could not create work order: {str(e)}")
 
     return response.json()
@@ -92,10 +99,14 @@ def complete_work_order_v2(work_order_id: int, completed_on_dttm: datetime) -> d
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
+        logger.error(
+            f"Error, could not complete work order: {e.response.status_code} - {e.response.content}"
+        )
         raise WorkOrderNotFound(
             f"Error, could not complete work order: {e.response.status_code} - {e.response.content}"
         )
     except requests.exceptions.RequestException as e:
+        logger.error(f"Error, could not complete work order: {str(e)}")
         raise WorkOrderNotFound(f"Error, could not complete work order: {str(e)}")
 
     return response.json()
@@ -129,17 +140,21 @@ def create_work_order_v2(work_order: dict) -> dict:
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
+        logger.error(
+            f"Error, could not create work order: {e.response.status_code} - {e.response.content}"
+        )
         raise WorkOrderUpdateError(
             f"Error, could not create work order: {e.response.status_code} - {e.response.content}"
         )
     except requests.exceptions.RequestException as e:
+        logger.error(f"Error, could not create work order: {str(e)}")
         raise WorkOrderUpdateError(f"Error, could not create work order: {str(e)}")
 
     return response.json()
 
 
 @Decorators.check_env_vars
-def get_work_orders_v2_pd(filter: Optional[dict]) -> Dict[int, WorkOrderV2]:
+def get_work_orders_v2_pd(filter: Optional[dict]) -> dict[int, WorkOrderV2]:
     """
     Get filtered work orders.
     Returns dictionary of pydantic objects keyed by work order id.
@@ -152,10 +167,10 @@ def get_work_orders_v2_pd(filter: Optional[dict]) -> Dict[int, WorkOrderV2]:
             work_orders[wo["id"]] = WorkOrderV2(**wo)
 
         except Exception as e:
-            print("Error in get_work_orders_v2_pd()")
-            print(str(e))
-            pprint(wo)
-            exit(0)
+            logger.error(
+                f"Error in get_work_orders_v2_pd() for work order {wo.get('id', 'unknown')}: {str(e)}"
+            )
+            raise
 
     return work_orders
 
@@ -198,15 +213,20 @@ def get_work_orders_v2(filter: Optional[dict]) -> List[dict]:
             response.raise_for_status()
 
         except requests.exceptions.HTTPError as e:
+            logger.error(
+                f"Error, could not get work orders: {e.response.status_code} - {e.response.content}"
+            )
             raise WorkOrderNotFound(
                 f"Error, could not get work orders: {e.response.status_code} - {e.response.content}"
             )
         except requests.exceptions.RequestException as e:
+            logger.error(f"Error, could not get work orders: {str(e)}")
             raise WorkOrderNotFound(f"Error, could not get work orders: {e}")
 
         data = response.json()
 
         if "tasks" not in data:
+            logger.error(f"No work orders found: {response.content}")
             raise NoDataReturned(f"No work orders found: {response.content}")
 
         all_work_orders = all_work_orders + data["tasks"]
@@ -257,10 +277,14 @@ def get_work_order_v2(work_order_id: int) -> dict:
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
+        logger.error(
+            f"Error, could not get work order details: {e.response.status_code} - {e.response.content}"
+        )
         raise WorkOrderNotFound(
             f"Error, could not get work order details: {e.response.status_code} - {e.response.content}"
         )
     except requests.exceptions.RequestException as e:
+        logger.error(f"Error, could not get work order details: {str(e)}")
         raise WorkOrderNotFound(f"Error, could not get work order details: {e}")
 
     return response.json()
@@ -294,10 +318,14 @@ def remove_checklist_work_order_v2(work_order_id: int, checklist_id: int) -> dic
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
+        logger.error(
+            f"Error, could not remove checklist from work order: {e.response.status_code} - {e.response.content}"
+        )
         raise WorkOrderNotFound(
             f"Error, could not remove checklist from work order: {e.response.status_code} - {e.response.content}"
         )
     except requests.exceptions.RequestException as e:
+        logger.error(f"Error, could not remove checklist from work order: {str(e)}")
         raise WorkOrderNotFound(
             f"Error, could not remove checklist from work order: {str(e)}"
         )
@@ -332,10 +360,14 @@ def update_work_order_v2(work_order_id: int, work_order: dict) -> dict:
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
+        logger.error(
+            f"Error, could not update work order: {e.response.status_code} - {e.response.content}"
+        )
         raise WorkOrderNotFound(
             f"Error, could not update work order: {e.response.status_code} - {e.response.content}"
         )
     except requests.exceptions.RequestException as e:
+        logger.error(f"Error, could not update work order: {str(e)}")
         raise WorkOrderNotFound(f"Error, could not update work order: {str(e)}")
 
     return response.json()
