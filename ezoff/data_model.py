@@ -79,14 +79,15 @@ class AssetV2(BaseModel):
             # Assign Asset Class
             if "id" in field and field["id"] == CustomFieldID.ASSET_CLASS.value:
                 if field["value"] is not None and isinstance(field["value"], list):
-                    try:
-                        self.asset_class = AssetClass(field["value"][0])
-                    except ValueError as e:
-                        raise ValueError(
-                            (
-                                f'Invalid asset class in asset {self.id}: {field["value"][0]}'
+                    if len(field["value"]) > 0:
+                        try:
+                            self.asset_class = AssetClass(field["value"][0])
+                        except ValueError as e:
+                            raise ValueError(
+                                (
+                                    f'Invalid asset class in asset {self.id}: {field["value"][0]}'
+                                )
                             )
-                        )
 
 
 class ChecklistV2(BaseModel):

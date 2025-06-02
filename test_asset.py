@@ -3,11 +3,11 @@ from ezoff._helpers import _basic_retry, _fetch_page
 from ezoff import *
 from pprint import pprint
 
-asset = get_asset_v2(asset_id=35824)
+asset = get_asset_v2(asset_id=37576)
 
 pprint(asset)
 
-pd_asset = get_asset_v2_pd(asset_id=35824)
+pd_asset = get_asset_v2_pd(asset_id=37576)
 
 pprint(pd_asset.model_dump())
 
