@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 from typing import List, Dict, Optional, Any
 from datetime import datetime, date
 
@@ -56,7 +56,7 @@ class AssetV2(BaseModel):
     # Custom fields, parsed from the custom_fields attribute.
     rent: Optional[bool] = Field(default=None)
     serial_number: Optional[str] = Field(default=None)
-    asset_class: Optional[str] = Field(default=None)
+    asset_class: Optional[AssetClass] = Field(default=None)
 
     def model_post_init(self, __context: Any) -> None:
         """Parse custom fields."""
@@ -79,7 +79,11 @@ class AssetV2(BaseModel):
             # Assign Asset Class
             if "id" in field and field["id"] == CustomFieldID.ASSET_CLASS.value:
                 if field["value"] is not None and isinstance(field["value"], list):
-                    self.asset_class = field["value"][0]
+                    try:
+                        self.asset_class = AssetClass(field["value"][0])
+                    except ValueError as e:
+                        # Ignore invalid asset classes.
+                        pass
 
 
 class ChecklistV2(BaseModel):

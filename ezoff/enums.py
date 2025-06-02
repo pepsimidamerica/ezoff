@@ -1,7 +1,24 @@
 # from pydantic import BaseModel, Field
 from typing import List, Dict, Optional, Any
+
 # from datetime import datetime, date
 from enum import Enum
+
+
+class AssetClass(Enum):
+    BILL_CHANGER = "Bill Changer"
+    BULK_CO2 = "Bulk CO2"
+    COFFEE = "Coffee"
+    # COOLER = "Cooler"
+    FOUNTAIN = "Fountain"
+    MICRO_MARKET = "Micro Market"
+    REMOVE = "Remove"
+    SLUSH = "Slush"
+    TEA = "Tea"
+    TEST = "Test"
+    VENDOR = "Vendor"
+    WATER = "Water"
+
 
 class ResourceType(Enum):
     """Ez Office component (resource) type."""
@@ -25,5 +42,3 @@ class CustomFieldID(Enum):
 class RentLoan(Enum):
     RENT = "Rent"
     LOAN = "Loan"
-
-    
