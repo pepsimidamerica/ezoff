@@ -10,3 +10,7 @@ pprint(asset)
 pd_asset = get_asset_v2_pd(asset_id=35824)
 
 pprint(pd_asset.model_dump())
+
+
+assets = get_assets_v2_pd(filter={})
+
