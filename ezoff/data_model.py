@@ -82,8 +82,11 @@ class AssetV2(BaseModel):
                     try:
                         self.asset_class = AssetClass(field["value"][0])
                     except ValueError as e:
-                        # Ignore invalid asset classes.
-                        pass
+                        raise ValueError(
+                            (
+                                f'Invalid asset class in asset {self.id}: {field["value"][0]}'
+                            )
+                        )
 
 
 class ChecklistV2(BaseModel):
