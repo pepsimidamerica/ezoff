@@ -101,7 +101,7 @@ class AssetCache(EzoCache):
         return self.get_cache_entry(entry_id=asset_id, force_api=force_api)
 
     @property
-    def assets(self) -> AssetV2:
+    def assets(self) -> Dict[int, AssetV2]:
         return self.cache
 
 
