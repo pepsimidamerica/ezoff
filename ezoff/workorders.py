@@ -2,14 +2,19 @@
 This module contains functions to interact with work orders in EZOfficeInventory.
 """
 
+import logging
 import os
-from typing import Literal, Optional
-from datetime import date, datetime
+from datetime import datetime
+from typing import Optional
+
 import requests
 
 from ezoff._auth import Decorators
 from ezoff._helpers import _basic_retry, _fetch_page
-from .exceptions import *
+
+from .exceptions import ChecklistLinkError, NoDataReturned, WorkOrderUpdateError
+
+logger = logging.getLogger(__name__)
 
 
 @Decorators.check_env_vars
@@ -68,15 +73,18 @@ def get_work_orders(filter: Optional[dict]) -> dict:
             )
             response.raise_for_status()
         except requests.exceptions.HTTPError as e:
-            raise Exception(
+            logger.error(
                 f"Error, could not get work orders: {e.response.status_code} - {e.response.content}"
             )
+            raise
         except requests.exceptions.RequestException as e:
-            raise Exception(f"Error, could not get work orders: {e}")
+            logger.error(f"Error, could not get work orders: {e}")
+            raise
 
         data = response.json()
 
         if "work_orders" not in data:
+            logger.error(f"Error, could not get work orders: {response.content}")
             raise NoDataReturned(f"No work orders found: {response.content}")
 
         all_work_orders.update(data["work_orders"])
@@ -110,11 +118,13 @@ def get_work_order_details(work_order_id: int) -> dict:
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
-        raise Exception(
+        logger.error(
             f"Error, could not get work order details: {e.response.status_code} - {e.response.content}"
         )
+        raise
     except requests.exceptions.RequestException as e:
-        raise Exception(f"Error, could not get work order details: {e}")
+        logger.error(f"Error, could not get work order details: {e}")
+        raise
 
     return response.json()
 
@@ -139,13 +149,16 @@ def get_work_order_types() -> list[dict]:
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
-        raise Exception(
+        logger.error(
             f"Error, could not get work order types: {e.response.status_code} - {e.response.content}"
         )
+        raise
     except requests.exceptions.RequestException as e:
-        raise Exception(f"Error, could not get work order types: {e}")
+        logger.error(f"Error, could not get work order types: {e}")
+        raise
 
     if "work_order_types" not in response.json():
+        logger.error(f"Error, could not get work order types: {response.content}")
         raise Exception(f"Error, could not get work order types: {response.content}")
 
     return response.json()["work_order_types"]
@@ -221,11 +234,13 @@ def create_work_order(work_order: dict) -> dict:
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
-        raise Exception(
+        logger.error(
             f"Error, could not create work order: {e.response.status_code} - {e.response.content}"
         )
+        raise
     except requests.exceptions.RequestException as e:
-        raise Exception(f"Error, could not create work order: {e}")
+        logger.error(f"Error, could not create work order: {e}")
+        raise
 
     return response.json()
 
@@ -252,11 +267,13 @@ def start_work_order(work_order_id: int) -> dict:
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
-        raise Exception(
+        logger.error(
             f"Error, could not start work order: {e.response.status_code} - {e.response.content}"
         )
+        raise
     except requests.exceptions.RequestException as e:
-        raise Exception(f"Error, could not start work order: {e}")
+        logger.error(f"Error, could not start work order: {e}")
+        raise
 
     return response.json()
 
@@ -283,11 +300,13 @@ def end_work_order(work_order_id: int) -> dict:
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
-        raise Exception(
+        logger.error(
             f"Error, could not end work order: {e.response.status_code} - {e.response.content}"
         )
+        raise
     except requests.exceptions.RequestException as e:
-        raise Exception(f"Error, could not end work order: {e}")
+        logger.error(f"Error, could not end work order: {e}")
+        raise
 
     return response.json()
 
@@ -338,11 +357,13 @@ def add_work_log_to_work_order(work_order_id: int, work_log: dict) -> dict:
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
-        raise Exception(
+        logger.error(
             f"Error, could not add log to work order: {e.response.status_code} - {e.response.content}"
         )
+        raise
     except requests.exceptions.RequestException as e:
-        raise Exception(f"Error, could not add log to work order: {e}")
+        logger.error(f"Error, could not add log to work order: {e}")
+        raise
 
     return response.json()
 
@@ -396,11 +417,13 @@ def add_linked_inv_to_work_order(work_order_id: int, linked_inv: dict) -> dict:
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
-        raise Exception(
+        logger.error(
             f"Error, could not add linked inv to work order: {e.response.status_code} - {e.response.content}"
         )
+        raise
     except requests.exceptions.RequestException as e:
-        raise Exception(f"Error, could not add linked inv to work order: {e}")
+        logger.error(f"Error, could not add linked inv to work order: {e}")
+        raise
 
     return response.json()
 
@@ -424,15 +447,18 @@ def get_checklists() -> list[dict]:
             )
             response.raise_for_status()
         except requests.exceptions.HTTPError as e:
-            raise Exception(
+            logger.error(
                 f"Error, could not get checklists: {e.response.status_code} - {e.response.content}"
             )
+            raise
         except requests.exceptions.RequestException as e:
-            raise Exception(f"Error, could not get checklists: {e}")
+            logger.error(f"Error, could not get checklists: {e}")
+            raise
 
         data = response.json()
 
         if "checklists" not in data:
+            logger.error(f"Error, could not get checklists: {response.content}")
             raise Exception(f"Error, could not get checklists: {response.content}")
 
         all_checklists.extend(data["checklists"])
@@ -497,11 +523,13 @@ def create_service(asset_id: int, service: dict) -> dict:
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
-        raise Exception(
+        logger.error(
             f"Error, could not create service: {e.response.status_code} - {e.response.content}"
         )
+        raise
     except requests.exceptions.RequestException as e:
-        raise Exception(f"Error, could not create service: {e}")
+        logger.error(f"Error, could not create service: {e}")
+        raise
 
     return response.json()
 
@@ -605,8 +633,8 @@ def update_work_order_routing(
     task_type_id: int,
     start_dttm: datetime,
     due_dttm: datetime,
-    supervisor_id: str = None,
-    reviewer_id: str = None,
+    supervisor_id: str | None = None,
+    reviewer_id: str | None = None,
 ) -> dict:
     """Update the assigned to user and start/end time of a workorder.
     Intended for use by an external routing system.
@@ -634,7 +662,7 @@ def update_work_order_routing(
 
     if supervisor_id is not None:
         filter["task[supervisor_id]"] = supervisor_id
-        print(f'Updating work order supervisor to: {supervisor_id}')
+        print(f"Updating work order supervisor to: {supervisor_id}")
 
     if reviewer_id is not None:
         filter["task[reviewer_id]"] = reviewer_id

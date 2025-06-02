@@ -2,6 +2,7 @@
 Covers everything related to inventory assets.
 """
 
+import logging
 import os
 import time
 
@@ -9,6 +10,8 @@ import requests
 
 from ezoff._auth import Decorators
 from ezoff._helpers import _basic_retry, _fetch_page
+
+logger = logging.getLogger(__name__)
 
 
 @Decorators.check_env_vars
@@ -41,11 +44,13 @@ def get_all_inventories() -> list[dict]:
             )
             response.raise_for_status()
         except requests.exceptions.HTTPError as e:
-            raise Exception(
+            logger.error(
                 f"Error, could not get inventory details: {e.response.status_code} - {e.response.content}"
             )
+            raise
         except requests.exceptions.RequestException as e:
-            raise Exception("Error getting inventories: ", e)
+            logger.error(f"Error getting inventories: {e}")
+            raise
 
         data = response.json()
 
@@ -103,11 +108,13 @@ def get_inventory_details(inv_asset_num: int) -> dict:
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
-        raise Exception(
+        logger.error(
             f"Error, could not get inventory details: {e.response.status_code} - {e.response.content}"
         )
+        raise
     except requests.exceptions.RequestException as e:
-        raise Exception(f"Error getting inventory details: {e}")
+        logger.error(f"Error getting inventory details: {e}")
+        raise
 
     return response.json()
 
@@ -147,6 +154,7 @@ def create_inventory_order(inv_asset_num: int, order: dict) -> dict:
         )
         response.raise_for_status()
     except requests.exceptions.RequestException as e:
+        logger.error(f"Error creating inventory order: {e}")
         raise Exception(f"Error creating inventory order: {e}")
 
     return response.json()
@@ -188,11 +196,13 @@ def get_inventory_history(inv_asset_num: int) -> list[dict]:
             )
             response.raise_for_status()
         except requests.exceptions.HTTPError as e:
-            raise Exception(
+            logger.error(
                 f"Error, could not get inventory history: {e.response.status_code} - {e.response.content}"
             )
+            raise
         except requests.exceptions.RequestException as e:
-            raise Exception(f"Error getting inventory history: {e}")
+            logger.error(f"Error getting inventory history: {e}")
+            raise
 
         data = response.json()
 

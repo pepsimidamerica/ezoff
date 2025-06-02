@@ -2,6 +2,7 @@
 This module contains functions for interacting with locations in EZOfficeInventory
 """
 
+import logging
 import os
 import time
 from typing import Optional
@@ -10,6 +11,8 @@ import requests
 
 from ezoff._auth import Decorators
 from ezoff._helpers import _basic_retry, _fetch_page
+
+logger = logging.getLogger(__name__)
 
 
 @Decorators.check_env_vars
@@ -45,15 +48,18 @@ def get_locations(filter: Optional[dict]) -> list[dict]:
             )
             response.raise_for_status()
         except requests.exceptions.HTTPError as e:
-            raise Exception(
+            logger.error(
                 f"Error, could not get locations: {e.response.status_code} - {e.response.content}"
             )
+            raise
         except requests.exceptions.RequestException as e:
-            raise Exception(f"Error, could not get locations: {e}")
+            logger.error(f"Error, could not get locations: {e}")
+            raise
 
         data = response.json()
 
         if "locations" not in data:
+            logger.error(f"Error, could not get locations: {data}")
             raise Exception(f"Error, could not get locations: {response.content}")
 
         all_locations.extend(data["locations"])
@@ -92,11 +98,13 @@ def get_location_details(location_num: int) -> dict:
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
-        raise Exception(
+        logger.error(
             f"Error, could not get location: {e.response.status_code} - {e.response.content}"
         )
+        raise
     except requests.exceptions.RequestException as e:
-        raise Exception(f"Error, could not get location: {e}")
+        logger.error(f"Error, could not get location: {e}")
+        raise
 
     return response.json()
 
@@ -123,11 +131,13 @@ def get_location_item_quantities(location_num: int) -> dict:
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
-        raise Exception(
+        logger.error(
             f"Error, could not get location item quantities: {e.response.status_code} - {e.response.content}"
         )
+        raise
     except requests.exceptions.RequestException as e:
-        raise Exception(f"Error, could not get location item quantities: {e}")
+        logger.error(f"Error, could not get location item quantities: {e}")
+        raise
 
     return response.json()
 
@@ -179,11 +189,13 @@ def create_location(location: dict) -> dict:
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
-        raise Exception(
+        logger.error(
             f"Error, could not create location: {e.response.status_code} - {e.response.content}"
         )
+        raise
     except requests.exceptions.RequestException as e:
-        raise Exception(f"Error, could not create location: {e}")
+        logger.error(f"Error, could not create location: {e}")
+        raise
 
     return response.json()
 
@@ -207,11 +219,13 @@ def activate_location(location_num: int) -> dict:
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
-        raise Exception(
+        logger.error(
             f"Error, could not activate location: {e.response.status_code} - {e.response.content}"
         )
+        raise
     except requests.exceptions.RequestException as e:
-        raise Exception(f"Error, could not activate location: {e}")
+        logger.error(f"Error, could not activate location: {e}")
+        raise
 
     return response.json()
 
@@ -238,11 +252,13 @@ def deactivate_location(location_num: int) -> dict:
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
-        raise Exception(
+        logger.error(
             f"Error, could not deactivate location: {e.response.status_code} - {e.response.content}"
         )
+        raise
     except requests.exceptions.RequestException as e:
-        raise Exception(f"Error, could not deactivate location: {e}")
+        logger.error(f"Error, could not deactivate location: {e}")
+        raise
 
     return response.json()
 
@@ -295,10 +311,12 @@ def update_location(location_num: int, location: dict) -> dict:
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
-        raise Exception(
+        logger.error(
             f"Error, could not update location: {e.response.status_code} - {e.response.content}"
         )
+        raise
     except requests.exceptions.RequestException as e:
-        raise Exception(f"Error, could not update location: {e}")
+        logger.error(f"Error, could not update location: {e}")
+        raise
 
     return response.json()

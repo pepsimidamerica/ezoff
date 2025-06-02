@@ -2,15 +2,14 @@
 Projects in EZOffice
 """
 
+import logging
 import os
-import time
 
 import requests
-from pprint import pprint
 
 from ezoff._auth import Decorators
-from ezoff._helpers import _basic_retry, _fetch_page
 
+logger = logging.getLogger(__name__)
 
 
 @Decorators.check_env_vars
@@ -49,10 +48,12 @@ def project_link_asset(options: dict) -> dict:
         response.raise_for_status()
 
     except requests.exceptions.HTTPError as e:
-        raise Exception(
+        logger.error(
             f"Error, could not assign asset to project: {e.response.status_code} - {e.response.content}"
         )
+        raise
     except requests.exceptions.RequestException as e:
-        raise Exception(f"Error, could not assign asset to project: {e}")
+        logger.error(f"Error, could not assign asset to project: {e}")
+        raise
 
     return response.json()
