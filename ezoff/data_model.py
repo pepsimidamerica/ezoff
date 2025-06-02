@@ -1,30 +1,8 @@
 from pydantic import BaseModel, Field
 from typing import List, Dict, Optional, Any
 from datetime import datetime, date
-from enum import Enum
 
-
-class ResourceType(Enum):
-    """Ez Office component (resource) type."""
-
-    ASSET = "Asset"
-
-
-class CustomFieldID(Enum):
-    DEPOT = 739
-    EST_SVC_MINUTES = 728
-    RENT_FLAG = 70779
-    TAX_JURISDICTION = 738
-    NAT_ACCOUNT = 739
-    CANTEEONE_CODE = 740
-    PARENT_CUST_CODE = 771
-    EXCLUDE_RENT_FEES = 823
-    ASSET_SERIAL_NO = 66133
-
-
-class RentLoan(Enum):
-    RENT = "Rent"
-    LOAN = "Loan"
+from .enums import *
 
 
 class AssetV2(BaseModel):
@@ -78,6 +56,7 @@ class AssetV2(BaseModel):
     # Custom fields, parsed from the custom_fields attribute.
     rent: Optional[bool] = Field(default=None)
     serial_number: Optional[str] = Field(default=None)
+    asset_class: Optional[str] = Field(default=None)
 
     def model_post_init(self, __context: Any) -> None:
         """Parse custom fields."""
@@ -97,6 +76,11 @@ class AssetV2(BaseModel):
                 if field["value"] is not None and isinstance(field["value"], str):
                     self.serial_number = field["value"]
 
+            # Assign Asset Class
+            if "id" in field and field["id"] == CustomFieldID.ASSET_CLASS.value:
+                if field["value"] is not None and isinstance(field["value"], list):
+                    self.asset_class = field["value"][0]
+
 
 class ChecklistV2(BaseModel):
     id: int
@@ -109,8 +93,8 @@ class Component(BaseModel):
     resource_id: int
     resource_type: ResourceType
 
-    class Config:  
-        use_enum_values = True 
+    class Config:
+        use_enum_values = True
 
 
 class LocationV2(BaseModel):
