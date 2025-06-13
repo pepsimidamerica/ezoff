@@ -20,12 +20,6 @@ class AssetClass(Enum):
     WATER = "Water"
 
 
-class ResourceType(Enum):
-    """Ez Office component (resource) type."""
-
-    ASSET = "Asset"
-
-
 class CustomFieldID(Enum):
     DEPOT = 739
     EST_SVC_MINUTES = 728
@@ -37,8 +31,20 @@ class CustomFieldID(Enum):
     EXCLUDE_RENT_FEES = 823
     ASSET_SERIAL_NO = 66133
     ASSET_CLASS = 71024
+    LOCATION_CLASS = 845
+
+
+class LocationClass(Enum):
+    NONE = "None"
+    MARKET = "Micro Market"
 
 
 class RentLoan(Enum):
     RENT = "Rent"
     LOAN = "Loan"
+
+
+class ResourceType(Enum):
+    """Ez Office component (resource) type."""
+
+    ASSET = "Asset"

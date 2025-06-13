@@ -138,6 +138,7 @@ class LocationV2(BaseModel):
     # Custom fields
     parent_cust_code: Optional[str] = Field(default=None)
     exclude_rent_fees: Optional[bool] = Field(default=None)
+    location_class: Optional[LocationClass] = Field(default=LocationClass.NONE)
 
     def model_post_init(self, __context: Any) -> None:
         # Parse custom fields.
@@ -155,6 +156,10 @@ class LocationV2(BaseModel):
             if "id" in field and field["id"] == CustomFieldID.PARENT_CUST_CODE.value:
                 if field["value"] is not None and isinstance(field["value"], str):
                     self.parent_cust_code = field["value"]
+
+            # Assign 'Location Class'
+            if "id" in field and field["id"] == CustomFieldID.LOCATION_CLASS.value:
+                self.location_class = LocationClass(field["value"] or LocationClass.NONE)
 
         # Clear out custom field list, to save space.
         self.custom_fields = None
