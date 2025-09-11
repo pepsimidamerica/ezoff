@@ -1,103 +1,46 @@
 # ezoff
+
 Python package for interacting with the EZOffice API. Includes support for v1 and v2 EZ Office API endpoints.
 
+Base URL for v1: https://{company name}.ezofficeinventory.com/
+Base URL for v2: https://{company name}.ezofficeinventory.com/api/v2/
+
+## Rewrite
+
+There will be a number of breaking changes.
+
+- Remove all v1 endoints where there is a corresponding v2 endpoint.
+- Normalize function names for easier discoverability, e.g. get_asset_details -> asset_get_details
+- ~~Rename some of the files so we don't have both hanging around. Consolidate v1 and v2 together.~~
+- Perhaps add flag to each Get function to return either the pydantic object or the raw request response? Could be useful to have the option.
+- General cleanup of type hints and docstrings.
+- Maybe just ask for the subdomain for the os env var, as opposed to base URL? Would be easier with regards to slashes and the v1 and v2 endpoints.
+
 ## Installation
+
 `pip install ezoff`
 
 ## Usage
+
 Several environment variables are required for ezo to function.
 
 | Required? | Env Variable | Description |
 | --------- | ------------ | ----------- |
-| EZO_BASE_URL | Yes | Should be https://{companyname}.ezofficeinventory.com/ |
+| EZO_SUBDOMAIN | Yes | Should be your company name. Can be found in the URL of your EZO instance, https://{companyname}.ezofficeinventory.com/ |
 | EZO_TOKEN | Yes | The access token used to authenticate requests |
 
 ## Project Structure
+
 Project is split up into several files depending on what area of the EZOffice API is being dealt with. Purely for organizational purposes.
 
-## Ez Office API V1 Endpoints
-### Assets
-Contains functions for the following:
-- get all asssets
-- get filtered assets
-- search for an asset
-- create an asset
-- update an asset
-- delete an asset
-- check asset in
-- check asset out
-- get an asset's history
-
-### Inventories
-- get inventories
-- get inventory details
-- create inventory order
-- get inventory history
-
-### Groups
-Contains functions for the following:
-- get subgroups
-
-### Locations
-Contains functions for the following:
-- get locations
-- get location details
-- get item quantities in location
-- create a location
-- activate a location
-- deactivate a location
-- update a location
-
-### Members
-Contains functions for the following:
-- get members
-- get a member's details
-- create a member
-- update a member
-- deactivate a member
-- activate a member
-- get custom roles
-- get teams
-
-### Work Orders
-Contains functions for the following:
-- get work orders
-- get work order details
-- get work order types
-- create a work order
-- start a work order
-- end a work order
-- add work log to a work order
-- add linked inventory to a work order
-- get checklists
-
-## Ez Office V2 API
-Most V2 endpoint methods support the return of pydantic objects.
-
-### Assets V2
-Contains functions for the following:
-- get all asssets
-- get asset by identification number
-
-### Checklist V2
-Contains functions for the following:
-- get all checklists
-
-### Locations V2
-Contains functions for the following:
-- get all locations
-- get single location
-
-### Members V2
-Contains functions for the following:
-- get filtered members
-- get single member
-
-### Work Orders V2
-Contains functions for the following:
-- get filtered work orders
-- get single work order
-- update work order
+- Assets
+- Checklists
+- Groups
+- Inventories
+- Locations
+- Members
+- Projects
+- Work Orders
 
 ## Notes
 

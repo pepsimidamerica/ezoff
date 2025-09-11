@@ -4,10 +4,8 @@ Covers everything related to groups and subgroups in EZOfficeInventory
 
 import logging
 import os
-from typing import Optional
 
 import requests
-
 from ezoff._auth import Decorators
 from ezoff._helpers import _fetch_page
 
@@ -15,10 +13,59 @@ logger = logging.getLogger(__name__)
 
 
 @Decorators.check_env_vars
-def get_subgroups(group_id: Optional[int]) -> list[dict]:
+def group_create():
+    """
+    Creates a group.
+    """
+    pass
+
+
+@Decorators.check_env_vars
+def group_get():
+    """
+    ()
+    """
+    pass
+
+
+@Decorators.check_env_vars
+def group_update():
+    """
+    ()
+    """
+    pass
+
+
+@Decorators.check_env_vars
+def group_delete():
+    """
+    ()
+    """
+    pass
+
+
+@Decorators.check_env_vars
+def groups_get():
+    """
+    ()
+    """
+    pass
+
+
+@Decorators.check_env_vars
+def subgroup_get():
+    """
+    ()
+    """
+    pass
+
+
+@Decorators.check_env_vars
+def subgroups_get(group_id: int | None = None) -> list[dict]:
     """
     Get subgroups
-    Optionally takes a group_id to get subgroups of a specific group
+
+    :param group_id: Optionally filter to get subgroups of a specific group
     """
 
     url = os.environ["EZO_BASE_URL"] + "groups/get_sub_groups.api"

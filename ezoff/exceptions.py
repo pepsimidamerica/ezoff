@@ -1,8 +1,12 @@
-from enum import Enum
+"""
+Module contains any custom exceptions defined for use in package.
+"""
 
 
 class AssetException(Exception):
-    """Parent class for exceptions related to EZ-Office Fixed Assets."""
+    """
+    Parent class for exceptions related to EZ-Office Fixed Assets.
+    """
 
     def __init__(self, asset_id: str):
         super().__init__("")
@@ -10,7 +14,6 @@ class AssetException(Exception):
 
 
 class AssetNotFound(AssetException):
-
     def __str__(self):
         return f"Asset {self.asset_id} not found in EZ-Office."
 

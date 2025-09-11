@@ -3,18 +3,17 @@ This module contains functions to interact with the checklist v2 API in EZOffice
 """
 
 import os
-from typing import Literal, Optional
-from datetime import date, datetime
-import requests
 from pprint import pprint
 
+import requests
 from ezoff._auth import Decorators
-from ezoff._helpers import _basic_retry, _fetch_page
-from .exceptions import *
-from .data_model import *
+from ezoff._helpers import _fetch_page
+from ezoff.data_model import ChecklistV2
+from ezoff.exceptions import ChecklistNotFound, NoDataReturned
+
 
 @Decorators.check_env_vars
-def get_checklists_v2_pd() -> Dict[str, ChecklistV2]:
+def get_checklists_v2_pd() -> dict[str, ChecklistV2]:
     """
     Get all checklists from EZ Office V2 API Call.
     Returns dictionary of pydantic objects keyed by checklist id.
@@ -25,12 +24,11 @@ def get_checklists_v2_pd() -> Dict[str, ChecklistV2]:
     for c in checklist_dict:
         checklist = checklist_dict[c]
         try:
-            checklists[checklist['id']] = ChecklistV2(**checklist)
+            checklists[checklist["id"]] = ChecklistV2(**checklist)
 
         except Exception as e:
             print(str(e))
             pprint(checklist)
-            exit(0)
 
     return checklists
 
@@ -64,7 +62,7 @@ def get_checklists_v2() -> dict:
             raise ChecklistNotFound(
                 f"Error, could not get checklists: {e.response.status_code} - {e.response.content}"
             )
-        
+
         except requests.exceptions.RequestException as e:
             raise ChecklistNotFound(f"Error, could not get checklists: {e}")
 

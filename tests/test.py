@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 # Load env vars from a .env file
 load_dotenv()
 
-from ezoff.ezoff import get_teams
+from ezoff.ezoff import get_members(filter={})
 
 res = get_teams()
 print(res)

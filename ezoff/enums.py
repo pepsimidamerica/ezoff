@@ -1,7 +1,7 @@
-# from pydantic import BaseModel, Field
-from typing import List, Dict, Optional, Any
+"""
+Module contains any enums used throughout the package.
+"""
 
-# from datetime import datetime, date
 from enum import Enum
 
 

@@ -1,11 +1,15 @@
-from pydantic import BaseModel, Field, ValidationError
-from typing import List, Dict, Optional, Any
-from datetime import datetime, date
+"""
+Module contains any pydantic models used throughout the package.
+"""
 
-from .enums import *
+from datetime import date, datetime
+from typing import Any, List, Optional
+
+from ezoff.enums import AssetClass, CustomFieldID, LocationClass, ResourceType
+from pydantic import BaseModel, Field
 
 
-class AssetV2(BaseModel):
+class Asset(BaseModel):
     active_sub_checkout: Optional[Any] = Field(default=None)
     arbitration: int
     audit_pending: bool
@@ -62,7 +66,6 @@ class AssetV2(BaseModel):
         """Parse custom fields."""
 
         for field in self.custom_fields:
-
             # Assign Rent Flag
             if "id" in field and field["id"] == CustomFieldID.RENT_FLAG.value:
                 if field["value"] is not None and isinstance(field["value"], list):
@@ -85,12 +88,12 @@ class AssetV2(BaseModel):
                         except ValueError as e:
                             raise ValueError(
                                 (
-                                    f'Invalid asset class in asset {self.id}: {field["value"][0]}'
+                                    f"Invalid asset class in asset {self.id}: {field['value'][0]}"
                                 )
                             )
 
 
-class ChecklistV2(BaseModel):
+class Checklist(BaseModel):
     id: int
     name: str
     created_by_id: int
@@ -105,7 +108,7 @@ class Component(BaseModel):
         use_enum_values = True
 
 
-class LocationV2(BaseModel):
+class Location(BaseModel):
     apply_default_return_date_to_child_locations: Optional[bool] = Field(default=None)
     checkout_indefinitely: Optional[bool] = Field(default=None)
     city: Optional[str] = Field(default=None)
@@ -143,7 +146,6 @@ class LocationV2(BaseModel):
     def model_post_init(self, __context: Any) -> None:
         # Parse custom fields.
         for field in self.custom_fields:
-
             # Assign 'Exclude Rent Fees'
             if "id" in field and field["id"] == CustomFieldID.EXCLUDE_RENT_FEES.value:
                 if field["value"] is not None and isinstance(field["value"], str):
@@ -159,13 +161,15 @@ class LocationV2(BaseModel):
 
             # Assign 'Location Class'
             if "id" in field and field["id"] == CustomFieldID.LOCATION_CLASS.value:
-                self.location_class = LocationClass(field["value"] or LocationClass.NONE)
+                self.location_class = LocationClass(
+                    field["value"] or LocationClass.NONE
+                )
 
         # Clear out custom field list, to save space.
         self.custom_fields = None
 
 
-class MemberV2(BaseModel):
+class Member(BaseModel):
     account_name: Optional[str] = Field(default=None)
     address_name: Optional[str] = Field(default=None)
     alert_type: Optional[str] = Field(default=None)
@@ -225,7 +229,7 @@ class MemberV2(BaseModel):
     zendesk_account_id: Optional[int] = Field(default=None)
 
 
-class WorkOrderV2(BaseModel):
+class WorkOrder(BaseModel):
     approver_id: Optional[int] = Field(default=None)
     assigned_to_id: Optional[int] = Field(default=None)
     assigned_to_type: str
@@ -254,7 +258,7 @@ class WorkOrderV2(BaseModel):
     project_id: Optional[int] = Field(default=None)
     recurrence_based_on_completion_date: bool
     recurrence_task_id: Optional[int | None]
-    repeat_every_basis: Optional[str] = Field(default=False)
+    repeat_every_basis: Optional[int] = Field(default=None)
     repeat_every_value: int
     repetition_end_date: Optional[str] = Field(default=None)
     repetition_starting: Optional[str] = Field(default=None)
@@ -295,3 +299,38 @@ class WorkOrderV2(BaseModel):
                 if field["value"] is not None:
                     self.depot = field["value"]
                     self.depot_id = int(field["value"][:2])
+
+
+class DepreciationRate(BaseModel):
+    id: int
+    depreciation_method_id: int
+    depreciation_method_name: str
+    rate: str
+
+
+class Group(BaseModel):
+    """
+    A group in EZO is a way of categorizing assets. You can have groups, as well
+    as subgroups that exist in a hierarchy beneath their parent group.
+    """
+
+    id: int
+    name: str
+    description: str
+    enable_service_triage: bool
+    triage_completion_period: int
+    triage_completion_period_basis: str
+    allow_staff_to_set_checkout_duration: bool
+    staff_checkout_duration_months: int
+    staff_checkout_duration_weeks: int
+    staff_checkout_duration_days: int
+    staff_checkout_duration_hours: int
+    staff_checkout_duration_mins: int
+    available_assets_count: int
+    visible_on_webstore: bool
+    hidden_on_webstore: bool
+    created_at: datetime
+    documents_count: int
+    asset_depreciation_mode: str
+    comments_count: int | None
+    depreciation_rates: list[DepreciationRate]
