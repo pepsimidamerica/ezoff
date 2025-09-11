@@ -9,7 +9,7 @@ from typing import Literal
 import requests
 from ezoff._auth import Decorators
 from ezoff._helpers import _fetch_page
-from ezoff.data_model import DepreciationRate
+from ezoff.data_model import DepreciationRate, Group, ResponseMessages
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ def group_create(
     staff_checkout_duration_days: int | None = None,
     staff_checkout_duration_hours: int | None = None,
     depreciation_rates: list[DepreciationRate] | None = None,
-):
+) -> Group | None:
     """
     Creates a group.
     """
@@ -63,24 +63,81 @@ def group_create(
         raise Exception(f"Error creating group: {e}")
 
     if response.status_code == 200:
-        # return status messages and group
-        pass
+        return Group(**response.json()["group"])
+    else:
+        return None
 
 
 @Decorators.check_env_vars
-def group_get():
+def group_get(group_id: int):
     """
-    ()
+    Returns a particular group.
     """
-    pass
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/groups/{group_id}"
+
+    try:
+        response = requests.get(
+            url,
+            headers={
+                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
+                "Accept": "application/json",
+            },
+        )
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        logger.error(
+            f"Error creating group: {e.response.status_code} - {e.response.content}"
+        )
+        raise Exception(
+            f"Error creating group: {e.response.status_code} - {e.response.content}"
+        )
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+        raise
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error creating group: {e}")
+        raise Exception(f"Error creating group: {e}")
+
+    if response.status_code == 200:
+        return Group(**response.json()["group"])
+    else:
+        return None
 
 
 @Decorators.check_env_vars
-def group_update():
+def group_update(group_id: int):
     """
-    ()
+    Updates a particular group.
     """
-    pass
+
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/groups/{group_id}"
+
+    try:
+        response = requests.patch(
+            url,
+            headers={
+                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
+                "Accept": "application/json",
+            },
+            data={},  # TODO
+        )
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        logger.error(
+            f"Error creating group: {e.response.status_code} - {e.response.content}"
+        )
+        raise Exception(
+            f"Error creating group: {e.response.status_code} - {e.response.content}"
+        )
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+        raise
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error creating group: {e}")
+        raise Exception(f"Error creating group: {e}")
+
+    if response.status_code == 200:
+        return Group(**response.json()["group"])
+    else:
+        return None
 
 
 @Decorators.check_env_vars
@@ -94,7 +151,7 @@ def group_delete():
 @Decorators.check_env_vars
 def groups_get():
     """
-    ()
+    Returns all groups
     """
     pass
 

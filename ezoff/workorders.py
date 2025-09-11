@@ -10,7 +10,7 @@ from datetime import datetime
 import requests
 from ezoff._auth import Decorators
 from ezoff._helpers import _basic_retry, _fetch_page
-from ezoff.data_model import Component, WorkOrderV2
+from ezoff.data_model import Component, WorkOrder
 from ezoff.exceptions import (
     ChecklistLinkError,
     NoDataReturned,
@@ -805,7 +805,7 @@ def create_work_order_v2(work_order: dict) -> dict:
 
 
 @Decorators.check_env_vars
-def get_work_orders_v2_pd(filter: dict | None = None) -> dict[int, WorkOrderV2]:
+def get_work_orders_v2_pd(filter: dict | None = None) -> dict[int, WorkOrder]:
     """
     Get filtered work orders.
     Returns dictionary of pydantic objects keyed by work order id.
@@ -815,7 +815,7 @@ def get_work_orders_v2_pd(filter: dict | None = None) -> dict[int, WorkOrderV2]:
 
     for wo in wo_dict:
         try:
-            work_orders[wo["id"]] = WorkOrderV2(**wo)
+            work_orders[wo["id"]] = WorkOrder(**wo)
 
         except Exception as e:
             print("Error in get_work_orders_v2_pd()")
@@ -887,14 +887,14 @@ def get_work_orders_v2(filter: dict | None = None) -> list[dict]:
 
 
 @Decorators.check_env_vars
-def get_work_order_v2_pd(work_order_id: int) -> WorkOrderV2:
+def get_work_order_v2_pd(work_order_id: int) -> WorkOrder:
     """
     Get a single work order.
     Returns a pydantic object.
     """
     wo_dict = get_work_order_v2(work_order_id=work_order_id)
 
-    return WorkOrderV2(**wo_dict["work_order"])
+    return WorkOrder(**wo_dict["work_order"])
 
 
 @_basic_retry
