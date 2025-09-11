@@ -9,6 +9,11 @@ from ezoff.enums import AssetClass, CustomFieldID, LocationClass, ResourceType
 from pydantic import BaseModel, Field
 
 
+class ResponseMessages(BaseModel):
+    success: list[str] | None = None
+    errors: list[str] | None = None
+
+
 class Asset(BaseModel):
     active_sub_checkout: Optional[Any] = Field(default=None)
     arbitration: int

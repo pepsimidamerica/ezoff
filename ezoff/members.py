@@ -11,7 +11,7 @@ from datetime import datetime
 import requests
 from ezoff._auth import Decorators
 from ezoff._helpers import _basic_retry, _fetch_page
-from ezoff.data_model import MemberV2
+from ezoff.data_model import Member
 from ezoff.exceptions import MemberNotFound, NoDataReturned
 
 logger = logging.getLogger(__name__)
