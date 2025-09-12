@@ -8,12 +8,12 @@ from pprint import pprint
 import requests
 from ezoff._auth import Decorators
 from ezoff._helpers import _fetch_page
-from ezoff.data_model import ChecklistV2
+from ezoff.data_model import Checklist
 from ezoff.exceptions import ChecklistNotFound, NoDataReturned
 
 
 @Decorators.check_env_vars
-def get_checklists_v2_pd() -> dict[str, ChecklistV2]:
+def get_checklists_v2_pd() -> dict[str, Checklist]:
     """
     Get all checklists from EZ Office V2 API Call.
     Returns dictionary of pydantic objects keyed by checklist id.
@@ -24,7 +24,7 @@ def get_checklists_v2_pd() -> dict[str, ChecklistV2]:
     for c in checklist_dict:
         checklist = checklist_dict[c]
         try:
-            checklists[checklist["id"]] = ChecklistV2(**checklist)
+            checklists[checklist["id"]] = Checklist(**checklist)
 
         except Exception as e:
             print(str(e))

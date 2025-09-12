@@ -10,7 +10,7 @@ import time
 import requests
 from ezoff._auth import Decorators
 from ezoff._helpers import _basic_retry, _fetch_page
-from ezoff.data_model import LocationV2
+from ezoff.data_model import Location
 from ezoff.exceptions import LocationNotFound, NoDataReturned
 
 logger = logging.getLogger(__name__)
@@ -324,7 +324,7 @@ def update_location(location_num: int, location: dict) -> dict:
 
 
 @Decorators.check_env_vars
-def get_loctions_v2_pd(filter: dict | None = None) -> dict[int, LocationV2]:
+def get_loctions_v2_pd(filter: dict | None = None) -> dict[int, Location]:
     """
     Get locations.
     Returns dictionary of pydantic objects keyed by location sequence number.
@@ -334,7 +334,7 @@ def get_loctions_v2_pd(filter: dict | None = None) -> dict[int, LocationV2]:
 
     for location in locations_dict:
         try:
-            locations[location["id"]] = LocationV2(**location)
+            locations[location["id"]] = Location(**location)
 
         except Exception as e:
             print("Error in get_loctions_v2_pd()")
@@ -406,13 +406,13 @@ def get_loctions_v2(filter: dict | None = None) -> list[dict]:
 
 
 @Decorators.check_env_vars
-def get_location_v2_pd(location_id: int) -> LocationV2:
+def get_location_v2_pd(location_id: int) -> Location:
     """
     Get a single location.
     Returns a pydantic object.
     """
     location_dict = get_location_v2(location_id=location_id)
-    return LocationV2(**location_dict["location"])
+    return Location(**location_dict["location"])
 
 
 @_basic_retry

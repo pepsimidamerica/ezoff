@@ -339,3 +339,5 @@ class Group(BaseModel):
     asset_depreciation_mode: str
     comments_count: int | None
     depreciation_rates: list[DepreciationRate]
+    parent_id: int | None
+    group_id: int | None

@@ -12,7 +12,7 @@ There will be a number of breaking changes.
 - Remove all v1 endoints where there is a corresponding v2 endpoint.
 - Normalize function names for easier discoverability, e.g. get_asset_details -> asset_get_details
 - ~~Rename some of the files so we don't have both hanging around. Consolidate v1 and v2 together.~~
-- Perhaps add flag to each Get function to return either the pydantic object or the raw request response? Could be useful to have the option.
+- Perhaps add flag to each Get function to return either the pydantic object or the raw request response? Could be useful to have the option. Or just say fuck it and have pydantic models for everything.
 - General cleanup of type hints and docstrings.
 - Maybe just ask for the subdomain for the os env var, as opposed to base URL? Would be easier with regards to slashes and the v1 and v2 endpoints.
 

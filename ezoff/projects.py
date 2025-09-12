@@ -6,7 +6,6 @@ import logging
 import os
 
 import requests
-
 from ezoff._auth import Decorators
 
 logger = logging.getLogger(__name__)

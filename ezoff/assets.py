@@ -11,7 +11,7 @@ from datetime import datetime
 import requests
 from ezoff._auth import Decorators
 from ezoff._helpers import _basic_retry, _fetch_page
-from ezoff.data_model import AssetV2
+from ezoff.data_model import Asset
 from ezoff.exceptions import (
     AssetDuplicateIdentificationNumber,
     AssetNotFound,
@@ -719,7 +719,7 @@ def get_items_for_token_input(q: str) -> list[dict]:
 
 
 @Decorators.check_env_vars
-def get_asset_v2_pma(identification_number: int) -> AssetV2 | None:
+def get_asset_v2_pma(identification_number: int) -> Asset | None:
     """
     Get an EZ Office asset by its identification number.
 
@@ -727,7 +727,7 @@ def get_asset_v2_pma(identification_number: int) -> AssetV2 | None:
         pma_asset_id (int): _description_
 
     Returns:
-        AssetV2: Pydantic EZ Office Asset Object.
+        Asset: Pydantic EZ Office Asset Object.
     """
     filter = {"filters": {"identifier": identification_number}}
     asset_dict = get_assets_v2_pd(filter=filter)
@@ -748,7 +748,7 @@ def get_asset_v2_pma(identification_number: int) -> AssetV2 | None:
 
 
 @Decorators.check_env_vars
-def get_assets_v2_pd(filter: dict | None = None) -> dict[int, AssetV2]:
+def get_assets_v2_pd(filter: dict | None = None) -> dict[int, Asset]:
     """
     Get filtered fixed assets.
     Returns dictionary of pydantic objects keyed by asset id.
@@ -758,7 +758,7 @@ def get_assets_v2_pd(filter: dict | None = None) -> dict[int, AssetV2]:
 
     for asset in asset_dict:
         try:
-            assets[asset["id"]] = AssetV2(**asset)
+            assets[asset["id"]] = Asset(**asset)
 
         except Exception as e:
             logger.error(f"Error in get_assets_v2_pd(): {e}")
@@ -821,13 +821,13 @@ def get_assets_v2(filter: dict | None = None) -> list[dict]:
 
 
 @Decorators.check_env_vars
-def get_asset_v2_pd(asset_id: int) -> AssetV2:
+def get_asset_v2_pd(asset_id: int) -> Asset:
     """
     Get a single asset.
     Returns a pydantic object.
     """
     asset_dict = get_asset_v2(asset_id=asset_id)
-    return AssetV2(**asset_dict["asset"])
+    return Asset(**asset_dict["asset"])
 
 
 @_basic_retry

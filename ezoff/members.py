@@ -506,7 +506,7 @@ def get_teams() -> list[dict]:
 
 
 @Decorators.check_env_vars
-def get_members_v2_pd(filter: dict | None = None) -> dict[int, MemberV2]:
+def get_members_v2_pd(filter: dict | None = None) -> dict[int, Member]:
     """
     Get filtered work orders.
     Returns dictionary of pydantic objects keyed by work order id.
@@ -516,7 +516,7 @@ def get_members_v2_pd(filter: dict | None = None) -> dict[int, MemberV2]:
 
     for member in member_dict:
         try:
-            members[member["id"]] = MemberV2(**member)
+            members[member["id"]] = Member(**member)
 
         except Exception as e:
             print(str(e))
@@ -590,14 +590,14 @@ def get_members_v2(filter: dict | None = None) -> list[dict]:
 
 
 @Decorators.check_env_vars
-def get_member_v2_pd(member_id: int) -> MemberV2:
+def get_member_v2_pd(member_id: int) -> Member:
     """
     Get a single member.
     Returns a pydantic object.
     """
     mem_dict = get_member_v2(member_id=member_id)
 
-    return MemberV2(**mem_dict["member"])
+    return Member(**mem_dict["member"])
 
 
 @_basic_retry
