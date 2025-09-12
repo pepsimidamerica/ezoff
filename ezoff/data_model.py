@@ -98,11 +98,16 @@ class Asset(BaseModel):
                             )
 
 
+class ChecklistLineItem(BaseModel):
+    title: str
+    type: str
+
+
 class Checklist(BaseModel):
     id: int
     name: str
     created_by_id: int
-    line_items: list
+    line_items: list[ChecklistLineItem]
 
 
 class Component(BaseModel):

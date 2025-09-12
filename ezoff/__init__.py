@@ -28,7 +28,7 @@ from .assets import (
     update_asset_v2,
     verification_request,
 )
-from .checklists import get_checklists_v2, get_checklists_v2_pd
+from .checklists import checklists_return, get_checklists_v2_pd
 from .data_model import (
     Asset,
     Checklist,

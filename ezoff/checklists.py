@@ -2,86 +2,69 @@
 This module contains functions to interact with the checklist v2 API in EZOfficeInventory.
 """
 
+import logging
 import os
-from pprint import pprint
+import time
 
 import requests
 from ezoff._auth import Decorators
 from ezoff._helpers import _fetch_page
 from ezoff.data_model import Checklist
-from ezoff.exceptions import ChecklistNotFound, NoDataReturned
+from ezoff.exceptions import NoDataReturned
+
+logger = logging.getLogger(__name__)
 
 
 @Decorators.check_env_vars
-def get_checklists_v2_pd() -> dict[str, Checklist]:
+def checklists_return() -> list[Checklist]:
     """
-    Get all checklists from EZ Office V2 API Call.
-    Returns dictionary of pydantic objects keyed by checklist id.
-    """
-    checklist_dict = get_checklists_v2()
-    checklists = {}
-
-    for c in checklist_dict:
-        checklist = checklist_dict[c]
-        try:
-            checklists[checklist["id"]] = Checklist(**checklist)
-
-        except Exception as e:
-            print(str(e))
-            pprint(checklist)
-
-    return checklists
-
-
-@Decorators.check_env_vars
-def get_checklists_v2() -> dict:
-    """
-    Get all checklists from EZ Office. V2 API Call.
-
-    https://pepsimidamerica.ezofficeinventory.com/api/v2/checklists?page=1&per_page=100
+    Returns all checklists.
     """
 
-    url = os.environ["EZO_BASE_URL"] + "/api/v2/checklists"
+    url = (
+        f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/checklists"
+    )
 
-    page = 1
-    per_page = 100
-    all_checklists = {}
+    all_checklists = []
 
     while True:
-        params = {"page": page, "per_page": per_page}
-
         try:
             response = _fetch_page(
                 url,
                 headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-                params=params,
             )
             response.raise_for_status()
 
         except requests.exceptions.HTTPError as e:
-            raise ChecklistNotFound(
-                f"Error, could not get checklists: {e.response.status_code} - {e.response.content}"
+            logger.error(
+                f"Error getting checklists: {e.response.status_code} - {e.response.content}"
             )
-
+            raise Exception(
+                f"Error getting checklists: {e.response.status_code} - {e.response.content}"
+            )
+        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+            raise
         except requests.exceptions.RequestException as e:
-            raise ChecklistNotFound(f"Error, could not get checklists: {e}")
+            logger.error(f"Error getting checklists: {e}")
+            raise Exception(f"Error getting checklists: {e}")
 
         data = response.json()
 
         if "checklists" not in data:
             raise NoDataReturned(f"No checklists found: {response.content}")
 
-        for checklist in data["checklists"]:
-            all_checklists[checklist["id"]] = checklist
+        all_checklists.extend(data["checklists"])
 
-        metadata = data["metadata"]
-
-        if "total_pages" not in metadata:
+        if (
+            "metadata" not in data
+            or "next_page" not in data["metadata"]
+            or data["metadata"]["next_page"] is None
+        ):
             break
 
-        if page >= metadata["total_pages"]:
-            break
+        # Get the next page's url from the current page of data.
+        url = data["metadata"]["next_page"]
 
-        page += 1
+        time.sleep(1)
 
-    return all_checklists
+    return [Checklist(**x) for x in all_checklists]
