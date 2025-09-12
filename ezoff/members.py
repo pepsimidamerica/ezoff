@@ -9,7 +9,7 @@ import time
 import requests
 from ezoff._auth import Decorators
 from ezoff._helpers import _basic_retry, _fetch_page
-from ezoff.data_model import CustomRole, Member, MemberCreate, Team
+from ezoff.data_model import CustomRole, Member, MemberCreate, Team, UserListing
 from ezoff.exceptions import NoDataReturned
 
 logger = logging.getLogger(__name__)
@@ -462,3 +462,52 @@ def teams_return() -> list[Team]:
         time.sleep(1)
 
     return [Team(**x) for x in all_teams]
+
+
+@Decorators.check_env_vars
+def user_listings_return() -> list[UserListing]:
+    """
+    Returns all user listings.
+    Note: This API endpoint is documented, but I only ever get a 403 when
+    trying to use it. Even though obviously using the API key.
+    """
+
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/user_listings"
+
+    all_user_listings = []
+
+    while True:
+        try:
+            response = _fetch_page(
+                url,
+                headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+            )
+        except requests.exceptions.HTTPError as e:
+            logger.error(
+                f"Error, getting user listings: {e.response.status_code} - {e.response.content}"
+            )
+            raise
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error getting user listings: {e}")
+            raise
+
+        data = response.json()
+
+        if "user_listings" not in data:
+            raise NoDataReturned(f"No user_listings found: {response.content}")
+
+        all_user_listings.extend(data["user_listings"])
+
+        if (
+            "metadata" not in data
+            or "next_page" not in data["metadata"]
+            or data["metadata"]["next_page"] is None
+        ):
+            break
+
+        # Get the next page's url from the current page of data.
+        url = data["metadata"]["next_page"]
+
+        time.sleep(1)
+
+    return [UserListing(**x) for x in all_user_listings]

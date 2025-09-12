@@ -282,6 +282,15 @@ class CustomRole(BaseModel):
     location_ids: list[int] | None
 
 
+class UserListing(BaseModel):
+    id: int
+    name: str
+    default: bool
+    include_sub_locations: bool
+    created_at: datetime
+    updated_at: datetime
+
+
 class WorkOrder(BaseModel):
     approver_id: Optional[int] = Field(default=None)
     assigned_to_id: Optional[int] = Field(default=None)
