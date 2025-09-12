@@ -3,7 +3,7 @@ Module contains any pydantic models used throughout the package.
 """
 
 from datetime import date, datetime
-from typing import Any, List, Optional
+from typing import Any, List, Literal, Optional
 
 from ezoff.enums import AssetClass, CustomFieldID, LocationClass, ResourceType
 from pydantic import BaseModel, Field
@@ -400,3 +400,25 @@ class Team(BaseModel):
     identification_number: str
     documents_count: int
     comments_count: int
+
+
+class Project(BaseModel):
+    id: int
+    name: str
+    description: str | None
+    created_by_id: int
+    state: str
+    documents_count: int
+    comments_count: int
+    identifier: str
+    linked_modules: list[
+        Literal[
+            "items",
+            "checkouts",
+            "reservations",
+            "purchase_orders",
+            "work_orders",
+            "carts",
+            "locations",
+        ]
+    ]

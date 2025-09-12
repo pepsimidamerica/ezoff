@@ -36,9 +36,9 @@ def group_create(
     Creates a group.
     """
 
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/groups"
-
     params = {k: v for k, v in locals().items() if v is not None}
+
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/groups"
 
     try:
         response = requests.post(
@@ -47,7 +47,7 @@ def group_create(
                 "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
                 "Accept": "application/json",
             },
-            data=params,
+            data={"group": params},
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -252,9 +252,9 @@ def subgroup_create(
     Creates a subgroup.
     """
 
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/groups/{parent_id}/sub_groups"
-
     params = {k: v for k, v in locals().items() if v is not None}
+
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/groups/{parent_id}/sub_groups"
 
     try:
         response = requests.post(

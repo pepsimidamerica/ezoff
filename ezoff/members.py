@@ -43,9 +43,9 @@ def member_create(
     Create a new member.
     """
 
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/members"
-
     params = {k: v for k, v in locals().items() if v is not None}
+
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/members"
 
     try:
         response = requests.post(

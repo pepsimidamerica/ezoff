@@ -42,11 +42,11 @@ def location_create(
     Creates a new location.
     """
 
+    params = {k: v for k, v in locals().items() if v is not None}
+
     url = (
         f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/locations"
     )
-
-    params = {k: v for k, v in locals().items() if v is not None}
 
     try:
         response = requests.post(
