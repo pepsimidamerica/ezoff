@@ -44,6 +44,6 @@ from .inventory import *
 from .locations import *
 from .members import *
 from .projects import *
-from .workorders import *
+from .work_orders import *
 
 __all__ = []

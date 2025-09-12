@@ -203,15 +203,16 @@ class Member(BaseModel):
     department: Optional[str] = Field(default=None)
     description: Optional[str] = Field(default=None)
     documents_count: Optional[int] = Field(default=None)
-    email: Optional[str] = Field(default=None)
+    email: str
     employee_id: Optional[str] = Field(default=None)
     employee_identification_number: Optional[str] = Field(default=None)
     fax: Optional[str] = Field(default=None)
-    full_name: Optional[str] = Field(default=None)
+    first_name: str
     hourly_rate: Optional[float] = Field(default=None)
     id: int
     inactive_by_id: Optional[int] = Field(default=None)
     jira_account_id: Optional[str] = Field(default=None)
+    last_name: str
     last_sync_date: Optional[datetime] = Field(default=None)
     last_sync_source: Optional[str] = Field(default=None)
     manager_id: Optional[int] = Field(default=None)
@@ -220,7 +221,7 @@ class Member(BaseModel):
     password_changed_at: Optional[datetime] = Field(default=None)
     payment_term_id: Optional[int] = Field(default=None)
     phone_number: Optional[str] = Field(default=None)
-    role_id: Optional[int] = Field(default=None)
+    role_id: int
     salesforce_id: Optional[int] = Field(default=None)
     secure_code: Optional[str] = Field(default=None)
     services_count: Optional[int] = Field(default=None)
@@ -230,13 +231,55 @@ class Member(BaseModel):
     status: int
     stock_asset_current_checkout_view: Optional[bool] = Field(default=None)
     subscribed_to_emails: Optional[bool] = Field(default=None)
-    team_id: Optional[int] = Field(default=None)
+    team_ids: list[int] | None
     time_zone: Optional[str] = Field(default=None)
     unseen_app_updates_count: Optional[int] = Field(default=None)
     unsubscribed_by_id: Optional[int] = Field(default=None)
     updated_at: Optional[datetime] = Field(default=None)
     user_listing_id: Optional[int] = Field(default=None)
     zendesk_account_id: Optional[int] = Field(default=None)
+
+
+class MemberCreate(BaseModel):
+    """
+    A model representing the data required to create a new member.
+    """
+
+    first_name: str | None = None
+    last_name: str
+    role_id: int
+    email: str
+    employee_identification_number: str | None = None
+    team_ids: list[int] | None = None
+    user_listing_id: int | None = None
+    login_enabled: bool | None = None
+    subscribed_to_emails: bool | None = None
+    skip_confirmation_email: bool | None = None
+    address_name: str | None = None
+    address: str | None = None
+    address_line_2: str | None = None
+    city: str | None = None
+    state: str | None = None
+    zip_code: str | None = None
+    country: str | None = None
+    fax: str | None = None
+    phone_number: str | None = None
+    image_url: str | None = None
+    custom_fields: list[dict] | None = None
+
+
+class CustomRole(BaseModel):
+    id: int
+    name: str
+    description: str
+    created_by_id: int
+    base_role_id: int
+    visibility: str
+    users_visibility: str
+    system_generated: bool
+    group_ids: list[int] | None
+    team_ids: list[int] | None
+    location_ids: list[int] | None
 
 
 class WorkOrder(BaseModel):
@@ -303,12 +346,13 @@ class WorkOrder(BaseModel):
 
     def model_post_init(self, __context: Any) -> None:
         # Parse custom fields.
-        for field in self.custom_fields:
-            # Assign Depot and Depot ID
-            if "id" in field and field["id"] == CustomFieldID.DEPOT.value:
-                if field["value"] is not None:
-                    self.depot = field["value"]
-                    self.depot_id = int(field["value"][:2])
+        if self.custom_fields:
+            for field in self.custom_fields:
+                # Assign Depot and Depot ID
+                if "id" in field and field["id"] == CustomFieldID.DEPOT.value:
+                    if field["value"] is not None:
+                        self.depot = field["value"]
+                        self.depot_id = int(field["value"][:2])
 
 
 class DepreciationRate(BaseModel):
@@ -346,3 +390,13 @@ class Group(BaseModel):
     depreciation_rates: list[DepreciationRate]
     parent_id: int | None
     group_id: int | None
+
+
+class Team(BaseModel):
+    id: int
+    name: str
+    description: str
+    parent_id: int | None
+    identification_number: str
+    documents_count: int
+    comments_count: int

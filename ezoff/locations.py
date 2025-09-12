@@ -16,61 +16,62 @@ logger = logging.getLogger(__name__)
 
 
 @Decorators.check_env_vars
-def location_create(location: dict) -> dict:
+def location_create(
+    name: str,
+    city: str | None = None,
+    status: str | None = None,
+    street1: str | None = None,
+    street2: str | None = None,
+    state: str | None = None,
+    zip_code: str | None = None,
+    description: str | None = None,
+    parent_id: int | None = None,
+    latitude: int | None = None,
+    longitude: int | None = None,
+    country: str | None = None,
+    identification_number: str | None = None,
+    manual_coordinates_provided: bool | None = None,
+    checkout_indefinitely: bool | None = None,
+    default_return_duration: int | None = None,
+    default_return_deuration_unit: str | None = None,
+    default_return_time: str | None = None,
+    apply_default_return_date_to_child_locations: bool | None = None,
+    custom_fields: list[dict] | None = None,
+) -> Location | None:
     """
-    Create a location
-    https://ezo.io/ezofficeinventory/developers/#api-create-location
+    Creates a new location.
     """
 
-    # Required fields
-    if "location[name]" not in location:
-        raise ValueError("location must have 'location[name]' key")
+    url = (
+        f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/locations"
+    )
 
-    # Remove any keys that are not valid
-    valid_keys = [
-        "location[parent_id]",
-        "location[identification_number]",
-        "location[name]",
-        "location[city]",
-        "location[state]",
-        "location[zipcode]",
-        "location[street1]",
-        "location[street2]",
-        "location[status]",
-        "location[description]",
-    ]
-
-    location = {
-        k: v
-        for k, v in location.items()
-        if k in valid_keys or k.startswith("location[custom_attributes]")
-    }
-
-    if "location[status]" in location:
-        if location["location[status]"] not in ["active", "inactive"]:
-            raise ValueError(
-                "location['location[status]'] must be one of 'active', 'inactive'"
-            )
-
-    url = os.environ["EZO_BASE_URL"] + "locations.api"
+    params = {k: v for k, v in locals().items() if v is not None}
 
     try:
         response = requests.post(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            data=location,
+            data={"location": params},
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         logger.error(
-            f"Error, could not create location: {e.response.status_code} - {e.response.content}"
+            f"Error creating location: {e.response.status_code} - {e.response.content}"
         )
+        raise Exception(
+            f"Error creating location: {e.response.status_code} - {e.response.content}"
+        )
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
         raise
     except requests.exceptions.RequestException as e:
-        logger.error(f"Error, could not create location: {e}")
-        raise
+        logger.error(f"Error creating location: {e}")
+        raise Exception(f"Error creating location: {e}")
 
-    return response.json()
+    if response.status_code == 200 and "location" in response.json():
+        return Location(**response.json()["location"])
+    else:
+        return None
 
 
 @_basic_retry

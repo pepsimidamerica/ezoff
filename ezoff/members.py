@@ -2,630 +2,128 @@
 This module contains functions for interacting with members/roles/user setup in EZOfficeInventory
 """
 
-import json
 import logging
 import os
 import time
-from datetime import datetime
 
 import requests
 from ezoff._auth import Decorators
 from ezoff._helpers import _basic_retry, _fetch_page
-from ezoff.data_model import Member
-from ezoff.exceptions import MemberNotFound, NoDataReturned
+from ezoff.data_model import CustomRole, Member, MemberCreate, Team
+from ezoff.exceptions import NoDataReturned
 
 logger = logging.getLogger(__name__)
 
 
 @Decorators.check_env_vars
-def get_members(filter: dict | None = None) -> list[dict]:
+def member_create(
+    first_name: str | None,
+    last_name: str,
+    role_id: int,
+    email: str,
+    employee_identification_number: str | None,
+    team_ids: list[int] | None,
+    user_listing_id: int | None,
+    login_enabled: bool | None,
+    subscribed_to_emails: bool | None,
+    skip_confirmation_email: bool | None,
+    address_name: str | None,
+    address: str | None,
+    address_line_2: str | None,
+    city: str | None,
+    state: str | None,
+    zip_code: str | None,
+    country: str | None,
+    fax: str | None,
+    phone_number: str | None,
+    image_url: str | None,
+    custom_fields: list[dict] | None,
+) -> Member | None:
     """
-    Get members from EZOfficeInventory
-    Optionally filter by email, employee_identification_number, or status
-    https://ezo.io/ezofficeinventory/developers/#api-retrieve-members
-    """
-
-    if filter is not None:
-        if "filter" not in filter or "filter_val" not in filter:
-            raise ValueError("filter must have 'filter' and 'filter_val' keys")
-        if filter["filter"] not in [
-            "email",
-            "employee_identification_number",
-            "status",
-        ]:
-            raise ValueError(
-                "filter['filter'] must be one of 'email', 'employee_identification_number', 'status'"
-            )
-
-    url = os.environ["EZO_BASE_URL"] + "members.api"
-
-    page = 1
-    all_members = []
-
-    while True:
-        params = {"page": page, "include_custom_fields": "true"}
-        if filter is not None:
-            params.update(filter)
-
-        try:
-            response = _fetch_page(
-                url,
-                headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-                params=params,
-            )
-            response.raise_for_status()
-        except requests.exceptions.HTTPError as e:
-            logger.error(
-                f"Error, could not get members: {e.response.status_code} - {e.response.content}"
-            )
-            raise
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error, could not get members: {e}")
-            raise
-
-        data = response.json()
-        if "members" not in data:
-            logger.error(f"Error, could not get members: {data}")
-            raise Exception(f"Error, could not get members: {response.content}")
-
-        all_members.extend(data["members"])
-
-        if "total_pages" not in data:
-            break
-
-        if page >= data["total_pages"]:
-            break
-
-        page += 1
-
-        # Potentially running into rate limiting issues with this endpoint
-        # Sleep for a second to avoid this
-        time.sleep(1)
-
-    return all_members
-
-
-@Decorators.check_env_vars
-def get_filtered_members(filter: dict) -> list[dict]:
-    """
-    Get members via filtering.
+    Create a new member.
     """
 
-    valid_keys = [
-        "filters[role][value]",
-        "filters[team][value]",
-        "filters[department][value]",
-        "filters[login][value]",
-        "filters[manager][value]",
-        "filters[location][value]",
-        "filters[active][value]",
-        "filters[inactive][value]",
-        "filters[external][value]",
-        "filters[inactive_members_with_items][value]",
-        "filters[inactive_members_with_pending_associations][value]",
-        "filters[off_boarding_due_in][value]",
-        "filters[off_boarding_overdue][value]",
-        "filters[created_during][value]",
-        "filters[creation_source][value]",
-        "filters[last_logged_in_during][value]",
-        "filters[last_sync_source][value]",
-        "filters[synced_during][value]",
-    ]
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/members"
 
-    # Remove any keys that are not valid
-    filter = {k: v for k, v in filter.items() if k in valid_keys}
-
-    # If no filter keys are provided, return all members
-    if not filter:
-        return get_members(None)
-
-    url = os.environ["EZO_BASE_URL"] + "members/filter"
-
-    page = 1
-    all_members = []
-
-    while True:
-        params = {"page": page, "include_custom_fields": "true"}
-        params.update(filter)
-
-        try:
-            response = _fetch_page(
-                url,
-                headers={
-                    "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                    "Accept": "application/json",
-                },
-                params=params,
-            )
-            response.raise_for_status()
-        except requests.exceptions.HTTPError as e:
-            logger.error(
-                f"Error, could not get members: {e.response.status_code} - {e.response.content}"
-            )
-            raise
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error, could not get members: {e}")
-            raise
-
-        data = response.json()
-
-        if "data" not in data:
-            logger.error(f"Error, could not get members: {data}")
-            raise Exception(f"Error, could not get members: {response.content}")
-
-        all_members.extend(data["data"])
-
-        if "total_pages" not in data["meta"]:
-            break
-
-        if page >= data["meta"]["total_pages"]:
-            break
-
-        page += 1
-
-        # Potentially running into rate limiting issues with this endpoint
-        # Sleep for a second to avoid this
-        time.sleep(1)
-
-    return all_members
-
-
-@_basic_retry
-@Decorators.check_env_vars
-def get_member_details(member_id: int) -> dict:
-    """
-    Get member from EZOfficeInventory by member_id
-    https://ezo.io/ezofficeinventory/developers/#api-member-details
-    """
-
-    url = os.environ["EZO_BASE_URL"] + "members/" + str(member_id) + ".api"
-
-    try:
-        response = requests.get(
-            url,
-            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            params={"include_custom_fields": "true"},
-            timeout=60,
-        )
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error, could not get member details: {e.response.status_code} - {e.response.content}"
-        )
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error getting member details: {e}")
-        raise
-
-    return response.json()
-
-
-@Decorators.check_env_vars
-def create_member(member: dict) -> dict:
-    """
-    Create a new member
-    https://ezo.io/ezofficeinventory/developers/#api-create-member
-    """
-
-    # Required fields
-    if "user[email]" not in member:
-        raise ValueError("member must have 'user[email]' key")
-    if "user[first_name]" not in member:
-        raise ValueError("member must have 'user[first_name]' key")
-    if "user[last_name]" not in member:
-        raise ValueError("member must have 'user[last_name]' key")
-    if "user[role_id]" not in member:
-        raise ValueError("member must have 'user[role_id]' key")
-
-    # Remove any keys that are not valid
-    valid_keys = [
-        "user[email]",
-        "user[employee_id]",
-        "user[employee_identification_number]",
-        "user[role_id]",
-        "user[team_id]",
-        "user[user_listing_id]",
-        "user[first_name]",
-        "user[last_name]",
-        "user[address_name]",
-        "user[address]",
-        "user[address_line_2]",
-        "user[city]",
-        "user[state]",
-        "user[country]",
-        "user[phone_number]",
-        "user[fax]",
-        "user[login_enabled]",
-        "user[subscribed_to_emails]",
-        "user[display_picture]",
-        "user[unsubscribed_by_id]",
-        "user[authorization_amount]",
-        "user[vendor_id]",
-        "user[time_zone]",
-        "user[hourly_rate]",
-        "user[offboarding_date]",
-        "user[location_id]",
-        "user[default_address_id]",
-        "user[description]",
-        "user[department]",
-        "skip_confirmation_email",
-    ]
-
-    # Check for custom attributes
-    member = {
-        k: v
-        for k, v in member.items()
-        if k in valid_keys or k.startswith("user[custom_attributes]")
-    }
-
-    url = os.environ["EZO_BASE_URL"] + "members.api"
+    params = {k: v for k, v in locals().items() if v is not None}
 
     try:
         response = requests.post(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            data=member,
+            data={"member": params},
             timeout=60,
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         logger.error(
-            f"Error, could not create member: {e.response.status_code} - {e.response.content}"
+            f"Error creating member: {e.response.status_code} - {e.response.content}"
         )
+        raise Exception(
+            f"Error creating member: {e.response.status_code} - {e.response.content}"
+        )
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
         raise
     except requests.exceptions.RequestException as e:
         logger.error(f"Error creating member: {e}")
-        raise
+        raise Exception(f"Error creating member: {e}")
 
-    return response.json()
-
-
-@Decorators.check_env_vars
-def update_member(member_id: int, member: dict) -> dict:
-    """
-    Update a member
-    Note: If updating a customer that has an email, you should include the email
-    in the member dict. If you don't, it will get removed for some reason. Not sure
-    why as I'm using patch. So presumably should only be touching the keys that
-    are specified.
-    https://ezo.io/ezofficeinventory/developers/#api-update-member
-    """
-
-    # Remove any keys that are not valid
-    valid_keys = [
-        "user[email]",
-        "user[employee_id]",
-        "user[employee_identification_number]",
-        "user[role_id]",
-        "user[team_id]",
-        "user[user_listing_id]",
-        "user[first_name]",
-        "user[last_name]",
-        "user[address_name]",
-        "user[address]",
-        "user[address_line_2]",
-        "user[city]",
-        "user[state]",
-        "user[country]",
-        "user[phone_number]",
-        "user[fax]",
-        "user[login_enabled]",
-        "user[subscribed_to_emails]",
-        "user[display_picture]",
-        "user[unsubscribed_by_id]",
-        "user[authorization_amount]",
-        "user[vendor_id]",
-        "user[time_zone]",
-        "user[hourly_rate]",
-        "user[offboarding_date]",
-        "user[location_id]",
-        "user[default_address_id]",
-        "user[description]",
-        "user[department]",
-        "skip_confirmation_email",
-    ]
-
-    # Check for custom attributes
-    member = {
-        k: v
-        for k, v in member.items()
-        if k in valid_keys or k.startswith("user[custom_attributes]")
-    }
-
-    url = os.environ["EZO_BASE_URL"] + "members/" + str(member_id) + ".api"
-
-    try:
-        response = requests.patch(
-            url,
-            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            data=member,
-            timeout=60,
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error, could not update member: {e.response.status_code} - {e.response.content}"
-        )
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error updating member: {e}")
-        raise
-
-    return response.json()
-
-
-@Decorators.check_env_vars
-def deactivate_member(member_id: int) -> dict:
-    """
-    Deactivate a member
-    https://ezo.io/ezofficeinventory/developers/#api-deactivate-user
-    """
-
-    url = os.environ["EZO_BASE_URL"] + "members/" + str(member_id) + "/deactivate.api"
-
-    try:
-        response = requests.put(
-            url,
-            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            timeout=60,
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error, could not deactivate member: {e.response.status_code} - {e.response.content}"
-        )
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error deactivating member: {e}")
-        raise
-
-    return response.json()
-
-
-@Decorators.check_env_vars
-def activate_member(member_id: int) -> dict:
-    """
-    Activate a member
-    https://ezo.io/ezofficeinventory/developers/#api-activate-user
-    """
-
-    url = os.environ["EZO_BASE_URL"] + "members/" + str(member_id) + "/activate.api"
-
-    try:
-        response = requests.put(
-            url,
-            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            timeout=60,
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error, could not activate member: {e.response.status_code} - {e.response.content}"
-        )
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error activating member: {e}")
-        raise
-
-    return response.json()
-
-
-@Decorators.check_env_vars
-def get_custom_roles() -> list[dict]:
-    """
-    Get list of custom roles
-    Results are technically paginated but the number of custom roles
-    is usually small enough that it can be returned in one page.
-    https://ezo.io/ezofficeinventory/developers/#api-retrieve-roles
-    """
-
-    url = os.environ["EZO_BASE_URL"] + "custom_roles.api"
-
-    pages = 1
-    all_custom_roles = []
-
-    while True:
-        try:
-            response = _fetch_page(
-                url,
-                headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-                params={"page": pages},
-            )
-        except requests.exceptions.HTTPError as e:
-            logger.error(
-                f"Error, could not update member: {e.response.status_code} - {e.response.content}"
-            )
-            raise
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error updating member: {e}")
-            raise
-
-        data = response.json()
-
-        if "custom_roles" not in data:
-            logger.error(f"Error, could not get custom roles: {data}")
-            raise Exception(f"Error, could not get custom roles: {response.content}")
-
-        all_custom_roles.extend(data["custom_roles"])
-
-        if "total_pages" not in data:
-            break
-
-        if pages >= data["total_pages"]:
-            break
-
-        pages += 1
-
-    return all_custom_roles
-
-
-@Decorators.check_env_vars
-def get_teams() -> list[dict]:
-    """
-    Get teams
-    https://ezo.io/ezofficeinventory/developers/#api-retrieve-teams
-    """
-
-    url = os.environ["EZO_BASE_URL"] + "teams.api"
-
-    page = 1
-    all_teams = []
-
-    while True:
-        try:
-            response = _fetch_page(
-                url,
-                headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-                params={"page": page},
-            )
-        except requests.exceptions.HTTPError as e:
-            logger.error(
-                f"Error, could not get teams: {e.response.status_code} - {e.response.content}"
-            )
-            raise
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error getting teams: {e}")
-            raise
-
-        data = response.json()
-
-        if "teams" not in data:
-            logger.error(f"Error, could not get teams: {data}")
-            raise Exception(f"Error, could not get teams: {response.content}")
-
-        all_teams.extend(data["teams"])
-
-        if "total_pages" not in data:
-            break
-
-        if page >= data["total_pages"]:
-            break
-
-        page += 1
-
-    return all_teams
-
-
-@Decorators.check_env_vars
-def get_members_v2_pd(filter: dict | None = None) -> dict[int, Member]:
-    """
-    Get filtered work orders.
-    Returns dictionary of pydantic objects keyed by work order id.
-    """
-    member_dict = get_members_v2(filter=filter)
-    members = {}
-
-    for member in member_dict:
-        try:
-            members[member["id"]] = Member(**member)
-
-        except Exception as e:
-            print(str(e))
-            print(member)
-
-    return members
-
-
-@_basic_retry
-@Decorators.check_env_vars
-def get_members_v2(filter: dict | None = None) -> list[dict]:
-    """
-    Get filtered members.
-    """
-
-    if filter:
-        payload = json.dumps(filter)
+    if response.status_code == 200:
+        return Member(**response.json()["member"])
     else:
-        payload = None
-
-    url = os.environ["EZO_BASE_URL"] + "api/v2/members"
-    page = 1
-    per_page = 100
-    members = []
-
-    while True:
-        params = {"page": page, "per_page": per_page}
-
-        headers = {
-            "Accept": "application/json",
-            "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-            "Cache-Control": "no-cache",
-            "Host": "pepsimidamerica.ezofficeinventory.com",
-            "Accept-Encoding": "gzip, deflate, br",
-            "Connection": "keep-alive",
-            "Content-Type": "application/json",
-        }
-
-        try:
-            response = _fetch_page(
-                url,
-                headers=headers,
-                params=params,
-                data=payload,
-            )
-            response.raise_for_status()
-
-        except requests.exceptions.HTTPError as e:
-            raise MemberNotFound(
-                f"Error, could not get members: {e.response.status_code} - {e.response.content}"
-            )
-        except requests.exceptions.RequestException as e:
-            raise MemberNotFound(f"Error, could not get members: {e}")
-
-        data = response.json()
-
-        if "members" not in data:
-            raise NoDataReturned(f"No members found: {response.content}")
-
-        members = members + data["members"]
-
-        if "metadata" not in data or "total_pages" not in data["metadata"]:
-            break
-
-        if page >= data["metadata"]["total_pages"]:
-            break
-
-        page += 1
-
-    return members
+        return None
 
 
 @Decorators.check_env_vars
-def get_member_v2_pd(member_id: int) -> Member:
+def members_create(members: list[MemberCreate]) -> list[Member] | None:
     """
-    Get a single member.
-    Returns a pydantic object.
+    Creates new members in bulk.
     """
-    mem_dict = get_member_v2(member_id=member_id)
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/members/bulk_create"
 
-    return Member(**mem_dict["member"])
+    try:
+        response = requests.post(
+            url,
+            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+            data={
+                "members": [member.model_dump(exclude_none=True) for member in members]
+            },
+            timeout=60,
+        )
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        logger.error(
+            f"Error creating members: {e.response.status_code} - {e.response.content}"
+        )
+        raise Exception(
+            f"Error creating members: {e.response.status_code} - {e.response.content}"
+        )
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+        raise
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error creating member: {e}")
+        raise Exception(f"Error creating member: {e}")
+
+    if response.status_code == 200:
+        return [Member(**x) for x in response.json()["members"]]
+    else:
+        return None
 
 
 @_basic_retry
 @Decorators.check_env_vars
-def get_member_v2(member_id: int) -> dict:
+def member_return(member_id: int) -> Member | None:
     """
-    Get a single member.
-    Returns a pydantic object.
+    Returns a particular member.
     """
 
-    # 'API User' is invalid in the member API. Hardcode response for API User's member id.
-    if member_id == 238602:
-        return {
-            "member": {
-                "id": 238602,
-                "status": 1,
-                "created_at": datetime.now(),
-                "full_name": "API User",
-                "email": "clambert@pepsimidamerica.com",
-            }
-        }
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/members/{member_id}"
 
-    url = os.environ["EZO_BASE_URL"] + f"api/v2/members/{member_id}"
     headers = {
         "Accept": "application/json",
         "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
         "Cache-Control": "no-cache",
-        "Host": "pepsimidamerica.ezofficeinventory.com",
+        "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
         "Accept-Encoding": "gzip, deflate, br",
         "Connection": "keep-alive",
     }
@@ -638,10 +136,329 @@ def get_member_v2(member_id: int) -> dict:
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
-        raise MemberNotFound(
-            f"Error, could not get member details: {e.response.status_code} - {e.response.content}"
+        logger.error(
+            f"Error getting member: {e.response.status_code} - {e.response.content}"
         )
+        raise Exception(
+            f"Error getting member: {e.response.status_code} - {e.response.content}"
+        )
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+        raise
     except requests.exceptions.RequestException as e:
-        raise MemberNotFound(f"Error, could not get member details: {e}")
+        logger.error(f"Error getting member: {e}")
+        raise Exception(f"Error getting member: {e}")
 
-    return response.json()
+    if response.status_code == 200:
+        return Member(**response.json()["member"])
+    else:
+        return None
+
+
+@_basic_retry
+@Decorators.check_env_vars
+def members_return(filter: dict | None = None) -> list[Member]:
+    """
+    Returns all members. Optionally, filter by
+    """
+
+    if filter:
+        for field in filter:
+            if field not in Member.model_fields:
+                raise ValueError(f"'{field}' is not a valid field for a member.")
+            filter = {"filters": filter}
+    else:
+        filter = None
+
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/members"
+
+    all_members = []
+
+    while True:
+        try:
+            response = _fetch_page(
+                url,
+                headers={
+                    "Accept": "application/json",
+                    "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
+                    "Cache-Control": "no-cache",
+                    "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
+                    "Accept-Encoding": "gzip, deflate, br",
+                    "Connection": "keep-alive",
+                    "Content-Type": "application/json",
+                },
+                data=filter,
+            )
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            logger.error(
+                f"Error getting members: {e.response.status_code} - {e.response.content}"
+            )
+            raise Exception(
+                f"Error creating members: {e.response.status_code} - {e.response.content}"
+            )
+        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+            raise
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error getting member: {e}")
+            raise Exception(f"Error getting member: {e}")
+
+        data = response.json()
+
+        if "members" not in data:
+            raise NoDataReturned(f"No members found: {response.content}")
+
+        all_members.extend(data["members"])
+
+        if (
+            "metadata" not in data
+            or "next_page" not in data["metadata"]
+            or data["metadata"]["next_page"] is None
+        ):
+            break
+
+        # Get the next page's url from the current page of data.
+        url = data["metadata"]["next_page"]
+
+        time.sleep(1)
+
+    return [Member(**x) for x in all_members]
+
+
+@Decorators.check_env_vars
+def member_update(member_id: int, update_data: dict) -> Member | None:
+    """
+    Updates a particular member.
+    """
+
+    for field in update_data:
+        if field not in Member.model_fields:
+            raise ValueError(f"'{field}' is not a valid field for a member.")
+
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/members/{member_id}"
+
+    try:
+        response = requests.patch(
+            url,
+            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+            data={"member": update_data},
+            timeout=60,
+        )
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        logger.error(
+            f"Error updating members: {e.response.status_code} - {e.response.content}"
+        )
+        raise Exception(
+            f"Error updating members: {e.response.status_code} - {e.response.content}"
+        )
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+        raise
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error updating member: {e}")
+        raise Exception(f"Error updating member: {e}")
+
+    if response.status_code == 200:
+        return Member(**response.json()["member"])
+    else:
+        return None
+
+
+@Decorators.check_env_vars
+def member_activate(member_id: int) -> Member | None:
+    """
+    Activates a particular member.
+    """
+
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/members/{member_id}/activate"
+
+    try:
+        response = requests.put(
+            url,
+            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+            timeout=60,
+        )
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        logger.error(
+            f"Error activating member: {e.response.status_code} - {e.response.content}"
+        )
+        raise Exception(
+            f"Error activating member: {e.response.status_code} - {e.response.content}"
+        )
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+        raise
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error activating member: {e}")
+        raise Exception(f"Error activating member: {e}")
+
+    if response.status_code == 200:
+        return Member(**response.json()["member"])
+    else:
+        return None
+
+
+@Decorators.check_env_vars
+def member_deactivate(member_id: int) -> Member | None:
+    """
+    Deactivates a particular member.
+    """
+
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/members/{member_id}/deactivate"
+
+    try:
+        response = requests.put(
+            url,
+            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+            timeout=60,
+        )
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        logger.error(
+            f"Error deactivating member: {e.response.status_code} - {e.response.content}"
+        )
+        raise Exception(
+            f"Error deactivating member: {e.response.status_code} - {e.response.content}"
+        )
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+        raise
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error deactivating member: {e}")
+        raise Exception(f"Error deactivating member: {e}")
+
+    if response.status_code == 200:
+        return Member(**response.json()["member"])
+    else:
+        return None
+
+
+@Decorators.check_env_vars
+def custom_roles_return() -> list[CustomRole]:
+    """
+    Get all custom roles
+    """
+
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/custom_roles"
+
+    all_custom_roles = []
+
+    while True:
+        try:
+            response = _fetch_page(
+                url,
+                headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+            )
+        except requests.exceptions.HTTPError as e:
+            logger.error(
+                f"Error, could not get custom roles: {e.response.status_code} - {e.response.content}"
+            )
+            raise
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error getting custom roles: {e}")
+            raise
+
+        data = response.json()
+
+        if "custom_roles" not in data:
+            raise NoDataReturned(f"No custom roles found: {response.content}")
+
+        all_custom_roles.extend(data["custom_roles"])
+
+        if (
+            "metadata" not in data
+            or "next_page" not in data["metadata"]
+            or data["metadata"]["next_page"] is None
+        ):
+            break
+
+        # Get the next page's url from the current page of data.
+        url = data["metadata"]["next_page"]
+
+        time.sleep(1)
+
+    return [CustomRole(**x) for x in all_custom_roles]
+
+
+@Decorators.check_env_vars
+def custom_role_update(custom_role_id: int, update_data) -> CustomRole | None:
+    """
+    Updates a particular custom role.
+    """
+
+    for field in update_data:
+        if field not in CustomRole.model_fields:
+            raise ValueError(f"'{field}' is not a valid field for a custom role.")
+
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/custom_roles/{custom_role_id}"
+
+    try:
+        response = requests.patch(
+            url,
+            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+            data={"custom_role": update_data},
+            timeout=60,
+        )
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        logger.error(
+            f"Error updating custom role: {e.response.status_code} - {e.response.content}"
+        )
+        raise Exception(
+            f"Error updating custom role: {e.response.status_code} - {e.response.content}"
+        )
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+        raise
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error updating custom role: {e}")
+        raise Exception(f"Error updating custom role: {e}")
+
+    if response.status_code == 200:
+        return CustomRole(**response.json()["custom_role"])
+    else:
+        return None
+
+
+@Decorators.check_env_vars
+def teams_return() -> list[Team]:
+    """
+    Get all teams
+    """
+
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/teams"
+
+    all_teams = []
+
+    while True:
+        try:
+            response = _fetch_page(
+                url,
+                headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+            )
+        except requests.exceptions.HTTPError as e:
+            logger.error(
+                f"Error, getting teams: {e.response.status_code} - {e.response.content}"
+            )
+            raise
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error getting teams: {e}")
+            raise
+
+        data = response.json()
+
+        if "teams" not in data:
+            raise NoDataReturned(f"No teams found: {response.content}")
+
+        all_teams.extend(data["teams"])
+
+        if (
+            "metadata" not in data
+            or "next_page" not in data["metadata"]
+            or data["metadata"]["next_page"] is None
+        ):
+            break
+
+        # Get the next page's url from the current page of data.
+        url = data["metadata"]["next_page"]
+
+        time.sleep(1)
+
+    return [Team(**x) for x in all_teams]

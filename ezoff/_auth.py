@@ -7,7 +7,6 @@ import os
 
 
 class Decorators:
-
     @staticmethod
     def check_env_vars(decorated):
         """
@@ -18,8 +17,8 @@ class Decorators:
             """
             Wrapper function
             """
-            if "EZO_BASE_URL" not in os.environ:
-                raise Exception("EZO_BASE_URL not found in environment variables.")
+            if "EZO_SUBDOMAIN" not in os.environ:
+                raise Exception("EZO_SUBDOMAIN not found in environment variables.")
             if "EZO_TOKEN" not in os.environ:
                 raise Exception("EZO_TOKEN not found in environment variables.")
             return decorated(*args, **kwargs)
