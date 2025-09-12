@@ -446,3 +446,6 @@ def subgroup_delete(group_id: int, subgroup_id: int) -> ResponseMessages | None:
         return ResponseMessages(**response.json()["messages"])
     else:
         return None
+
+
+# TODO Add group depreciation rates
