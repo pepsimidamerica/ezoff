@@ -9,223 +9,143 @@ import time
 import requests
 from ezoff._auth import Decorators
 from ezoff._helpers import _basic_retry, _fetch_page
+from ezoff.data_model import Inventory
 
 logger = logging.getLogger(__name__)
 
 
 @Decorators.check_env_vars
-def get_all_inventories() -> list[dict]:
+def inventory_create(inv_asset_num: int, order: dict) -> Inventory | None:
     """
-    Gets all inventory assets. Recommended to use the filtered endpoint instead
-    as this one will take a long time to run.
-    https://ezo.io/ezofficeinventory/developers/#api-retrieve-inventories
+    Creates an inventory item
     """
-
-    url = os.environ["EZO_BASE_URL"] + "inventory.api"
-
-    page = 1
-    all_inventories = []
-
-    while True:
-        params = {"page": page}
-
-        try:
-            response = _fetch_page(
-                url,
-                headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-                params=params,
-                data={
-                    "include_custom_fields": "true",
-                    "show_document_urls": "true",
-                    "show_image_urls": "true",
-                    "show_document_details": "true",
-                },
-            )
-            response.raise_for_status()
-        except requests.exceptions.HTTPError as e:
-            logger.error(
-                f"Error, could not get inventory details: {e.response.status_code} - {e.response.content}"
-            )
-            raise
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error getting inventories: {e}")
-            raise
-
-        data = response.json()
-
-        if "assets" not in data:
-            break
-
-        all_inventories.extend(data["assets"])
-
-        if "total_pages" not in data:
-            break
-
-        if page >= data["total_pages"]:
-            break
-
-        page += 1
-
-        # Potentially running into rate limiting issues with this endpoint
-        # Sleep for a second to avoid this
-        time.sleep(1)
-
-    return all_inventories
-
-
-# @Decorators.check_env_vars
-# def get_filtered_inventories(filter: dict):
-#     """
-#     Gets inventory assets that match the given filters
-#     https://ezo.io/ezofficeinventory/developers/#api-volatile-asset-filters
-#     """
-
-#     url = os.environ["EZO_BASE_URL"] + "inventory/filter.api"
+    pass
 
 
 @_basic_retry
 @Decorators.check_env_vars
-def get_inventory_details(inv_asset_num: int) -> dict:
+def inventory_return(inv_asset_num: int) -> Inventory | None:
     """
-    Get details for an inventory asset (sometimes referred to in API as a volatile asset)
-    https://ezo.io/ezofficeinventory/developers/#api-volatile-details
+    Get details for an inventory item.
     """
-
-    url = os.environ["EZO_BASE_URL"] + f"inventory/{inv_asset_num}.api"
-
-    try:
-        response = requests.get(
-            url,
-            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            data={
-                "include_custom_fields": "true",
-                "show_document_urls": "true",
-                "show_image_urls": "true",
-                "show_document_details": "true",
-            },
-            timeout=60,
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error, could not get inventory details: {e.response.status_code} - {e.response.content}"
-        )
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error getting inventory details: {e}")
-        raise
-
-    return response.json()
+    pass
 
 
 @Decorators.check_env_vars
-def create_inventory_order(inv_asset_num: int, order: dict) -> dict:
+def inventories_return() -> list[Inventory]:
     """
-    Creates an inventory order (i.e. Add Stock or New Sale)
+    Returns all inventory items.
     """
-    url = os.environ["EZO_BASE_URL"] + f"inventory/{inv_asset_num}/order.api"
-
-    # Check required fields
-    if "line_item[quantity]" not in order:
-        raise Exception("Quantity is required for an order")
-    if "line_item[price]" not in order:
-        raise Exception("Price is required for an order")
-    if "order_type" not in order:
-        raise Exception("Order type is required for an order")
-
-    # Remove any keys that are not valid
-    valid_keys = ["line_item[quantity]", "line_item[price]", "order_type"]
-
-    order = {
-        k: v
-        for k, v in order.items()
-        if k in valid_keys
-        or k.startswith("add_stock_values[c_attr_vals]")
-        or k.startswith("remove_stock_values[c_attr_vals]")
-    }
-
-    try:
-        response = requests.post(
-            url,
-            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            data=order,
-            timeout=60,
-        )
-        response.raise_for_status()
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error creating inventory order: {e}")
-        raise Exception(f"Error creating inventory order: {e}")
-
-    return response.json()
-
-
-# @Decorators.check_env_vars
-# def transfer_inventory(inv_asset_num: int, transfer: dict) -> dict:
-#     """
-#     Transfers inventory asset amount from one location to another.
-#     Called "transfer stock" in the documentation, I'm just calling it
-#     transfer inventory for consistency.
-#     https://ezo.io/ezofficeinventory/developers/#api-transfer-stock
-#     """
-
-#     url = os.environ["EZO_BASE_URL"] + f"inventory/{inv_asset_num}/transfer_stock.api"
+    pass
 
 
 @Decorators.check_env_vars
-def get_inventory_history(inv_asset_num: int) -> list[dict]:
+def inventory_add_stock(inventory_id: int):
     """
-    Gets history of an inventory asset
-    https://ezo.io/ezofficeinventory/developers/#api-inventory-history
+    Adds stock to inventory item.
     """
-
-    url = os.environ["EZO_BASE_URL"] + f"inventory/{inv_asset_num}/history.api"
-
-    page = 1
-    all_history = []
-
-    while True:
-        params = {"page": page}
-
-        try:
-            response = requests.get(
-                url,
-                headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-                params=params,
-                timeout=60,
-            )
-            response.raise_for_status()
-        except requests.exceptions.HTTPError as e:
-            logger.error(
-                f"Error, could not get inventory history: {e.response.status_code} - {e.response.content}"
-            )
-            raise
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error getting inventory history: {e}")
-            raise
-
-        data = response.json()
-
-        if "history" not in data:
-            break
-
-        all_history.extend(data["history"])
-
-        if "total_pages" not in data:
-            break
-
-        if page >= data["total_pages"]:
-            break
-
-        page += 1
-
-        # Potentially running into rate limiting issues with this endpoint
-        # Sleep for a second to avoid this
-        time.sleep(1)
-
-    return all_history
+    pass
 
 
-# TODO Create Inventory Asset
-# TODO Update Inventory Asset
-# TODO Delete Inventory Asset
-# TODO Get Location Based Thresholds
+@Decorators.check_env_vars
+def inventory_remove_stock(inventory_id: int):
+    """
+    Removes stock of inventory item.
+    """
+    pass
+
+
+@Decorators.check_env_vars
+def inventory_transfer_stock(inventory_id: int):
+    """
+    Transfers inventory item amount from one location to another.
+    """
+    pass
+
+
+@Decorators.check_env_vars
+def inventory_retire(inventory_id: int):
+    """
+    ()
+    """
+    pass
+
+
+@Decorators.check_env_vars
+def inventory_activate(inventory_id: int):
+    """
+    ()
+    """
+    pass
+
+
+@Decorators.check_env_vars
+def inventory_delete(inventory_id: int):
+    """
+    Deletes an inventory item.
+    """
+    pass
+
+
+@Decorators.check_env_vars
+def inventory_quantity_by_location_return():
+    """
+    ()
+    """
+    pass
+
+
+@Decorators.check_env_vars
+def inventory_line_item_locations_return():
+    """
+    ()
+    """
+    pass
+
+
+@Decorators.check_env_vars
+def inventory_custom_field_history_return():
+    """
+    ()
+    """
+    pass
+
+
+@Decorators.check_env_vars
+def inventory_location_based_threshold_return():
+    """
+    ()
+    """
+    pass
+
+
+@Decorators.check_env_vars
+def inventory_history_return(inventory_id: int) -> list[dict]:
+    """
+    Gets stock history of an inventory item.
+    """
+    pass
+
+
+@Decorators.check_env_vars
+def inventory_reservations_return():
+    """
+    ()
+    """
+    pass
+
+
+@Decorators.check_env_vars
+def inventory_link_to_project():
+    """
+    ()
+    """
+    pass
+
+
+@Decorators.check_env_vars
+def inventory_unlink_from_project():
+    """
+    ()
+    """
+    pass

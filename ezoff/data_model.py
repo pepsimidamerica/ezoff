@@ -98,6 +98,28 @@ class Asset(BaseModel):
                             )
 
 
+class Inventory(BaseModel):
+    name: str
+    group_id: int
+    location_id: int
+    display_image: str
+    identifier: str
+    description: str
+    product_model_number: str
+    cost_price: float
+    vendor_id: int
+    salvage_value: float
+    sub_group_id: int | None
+    inventory_threshold: int
+    default_low_location_threshold: int
+    default_excess_location_threshold: int
+    initial_stock_quantity: int
+    line_items_attributes: list
+    location_thresholds_attributes: list
+    asset_detail_attributes: dict
+    custom_fields: list
+
+
 class ChecklistLineItem(BaseModel):
     title: str
     type: str
