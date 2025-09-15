@@ -465,7 +465,7 @@ def asset_checkout(
         logger.error(f"Error checking out asset: {e}")
         raise Exception(f"Error checking out asset: {e}")
 
-    if response.status_code == 200:
+    if response.status_code == 200 and "messages" in response.json():
         return ResponseMessages(**response.json()["messages"])
     else:
         return None
@@ -596,13 +596,12 @@ def verification_request(asset_id: int) -> dict:
 
 @_basic_retry
 @Decorators.check_env_vars
-def delete_asset(asset_id: int) -> dict:
+def asset_delete(asset_id: int) -> ResponseMessages | None:
     """
-    Delete an asset
-    https://ezo.io/ezofficeinventory/developers/#api-delete-asset
+    Delete a particular asset.
     """
 
-    url = os.environ["EZO_BASE_URL"] + "assets/" + str(asset_id) + ".api"
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/assets/{asset_id}"
 
     try:
         response = requests.delete(
@@ -613,14 +612,21 @@ def delete_asset(asset_id: int) -> dict:
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         logger.error(
-            f"Error, could not delete asset: {e.response.status_code} - {e.response.content}"
+            f"Error deleting asset: {e.response.status_code} - {e.response.content}"
         )
+        raise Exception(
+            f"Error deleting asset: {e.response.status_code} - {e.response.content}"
+        )
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
         raise
     except requests.exceptions.RequestException as e:
-        logger.error(f"Error, could not delete asset: {e}")
-        raise
+        logger.error(f"Error deleting asset: {e}")
+        raise Exception(f"Error deleting asset: {e}")
 
-    return response.json()
+    if response.status_code == 200 and "messages" in response.json():
+        return ResponseMessages(**response.json()["messages"])
+    else:
+        return None
 
 
 # TODO Add bulk operations
