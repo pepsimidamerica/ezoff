@@ -44,8 +44,4 @@ Project is split up into several files depending on what area of the EZOffice AP
 
 ## Notes
 
-The official EZOffice documentation is mistaken on custom fields (insofar as how to fill them out when creating an object or updating the custom field on an already existing object). It says to put underscores in place of spaces in the field name, but this is incorrect. After testing the API, it appears it wants the actual name of the field with the spaces, not underscores. At least on members.
-
-Similarly, the documentation isn't exhaustive when it comes to listing the valid fields when creating or updating something. Frequently there are fields on the actual page that aren't mentioned in the EZOffice documentation. Throughout this program I check that keys provided are valid to prevent the API call from potentially erroring out. So there may be times where a key that would be valid if passed to the API is provided, but the function does not allow it. This is because the key wasn't documented. Just have to add to list of valid key whenever we run into one.
-
 When wanting to clear a field out of its current value with an update function, generally the empty string ("") should be used.

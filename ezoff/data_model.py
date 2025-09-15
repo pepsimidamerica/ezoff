@@ -453,3 +453,98 @@ class Project(BaseModel):
             "locations",
         ]
     ]
+
+
+class CustomFieldHistoryItem(BaseModel):
+    id: int
+    value: str | None
+    number_value: int | float | None
+    date_value: date | None
+    options_value: Any | None
+    date_time_value: datetime | None
+    line_item_id: int | None
+    linkable_resource_value: Any | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class StockHistoryItem(BaseModel):
+    id: int
+    quantity: int
+    price: str
+    comments: str | None
+    created_by_id: int
+    basket_id: int | None
+    is_transfer: bool
+    is_custody_transfer: bool
+    retire_reason_id: int | None
+    quantity_after_transaction: int
+    order_type: str
+    remaining_quantity: int | None
+    retire_reason: str | None
+    checked_out_to_location_id: int | None
+    checked_in_from_location_id: int | None
+    vendor_id: int | None
+    checkout_line_item_id: int | None
+    purchase_order_id: int | None
+    basket_asset_id: int | None
+    service_id: int | None
+    cost_price: str | None
+    unit_cost_price: list[dict] | None
+    task_id: int | None
+    check_out_to_asset_id: int | None
+    paired_transfer_line_item_id: int | None
+    project_id: int | None
+    original_quantity: int | None
+    signed_by_name: str | None
+    transfer_from_location_id: int | None
+    transition_to_substate_id: int | None
+    action_source: str | None
+    cost_valuation_method: str | None
+    signature_image_id: int | None
+    item_audit_id: int | None
+    linked_inventory_item_id: int | None
+    parent_id: int | None
+    agreement_document_id: int | None
+    agreement_accepted: bool | None
+    user_full_name: str | None
+    for_retiring_checked_out_stock: bool | None
+    asset_name: str | None
+    transition_from_substate_id: int | None
+    checkout_on: datetime | None
+    checkin_on: datetime | None
+    purchased_on: datetime | None
+    checkin_due_on: datetime | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class Reservation(BaseModel):
+    id: int
+    resource_id: int
+    reservable_id: int
+    reservable_type: str
+    from_date: datetime
+    note: str | None
+    status: str
+    to_date: datetime | None
+    action_taken_by_id: int
+    created_by_id: int
+    quantity: int
+    location_id: int
+    price: float | None
+    package_id: int | None
+    basket_id: int | None
+    baskets_asset_id: int | None
+    signature_image_id: int | None
+    reserved_to_location_id: int | None
+    denied_reason: str | None
+    recurring_reservation_id: int | None
+    transition_from_substate_id: int | None
+    signed_by_name: str | None
+    project_id: int | None
+    resource_type: str | None
+    creation_source: str | None
+    approved_or_denied_at: datetime | None
+    created_at: datetime | None
+    updated_at: datetime | None
