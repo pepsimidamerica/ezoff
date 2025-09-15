@@ -548,3 +548,39 @@ class Reservation(BaseModel):
     approved_or_denied_at: datetime | None
     created_at: datetime | None
     updated_at: datetime | None
+
+
+class TokenInput(BaseModel):
+    id: int
+    name: str
+
+
+class AssetHistoryItem(BaseModel):
+    id: int
+    assigned_to_id: int
+    created_by_id: int
+    is_checkout: bool | None
+    location_id: int | None
+    comments_count: int | None
+    package_id: int
+    basket_id: int | None
+    is_transfer: bool | None
+    checked_out_duration_in_seconds: int
+    rent_collected: str | None
+    signed_by_name: str | None
+    signature_image_id: str | None
+    action_source: str | None
+    past_checkout: bool
+    assigned_to_type: str
+    basket_asset_id: int | None
+    agreement_document_id: int | None
+    agreement_accepted: bool | None
+    assigned_to_name: str | None
+    assigned_asset: str | None
+    project_id: int | None
+    checkin_due_on: datetime | str | None
+    actual_checkin_on: datetime | str | None
+    checkin_on: datetime | str | None
+    checkout_on: datetime | None
+    created_at: datetime
+    updated_at: datetime

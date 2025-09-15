@@ -158,7 +158,7 @@ def member_return(member_id: int) -> Member | None:
 @Decorators.check_env_vars
 def members_return(filter: dict | None = None) -> list[Member]:
     """
-    Returns all members. Optionally, filter by
+    Returns all members. Optionally, filter by one or more member fields.
     """
 
     if filter:

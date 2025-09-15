@@ -63,7 +63,7 @@ def group_create(
         logger.error(f"Error creating group: {e}")
         raise Exception(f"Error creating group: {e}")
 
-    if response.status_code == 200:
+    if response.status_code == 200 and "group" in response.json(0):
         return Group(**response.json()["group"])
     else:
         return None
@@ -188,7 +188,7 @@ def group_update(group_id: int, update_data: dict) -> Group | None:
         logger.error(f"Error updating group: {e}")
         raise Exception(f"Error updating group: {e}")
 
-    if response.status_code == 200:
+    if response.status_code == 200 and "group" in response.json():
         return Group(**response.json()["group"])
     else:
         return None
