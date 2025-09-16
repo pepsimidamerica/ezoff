@@ -76,7 +76,7 @@ def inventory_create(
         logger.error(f"Error creating inventory: {e}")
         raise Exception(f"Error creating inventory: {e}")
 
-    if response.status_code == 200:
+    if response.status_code == 200 and "inventory" in response.json():
         return Inventory(**response.json()["inventory"])
     else:
         return None
@@ -113,7 +113,7 @@ def inventory_return(inventory_id: int) -> Inventory | None:
         logger.error(f"Error getting inventory: {e}")
         raise Exception(f"Error getting inventory: {e}")
 
-    if response.status_code == 200:
+    if response.status_code == 200 and "inventory" in response.json():
         return Inventory(**response.json()["inventory"])
     else:
         return None

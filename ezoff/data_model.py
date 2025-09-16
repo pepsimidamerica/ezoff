@@ -584,3 +584,20 @@ class AssetHistoryItem(BaseModel):
     checkout_on: datetime | None
     created_at: datetime
     updated_at: datetime
+
+
+class Bundle(BaseModel):
+    id: int
+    name: str
+    description: str | None
+    identification_number: str | None
+    location_id: int
+    documents_count: int
+    comments_count: int
+    state: str
+    enable_items_restricted_by_location: bool
+    allow_add_bundle_without_specifying_items: bool
+    created_at: datetime
+    updated_at: datetime
+    line_items: list[dict]
+    custom_fields: list[dict]
