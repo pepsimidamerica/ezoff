@@ -658,3 +658,17 @@ class RetireReason(BaseModel):
     include_in_shrinkage: bool
     created_at: datetime
     updated_at: datetime
+
+
+class Vendor(BaseModel):
+    id: int
+    name: str
+    address: str | None
+    contact_person_name: str | None
+    website: str | None
+    description: str | None
+    email: str | None
+    fax: str | None
+    phone: str | None
+    status: bool
+    custom_fields: list[dict]

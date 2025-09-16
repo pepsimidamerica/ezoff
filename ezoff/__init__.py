@@ -91,9 +91,9 @@ from .purchase_orders import (
     purchase_order_return,
     purchase_orders_return,
 )
-from .retire_reasons import *
+from .retire_reasons import retire_reasons_return
 from .stock_assets import *
-from .vendors import *
+from .vendors import vendor_create, vendor_return, vendor_update, vendors_return
 from .work_orders import *
 
 __all__ = []

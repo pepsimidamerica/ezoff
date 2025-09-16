@@ -172,7 +172,7 @@ def group_update(group_id: int, update_data: dict) -> Group | None:
                 "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
                 "Accept": "application/json",
             },
-            data=update_data,
+            data={"group": update_data},
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
