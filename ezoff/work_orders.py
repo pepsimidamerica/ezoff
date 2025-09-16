@@ -204,7 +204,7 @@ def work_order_return(work_order_id: int) -> WorkOrder | None:
 @Decorators.check_env_vars
 def work_orders_return(filter: dict | None = None) -> list[WorkOrder]:
     """
-    Get filtered work orders. Optionally filter using one or more work order fields.
+    Get all work orders. Optionally filter using one or more work order fields.
     """
 
     if filter:
@@ -302,22 +302,21 @@ def work_order_update(work_order_id: int, work_order: dict) -> dict:
     Updates a work order.
     """
 
-    headers = {
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-        "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-        "Cache-Control": "no-cache",
-        "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Connection": "keep-alive",
-        "Content-Length": "75",
-    }
-    url = f"{os.environ['EZO_BASE_URL']}api/v2/work_orders/{str(work_order_id)}/"
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}"
 
     try:
         response = requests.put(
             url,
-            headers=headers,
+            headers={
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
+                "Cache-Control": "no-cache",
+                "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
+                "Accept-Encoding": "gzip, deflate, br",
+                "Connection": "keep-alive",
+                "Content-Length": "75",
+            },
             data=json.dumps(work_order),
             timeout=60,
         )
@@ -362,12 +361,7 @@ def work_order_add_work_log(work_order_id: int, work_log: dict) -> dict:
 
     work_log = {k: v for k, v in work_log.items() if k in valid_keys}
 
-    url = (
-        os.environ["EZO_BASE_URL"]
-        + "tasks/"
-        + str(work_order_id)
-        + "/task_work_logs.api"
-    )
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/tasks/{work_order_id}/task_work_logs.api"
 
     try:
         response = requests.post(
@@ -422,12 +416,7 @@ def work_order_add_linked_inv(work_order_id: int, linked_inv: dict) -> dict:
         or (k.startswith("linked_inventory_items[") and k.endswith("][resource_type]"))
     }
 
-    url = (
-        os.environ["EZO_BASE_URL"]
-        + "tasks/"
-        + str(work_order_id)
-        + "/link_inventory.api"
-    )
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/tasks/{work_order_id}/link_inventory.api"
 
     try:
         response = requests.patch(
@@ -500,19 +489,7 @@ def work_order_add_component(work_order_id: int, components: list[Component]) ->
     Adds a component to a work order.
     """
 
-    headers = {
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-        "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-        "Cache-Control": "no-cache",
-        "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Connection": "keep-alive",
-        "Content-Length": "75",
-    }
-    url = (
-        f"{os.environ['EZO_BASE_URL']}api/v2/work_orders/{work_order_id}/add_components"
-    )
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/add_components"
     payload = {"work_order": {"components": []}}
     for component in components:
         payload["work_order"]["components"].append(component.model_dump())
@@ -520,7 +497,15 @@ def work_order_add_component(work_order_id: int, components: list[Component]) ->
     try:
         response = requests.post(
             url,
-            headers=headers,
+            headers={
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
+                "Cache-Control": "no-cache",
+                "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
+                "Accept-Encoding": "gzip, deflate, br",
+                "Connection": "keep-alive",
+            },
             data=json.dumps(payload),
             timeout=60,
         )
@@ -541,13 +526,7 @@ def work_order_mark_in_progress(work_order_id: int) -> dict:
     Start a work order
     https://ezo.io/ezofficeinventory/developers/#api-start-task
     """
-
-    url = (
-        os.environ["EZO_BASE_URL"]
-        + "tasks/"
-        + str(work_order_id)
-        + "/mark_in_progress.api"
-    )
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/tasks/{work_order_id}/mark_in_progress.api"
 
     try:
         response = requests.patch(
@@ -577,30 +556,28 @@ def work_order_mark_complete(work_order_id: int, completed_on_dttm: datetime) ->
     Completes a work order.
     """
 
-    headers = {
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-        "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-        "Cache-Control": "no-cache",
-        "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Connection": "keep-alive",
-        "Content-Length": "75",
-    }
-    url = (
-        f"{os.environ['EZO_BASE_URL']}api/v2/work_orders/{work_order_id}/mark_complete"
-    )
-    payload = {
-        "work_order": {
-            "completed_on_date": completed_on_dttm.strftime("%Y-%m-%dT%H:%M:%SZ")
-        }
-    }
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/mark_complete"
 
     try:
         response = requests.patch(
             url,
-            headers=headers,
-            data=json.dumps(payload),
+            headers={
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
+                "Cache-Control": "no-cache",
+                "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
+                "Accept-Encoding": "gzip, deflate, br",
+                "Connection": "keep-alive",
+                "Content-Length": "75",
+            },
+            data={
+                "work_order": {
+                    "completed_on_date": completed_on_dttm.strftime(
+                        "%Y-%m-%dT%H:%M:%SZ"
+                    )
+                }
+            },
             timeout=60,
         )
         response.raise_for_status()
@@ -629,19 +606,13 @@ def work_order_add_checklist(
         ChecklistLinkError: General error thrown when link checklist API call fails.
     """
 
-    url = (
-        os.environ["EZO_BASE_URL"]
-        + "tasks/"
-        + str(service_call_id)
-        + "/add_checklists.json"
-    )
-    data = {"checklist_ids": str(checklist_id), "asset_id": str(asset_id)}
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/tasks/{service_call_id}/add_checklists.json"
 
     try:
         response = requests.post(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            data=data,
+            data={"checklist_ids": str(checklist_id), "asset_id": str(asset_id)},
             timeout=60,
         )
         response.raise_for_status()
@@ -667,25 +638,21 @@ def work_order_remove_checklist(work_order_id: int, checklist_id: int) -> dict:
     """
     Removes a checklist from a work order.
     """
-
-    headers = {
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-        "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-        "Cache-Control": "no-cache",
-        "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Connection": "keep-alive",
-        "Content-Length": "75",
-    }
-    url = f"{os.environ['EZO_BASE_URL']}api/v2/work_orders/{work_order_id}/remove_checklist"
-    payload = {"work_order": {"checklist_id": checklist_id}}
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/remove_checklist"
 
     try:
         response = requests.delete(
             url,
-            headers=headers,
-            data=json.dumps(payload),
+            headers={
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
+                "Cache-Control": "no-cache",
+                "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
+                "Accept-Encoding": "gzip, deflate, br",
+                "Connection": "keep-alive",
+            },
+            data={"work_order": {"checklist_id": checklist_id}},
             timeout=60,
         )
         response.raise_for_status()

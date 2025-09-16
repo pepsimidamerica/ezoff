@@ -119,19 +119,17 @@ def member_return(member_id: int) -> Member | None:
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/members/{member_id}"
 
-    headers = {
-        "Accept": "application/json",
-        "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-        "Cache-Control": "no-cache",
-        "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Connection": "keep-alive",
-    }
-
     try:
         response = requests.get(
             url,
-            headers=headers,
+            headers={
+                "Accept": "application/json",
+                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
+                "Cache-Control": "no-cache",
+                "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
+                "Accept-Encoding": "gzip, deflate, br",
+                "Connection": "keep-alive",
+            },
             timeout=60,
         )
         response.raise_for_status()
