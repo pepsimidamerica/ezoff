@@ -648,3 +648,13 @@ class Package(BaseModel):
     asset_ids: list[int]
     description: str | None
     arbitration: str | None
+
+
+class RetireReason(BaseModel):
+    id: int
+    name: str
+    active: bool
+    system_generated: bool
+    include_in_shrinkage: bool
+    created_at: datetime
+    updated_at: datetime
