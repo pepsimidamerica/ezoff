@@ -68,7 +68,7 @@ def member_create(
         logger.error(f"Error creating member: {e}")
         raise Exception(f"Error creating member: {e}")
 
-    if response.status_code == 200:
+    if response.status_code == 200 and "member" in response.json():
         return Member(**response.json()["member"])
     else:
         return None
@@ -104,7 +104,7 @@ def members_create(members: list[MemberCreate]) -> list[Member] | None:
         logger.error(f"Error creating member: {e}")
         raise Exception(f"Error creating member: {e}")
 
-    if response.status_code == 200:
+    if response.status_code == 200 and "members" in response.json():
         return [Member(**x) for x in response.json()["members"]]
     else:
         return None
@@ -148,7 +148,7 @@ def member_return(member_id: int) -> Member | None:
         logger.error(f"Error getting member: {e}")
         raise Exception(f"Error getting member: {e}")
 
-    if response.status_code == 200:
+    if response.status_code == 200 and "member" in response.json():
         return Member(**response.json()["member"])
     else:
         return None
@@ -257,7 +257,7 @@ def member_update(member_id: int, update_data: dict) -> Member | None:
         logger.error(f"Error updating member: {e}")
         raise Exception(f"Error updating member: {e}")
 
-    if response.status_code == 200:
+    if response.status_code == 200 and "member" in response.json():
         return Member(**response.json()["member"])
     else:
         return None
@@ -291,7 +291,7 @@ def member_activate(member_id: int) -> Member | None:
         logger.error(f"Error activating member: {e}")
         raise Exception(f"Error activating member: {e}")
 
-    if response.status_code == 200:
+    if response.status_code == 200 and "member" in response.json():
         return Member(**response.json()["member"])
     else:
         return None
@@ -325,7 +325,7 @@ def member_deactivate(member_id: int) -> Member | None:
         logger.error(f"Error deactivating member: {e}")
         raise Exception(f"Error deactivating member: {e}")
 
-    if response.status_code == 200:
+    if response.status_code == 200 and "member" in response.json():
         return Member(**response.json()["member"])
     else:
         return None
@@ -411,7 +411,7 @@ def custom_role_update(custom_role_id: int, update_data) -> CustomRole | None:
         logger.error(f"Error updating custom role: {e}")
         raise Exception(f"Error updating custom role: {e}")
 
-    if response.status_code == 200:
+    if response.status_code == 200 and "custom_role" in response.json():
         return CustomRole(**response.json()["custom_role"])
     else:
         return None

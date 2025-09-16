@@ -66,7 +66,7 @@ def project_create(
         logger.error(f"Error creating project: {e}")
         raise Exception(f"Error creating project: {e}")
 
-    if response.status_code == 200:
+    if response.status_code == 200 and "project" in response.json():
         return Project(**response.json()["project"])
     else:
         return None
@@ -102,7 +102,7 @@ def project_return(project_id: int) -> Project | None:
         logger.error(f"Error getting project: {e}")
         raise Exception(f"Error getting project: {e}")
 
-    if response.status_code == 200:
+    if response.status_code == 200 and "project" in response.json():
         return Project(**response.json()["project"])
     else:
         return None
@@ -195,7 +195,7 @@ def project_mark_complete(project_id: int) -> Project | None:
         logger.error(f"Error marking project complete: {e}")
         raise Exception(f"Error marking project complete: {e}")
 
-    if response.status_code == 200:
+    if response.status_code == 200 and "project" in response.json():
         return Project(**response.json()["project"])
     else:
         return None
@@ -231,7 +231,7 @@ def project_mark_in_progress(project_id: int) -> Project | None:
         logger.error(f"Error marking project in progress: {e}")
         raise Exception(f"Error marking project in progress: {e}")
 
-    if response.status_code == 200:
+    if response.status_code == 200 and "project" in response.json():
         return Project(**response.json()["project"])
     else:
         return None

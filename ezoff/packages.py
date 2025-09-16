@@ -174,7 +174,7 @@ def package_checkin(
         logger.error(f"Error checking in asset: {e}")
         raise Exception(f"Error checking in asset: {e}")
 
-    if response.status_code == 200:
+    if response.status_code == 200 and "messages" in response.json():
         return ResponseMessages(**response.json()["messages"])
     else:
         return None

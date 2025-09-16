@@ -224,7 +224,7 @@ def group_delete(group_id: int) -> ResponseMessages | None:
         logger.error(f"Error creating group: {e}")
         raise Exception(f"Error creating group: {e}")
 
-    if response.status_code == 200:
+    if response.status_code == 200 and "messages" in response.json():
         return ResponseMessages(**response.json()["messages"])
     else:
         return None
@@ -279,7 +279,7 @@ def subgroup_create(
         logger.error(f"Error creating subgroup: {e}")
         raise Exception(f"Error creating subgroup: {e}")
 
-    if response.status_code == 200:
+    if response.status_code == 200 and "sub_group" in response.json():
         return Group(**response.json()["sub_group"])
     else:
         return None
@@ -316,7 +316,7 @@ def subgroup_return(group_id: int, subgroup_id: int) -> Group | None:
         logger.error(f"Error getting subgroup: {e}")
         raise Exception(f"Error getting subgroup: {e}")
 
-    if response.status_code == 200:
+    if response.status_code == 200 and "sub_group" in response.json():
         return Group(**response.json()["sub_group"])
     else:
         return None
@@ -406,7 +406,7 @@ def subgroup_update(group_id: int, subgroup_id: int, update_data: dict) -> Group
         logger.error(f"Error updating subgroup: {e}")
         raise Exception(f"Error updating subgroup: {e}")
 
-    if response.status_code == 200:
+    if response.status_code == 200 and "sub_group" in response.json():
         return Group(**response.json()["sub_group"])
     else:
         return None
@@ -442,7 +442,7 @@ def subgroup_delete(group_id: int, subgroup_id: int) -> ResponseMessages | None:
         logger.error(f"Error deleting subgroup: {e}")
         raise Exception(f"Error deleting subgroup: {e}")
 
-    if response.status_code == 200:
+    if response.status_code == 200 and "messages" in response.json():
         return ResponseMessages(**response.json()["messages"])
     else:
         return None

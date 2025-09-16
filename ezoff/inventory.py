@@ -271,7 +271,7 @@ def inventory_add_stock(
         logger.error(f"Error adding stock: {e}")
         raise Exception(f"Error adding stock: {e}")
 
-    if response.status_code == 200:
+    if response.status_code == 200 and "inventory" in response.json():
         return Inventory(**response.json()["inventory"])
     else:
         return None
@@ -323,7 +323,7 @@ def inventory_remove_stock(
         logger.error(f"Error removing stock: {e}")
         raise Exception(f"Error removing stock: {e}")
 
-    if response.status_code == 200:
+    if response.status_code == 200 and "inventory" in response.json():
         return Inventory(**response.json()["inventory"])
     else:
         return None
@@ -360,7 +360,7 @@ def inventory_update_location(inventory_id: int, location_id: int) -> Inventory 
         logger.error(f"Error updating location: {e}")
         raise Exception(f"Error updating location: {e}")
 
-    if response.status_code == 200:
+    if response.status_code == 200 and "inventory" in response.json():
         return Inventory(**response.json()["inventory"])
     else:
         return None
@@ -408,7 +408,7 @@ def inventory_transfer_stock(
         logger.error(f"Error transferring stock: {e}")
         raise Exception(f"Error transferring stock: {e}")
 
-    if response.status_code == 200:
+    if response.status_code == 200 and "inventory" in response.json():
         return Inventory(**response.json()["inventory"])
     else:
         return None
@@ -452,7 +452,7 @@ def inventory_retire(
         logger.error(f"Error retiring: {e}")
         raise Exception(f"Error retiring: {e}")
 
-    if response.status_code == 200:
+    if response.status_code == 200 and "inventory" in response.json():
         return Inventory(**response.json()["inventory"])
     else:
         return None
@@ -488,7 +488,7 @@ def inventory_activate(inventory_id: int):
         logger.error(f"Error activating: {e}")
         raise Exception(f"Error activating: {e}")
 
-    if response.status_code == 200:
+    if response.status_code == 200 and "inventory" in response.json():
         return Inventory(**response.json()["inventory"])
     else:
         return None
@@ -522,7 +522,7 @@ def inventory_delete(inventory_id: int):
         logger.error(f"Error deleting: {e}")
         raise Exception(f"Error deleting: {e}")
 
-    if response.status_code == 200:
+    if response.status_code == 200 and "inventory" in response.json():
         return Inventory(**response.json()["inventory"])
     else:
         return None
@@ -765,7 +765,7 @@ def inventory_link_to_project(
         logger.error(f"Error linking to project: {e}")
         raise Exception(f"Error linking to project: {e}")
 
-    if response.status_code == 200:
+    if response.status_code == 200 and "messages" in response.json():
         return ResponseMessages(**response.json()["messages"])
     else:
         return None
@@ -801,7 +801,7 @@ def inventory_unlink_from_project(project_id: int, inventory_ids: list[int]):
         logger.error(f"Error unlinking from project: {e}")
         raise Exception(f"Error unlinking from project: {e}")
 
-    if response.status_code == 200:
+    if response.status_code == 200 and "messages" in response.json(0):
         return ResponseMessages(**response.json()["messages"])
     else:
         return None
