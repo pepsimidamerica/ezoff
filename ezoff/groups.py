@@ -99,7 +99,7 @@ def group_return(group_id: int) -> Group | None:
         logger.error(f"Error getting group: {e}")
         raise Exception(f"Error getting group: {e}")
 
-    if response.status_code == 200:
+    if response.status_code == 200 and "group" in response.json():
         return Group(**response.json()["group"])
     else:
         return None

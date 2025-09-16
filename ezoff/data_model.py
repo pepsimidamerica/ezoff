@@ -672,3 +672,57 @@ class Vendor(BaseModel):
     phone: str | None
     status: bool
     custom_fields: list[dict]
+
+
+class StockAsset(BaseModel):
+    name: str
+    description: str | None
+    cost_price: str | None
+    identifier: str | None
+    audit_pending: bool
+    product_model_number: str | None
+    documents_count: int
+    pending_verification: bool
+    comments_count: int
+    state: str | None
+    salvage_value: str | None
+    vendor_id: int
+    group_id: int
+    bulk_import_id: int
+    location_id: int
+    depreciation_calculation_required: bool
+    package_id: int
+    purchase_order_id: int
+    retire_comments: str | None
+    retire_reason_id: int | None
+    sub_group_id: int | None
+    arbitration: int | None
+    last_history_id: int | None
+    retired_by_id: int | None
+    item_audit_id: int | None
+    sub_checked_out_to_id: int | None
+    last_assigned_to_id: int | None
+    manufacturer: str | None
+    sunshine_id: int | None
+    latest_contract_id: int | None
+    custom_substate_id: int | None
+    id: int
+    display_image: str | None
+    primary_user: str | None
+    created_at: datetime | None
+    updated_at: datetime | None
+    checkin_due_on: datetime | None
+    retired_on: datetime | None
+    checkout_on: datetime | None
+    purchased_on: datetime | None
+    last_checked_out_at: datetime | None
+    last_checked_in_at: datetime | None
+    synced_with_jira_at: datetime | None
+    custom_fields: list[dict]
+    net_quantity: int | None
+    available_quantity: int | None
+    inventory_threshold: int | None
+    location_based_threshold: int | None
+    initial_stock_quantity: int | None
+    default_excess_location_threshold: int | None
+    average_cost_per_unit: str | None

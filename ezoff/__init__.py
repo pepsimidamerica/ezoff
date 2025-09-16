@@ -92,7 +92,13 @@ from .purchase_orders import (
     purchase_orders_return,
 )
 from .retire_reasons import retire_reasons_return
-from .stock_assets import *
+from .stock_assets import (
+    stock_asset_create,
+    stock_asset_delete,
+    stock_asset_return,
+    stock_assets_return,
+    stock_assets_search,
+)
 from .vendors import vendor_create, vendor_return, vendor_update, vendors_return
 from .work_orders import *
 
