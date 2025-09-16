@@ -640,3 +640,11 @@ class PurchaseOrder(BaseModel):
     delivery_date: datetime
     custom_fields: list[dict]
     line_items: list[dict]
+
+
+class Package(BaseModel):
+    package_id: int
+    name: str
+    asset_ids: list[int]
+    description: str | None
+    arbitration: str | None
