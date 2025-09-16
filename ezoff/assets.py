@@ -560,36 +560,42 @@ def asset_activate(asset_id: int, location_id: int | None = None) -> Asset | Non
 
 @_basic_retry
 @Decorators.check_env_vars
-def verification_request(asset_id: int) -> dict:
+def asset_verification_request(asset_id: int, note: str) -> dict:
     """
-    Creates a verification request for a single asset.
-    https://ezo.io/ezofficeinventory/developers/#api-verification
-
-    Args:
-        asset_id (int): The asset ID to verify.
-
-    Raises:
-        AssetNotFound: Asset ID was not found in EZ-Office.
+    Creates a verification request for a particular asset.
     """
 
-    url = (
-        os.environ["EZO_BASE_URL"]
-        + "assets/"
-        + str(asset_id)
-        + "/verification_requests.api"
-    )
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/assets/{asset_id}/audits.json"
 
     try:
         response = requests.post(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             timeout=60,
+            # Not entirely sure on correct request body. Endpoint not documented in EZO v2
+            # API, so just copying what I'm seeing in the browser's network tools when doing a verification request
+            data={
+                "asset_id": asset_id,
+                "custom_substate_id": "",
+                "audit": {
+                    "custom_required": "1",
+                    "custom_note": note,
+                },
+            },
         )
         response.raise_for_status()
-
-    except (requests.exceptions.HTTPError, requests.exceptions.RequestException) as e:
-        logger.error(f"Error, could not create verification request: {e}")
-        raise AssetNotFound(asset_id=str(asset_id))
+    except requests.exceptions.HTTPError as e:
+        logger.error(
+            f"Error sending audit request: {e.response.status_code} - {e.response.content}"
+        )
+        raise Exception(
+            f"Error sending audit request: {e.response.status_code} - {e.response.content}"
+        )
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+        raise
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error sending audit request: {e}")
+        raise Exception(f"Error sending audit request: {e}")
 
     return response.json()
 

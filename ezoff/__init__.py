@@ -6,7 +6,21 @@ API v1: https://ezo.io/ezofficeinventory/developers/
 API v2: https://www.ezofficeinventory.com/api-docs/index.html
 """
 
-from .assets import *
+from .assets import (
+    asset_activate,
+    asset_checkin,
+    asset_checkout,
+    asset_create,
+    asset_delete,
+    asset_history_return,
+    asset_retire,
+    asset_return,
+    asset_update,
+    asset_verification_request,
+    assets_return,
+    assets_search,
+    assets_token_input_return,
+)
 from .bundle import *
 from .checklists import checklists_return
 from .data_model import *
