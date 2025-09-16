@@ -1,11 +1,16 @@
 """
 This module contains functions to interact with work orders in EZOfficeInventory.
+
+Note: API will inconsistently use a 'tasks' or 'work_orders' key when returning
+info from these endpoints. Each endpoint just needs to be checked which.
 """
 
 import json
 import logging
 import os
+import time
 from datetime import datetime
+from typing import Literal
 
 import requests
 from ezoff._auth import Decorators
@@ -13,7 +18,6 @@ from ezoff._helpers import _basic_retry, _fetch_page
 from ezoff.data_model import Component, WorkOrder
 from ezoff.exceptions import (
     ChecklistLinkError,
-    NoDataReturned,
     WorkOrderNotFound,
     WorkOrderUpdateError,
 )
@@ -22,62 +26,206 @@ logger = logging.getLogger(__name__)
 
 
 @Decorators.check_env_vars
-def get_work_orders(filter: dict | None = None) -> dict:
+def work_order_create(
+    title: str,
+    state: Literal["request"],
+    priority: Literal["High", "Medium", "Low"],
+    description: str | None = None,
+    created_by_id: int | None = None,
+    work_type_name: str | None = None,
+    mark_items_unavailable: bool = False,
+    warranty: bool = False,
+    supervisor_id: int | None = None,
+    assigned_to_id: int | None = None,
+    assigned_to_type: str | None = None,
+    secondary_assignee_ids: list[int] | None = None,
+    reviewer_id: int | None = None,
+    require_approval_from_reviewer: bool = False,
+    location_id: int | None = None,
+    expected_start_date: datetime | None = None,
+    due_date: datetime | None = None,
+    repetition: bool | None = None,
+    repetition_start_date: datetime | None = None,
+    repetition_end_date: datetime | None = None,
+    repeat_every_duration: str | None = None,
+    repeat_every_basis: int | None = None,
+    recurrence_based_on_completion: bool | None = None,
+    recurrence_based_on_interval: bool | None = None,
+    custom_fields: list[dict] | None = None,
+) -> WorkOrder | None:
     """
-    Get filtered work orders.
-
-    Note: This endpoint is weird. It supports many more filters than the
-    documentation advertises. There is a corresponding filter for each
-    of the filter options in the EZOffice web interface.
-    https://ezo.io/ezofficeinventory/developers/#api-get-filtered-task
-
-    :param filter: A dictionary containing all fields you want to filter by and their values
+    Creates a work order.
     """
 
-    if filter is not None:
-        # Remove any keys that are not valid
-        valid_keys = [
-            "filters[assigned_to]",
-            "filters[created_by]",
-            "filters[supervisor]",
-            "filters[reviewer]",
-            "filters[created_on]",
-            "filters[state]",
-            "filters[item]",
-            "filters[priority]",
-            "filters[task_type]",
-            "filters[due_date]",
-            "filters[expected_start_date]",
-            "filters[repetition_start_date]",
-            "filters[repetition_start_date]",
-            "filters[repetition_end_date]",
-            "filters[preventative]",
-            "filters[on_repeat]",
-            "filters[task_location]",
-            # "filters[review_pending_on_me]",  # Don't know if actually useful when API is calling and not user
-            "filters[scheduled]",
-        ]
+    params = {k: v for k, v in locals().items() if v is not None}
 
-        filter = {k: v for k, v in filter.items() if k in valid_keys}
-        filter["filter"] = "filter"  # Required when using filters
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders"
 
-    url = os.environ["EZO_BASE_URL"] + "tasks.api"
+    try:
+        response = requests.post(
+            url,
+            headers={
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
+                "Cache-Control": "no-cache",
+                "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
+                "Accept-Encoding": "gzip, deflate, br",
+                "Connection": "keep-alive",
+            },
+            data={"work_order": params},
+            timeout=60,
+        )
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        logger.error(
+            f"Error creating work order: {e.response.status_code} - {e.response.content}"
+        )
+        raise Exception(
+            f"Error creating work order: {e.response.status_code} - {e.response.content}"
+        )
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+        raise
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error creating work order: {e}")
+        raise Exception(f"Error creating work order: {e}")
 
-    page = 1
-    all_work_orders = {}
+    if response.status_code == 200 and "work_order" in response.json():
+        return WorkOrder(**response.json()["work_order"])
+    else:
+        return None
+
+
+@Decorators.check_env_vars
+def service_create(asset_id: int, service: dict) -> dict:
+    """
+    Creates a service record against a given asset
+    https://ezo.io/ezofficeinventory/developers/#api-create-service
+
+    TODO Don't see this directly mentioned in the API v2 docs.
+
+    :param asset_id: The ID of the asset to create the service record against
+    :param service: A dictionary containing the service record details
+    """
+
+    # Required fields
+    if "service[end_date]" not in service:
+        raise ValueError("service must have 'service[end_date]' key")
+    if "service_end_time" not in service:
+        raise ValueError("service must have 'service_end_time' key")
+    if "service_type_name" not in service:
+        raise ValueError("service must have 'service_type_name' key")
+    if "service[description]" not in service:
+        raise ValueError("service must have 'service[description]' key")
+
+    # Remove any keys that are not valid
+    valid_keys = [
+        "service[start_date]",
+        "service_start_time",
+        "service[end_date]",
+        "service_end_time",
+        "service_type_name",
+        "service[description]",
+        "inventory_ids",
+    ]
+
+    service = {
+        k: v
+        for k, v in service.items()
+        if k in valid_keys or k.startswith("linked_inventory_items")
+    }
+
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/assets/{asset_id}/services.api"
+
+    try:
+        response = requests.post(
+            url,
+            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+            params={"create_service_ticket_only": "true"},
+            data=service,
+            timeout=60,
+        )
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        logger.error(
+            f"Error, could not create service: {e.response.status_code} - {e.response.content}"
+        )
+        raise
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error, could not create service: {e}")
+        raise
+
+    return response.json()
+
+
+@_basic_retry
+@Decorators.check_env_vars
+def work_order_return(work_order_id: int) -> WorkOrder | None:
+    """
+    Get a single work order.
+    """
+
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}"
+
+    try:
+        response = requests.get(
+            url,
+            headers={
+                "Accept": "application/json",
+                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
+                "Cache-Control": "no-cache",
+                "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
+                "Accept-Encoding": "gzip, deflate, br",
+                "Connection": "keep-alive",
+            },
+            timeout=60,
+        )
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        logger.error(
+            f"Error getting work order: {e.response.status_code} - {e.response.content}"
+        )
+        raise Exception(
+            f"Error getting work order: {e.response.status_code} - {e.response.content}"
+        )
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+        raise
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error getting work order: {e}")
+        raise Exception(f"Error getting work order: {e}")
+
+    if response.status_code == 200 and "work_order" in response.json():
+        return WorkOrder(**response.json()["work_order"])
+    else:
+        return None
+
+
+@_basic_retry
+@Decorators.check_env_vars
+def work_orders_return(filter: dict | None = None) -> list[WorkOrder]:
+    """
+    Get filtered work orders. Optionally filter using one or more work order fields.
+    """
+
+    if filter:
+        for field in filter:
+            if field not in WorkOrder.model_fields:
+                raise ValueError(f"'{field}' is not a valid field for a work order.")
+            filter = {"filters": filter}
+    else:
+        filter = None
+
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders"
+
+    all_work_orders = []
 
     while True:
-        params = {"page": page}
-        if filter is not None:
-            params.update(filter)
-
         try:
             response = _fetch_page(
                 url,
                 headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-                params=params,
+                data=filter,
             )
-            response.raise_for_status()
         except requests.exceptions.HTTPError as e:
             logger.error(
                 f"Error, could not get work orders: {e.response.status_code} - {e.response.content}"
@@ -89,58 +237,30 @@ def get_work_orders(filter: dict | None = None) -> dict:
 
         data = response.json()
 
-        if "work_orders" not in data:
+        if "tasks" not in data:
             logger.error(f"Error, could not get work orders: {response.content}")
-            raise NoDataReturned(f"No work orders found: {response.content}")
+            raise Exception(f"Error, could not get work orders: {response.content}")
 
-        all_work_orders.update(data["work_orders"])
+        all_work_orders.extend(data["tasks"])
 
-        if "total_pages" not in data:
+        if (
+            "metadata" not in data
+            or "next_page" not in data["metadata"]
+            or data["metadata"]["next_page"] is None
+        ):
             break
 
-        if page >= data["total_pages"]:
-            break
+        # Get the next page's url from the current page of data.
+        url = data["metadata"]["next_page"]
 
-        page += 1
+        time.sleep(1)
 
-    return all_work_orders
+    return [WorkOrder(**x) for x in all_work_orders]
 
 
 @_basic_retry
 @Decorators.check_env_vars
-def get_work_order_details(work_order_id: int) -> dict:
-    """
-    Get work order details
-
-    https://ezo.io/ezofficeinventory/developers/#api-retrive-task-details
-
-    :param work_order_id: ID of the work order to get details about
-    """
-
-    url = os.environ["EZO_BASE_URL"] + "tasks/" + str(work_order_id) + ".api"
-
-    try:
-        response = requests.get(
-            url,
-            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            timeout=60,
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error, could not get work order details: {e.response.status_code} - {e.response.content}"
-        )
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error, could not get work order details: {e}")
-        raise
-
-    return response.json()
-
-
-@_basic_retry
-@Decorators.check_env_vars
-def get_work_order_types() -> list[dict]:
+def work_order_types_return() -> list[dict]:
     """
     Get work order types
     Function doesn't appear to be paginated even though most other similar
@@ -148,7 +268,7 @@ def get_work_order_types() -> list[dict]:
     https://ezo.io/ezofficeinventory/developers/#api-get-task-types
     """
 
-    url = os.environ["EZO_BASE_URL"] + "task_types.api"
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/assets/task_types.api"
 
     try:
         response = requests.get(
@@ -173,155 +293,47 @@ def get_work_order_types() -> list[dict]:
     return response.json()["work_order_types"]
 
 
+# TODO Linked Work orders return
+
+
 @Decorators.check_env_vars
-def create_work_order(work_order: dict) -> dict:
+def work_order_update(work_order_id: int, work_order: dict) -> dict:
     """
-    Create a work order
-    https://ezo.io/ezofficeinventory/developers/#api-create-task
+    Updates a work order.
     """
 
-    # Required fields
-    if "task[title]" not in work_order:
-        raise ValueError("work_order must have 'task[title]' key")
-
-    if "task[task_type]" not in work_order and "task[task_type_id]" not in work_order:
-        raise ValueError(
-            "work_order must have 'task[task_type]' or 'task[task_type_id]' key"
-        )
-
-    if "due_date" not in work_order:
-        raise ValueError("work_order must have 'due_date' key")
-
-    # Also check that the date is in the correct format mm/dd/yyyy
-    try:
-        datetime.strptime(work_order["due_date"], "%m/%d/%Y")
-    except ValueError:
-        raise ValueError("work_order['due_date'] must be in the format mm/dd/yyyy")
-
-    # Remove any keys that are not valid
-    valid_keys = [
-        "task[title]",
-        "task[task_type]",
-        "task[task_type_id]",
-        "task[priority]",
-        "task[assigned_to_id]",
-        "task[reviewer_id]",
-        "task[mark_items_unavailable]",
-        "expected_start_date",
-        "expected_start_time",
-        "due_date",
-        "start_time",
-        "base_cost",
-        "inventory_ids",
-        "checklist_ids",
-        "associated_assets",
-        "custom_field_names",
-        "task[project_id]",
-        "task[location_id]",
-        "task[custom_attributes][Short Problem Description]",
-        "task[description]",
-        "task[supervisor_id]",
-    ]
-
-    work_order = {
-        k: v
-        for k, v in work_order.items()
-        if k in valid_keys
-        or k.startswith("task[custom_attributes]")
-        or k.startswith("linked_inventory_items")
-        or k.startswith("associated_checklists")
+    headers = {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
+        "Cache-Control": "no-cache",
+        "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Connection": "keep-alive",
+        "Content-Length": "75",
     }
-
-    url = os.environ["EZO_BASE_URL"] + "tasks.api"
+    url = f"{os.environ['EZO_BASE_URL']}api/v2/work_orders/{str(work_order_id)}/"
 
     try:
-        response = requests.post(
+        response = requests.put(
             url,
-            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            data=work_order,
+            headers=headers,
+            data=json.dumps(work_order),
             timeout=60,
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error, could not create work order: {e.response.status_code} - {e.response.content}"
+        raise WorkOrderNotFound(
+            f"Error, could not update work order: {e.response.status_code} - {e.response.content}"
         )
-        raise
     except requests.exceptions.RequestException as e:
-        logger.error(f"Error, could not create work order: {e}")
-        raise
+        raise WorkOrderNotFound(f"Error, could not update work order: {str(e)}")
 
     return response.json()
 
 
 @Decorators.check_env_vars
-def start_work_order(work_order_id: int) -> dict:
-    """
-    Start a work order
-    https://ezo.io/ezofficeinventory/developers/#api-start-task
-    """
-
-    url = (
-        os.environ["EZO_BASE_URL"]
-        + "tasks/"
-        + str(work_order_id)
-        + "/mark_in_progress.api"
-    )
-
-    try:
-        response = requests.patch(
-            url,
-            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            timeout=60,
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error, could not start work order: {e.response.status_code} - {e.response.content}"
-        )
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error, could not start work order: {e}")
-        raise
-
-    return response.json()
-
-
-@Decorators.check_env_vars
-def end_work_order(work_order_id: int) -> dict:
-    """
-    End a work order
-    https://ezo.io/ezofficeinventory/developers/#api-end-task
-    """
-
-    url = (
-        os.environ["EZO_BASE_URL"]
-        + "tasks/"
-        + str(work_order_id)
-        + "/mark_complete.api"
-    )
-
-    try:
-        response = requests.patch(
-            url,
-            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            timeout=60,
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error, could not end work order: {e.response.status_code} - {e.response.content}"
-        )
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error, could not end work order: {e}")
-        raise
-
-    return response.json()
-
-
-@Decorators.check_env_vars
-def add_work_log_to_work_order(work_order_id: int, work_log: dict) -> dict:
+def work_order_add_work_log(work_order_id: int, work_log: dict) -> dict:
     """
     Add a work log to a work order
     resource id and resource type vary depending on type of component
@@ -378,7 +390,7 @@ def add_work_log_to_work_order(work_order_id: int, work_log: dict) -> dict:
 
 
 @Decorators.check_env_vars
-def add_linked_inv_to_work_order(work_order_id: int, linked_inv: dict) -> dict:
+def work_order_add_linked_inv(work_order_id: int, linked_inv: dict) -> dict:
     """
     Add linked inventory items to a work order
     resource id and resource type vary depending on type of component
@@ -437,205 +449,6 @@ def add_linked_inv_to_work_order(work_order_id: int, linked_inv: dict) -> dict:
     return response.json()
 
 
-@Decorators.check_env_vars
-def get_checklists() -> list[dict]:
-    """
-    Get checklists
-    https://ezo.io/ezofficeinventory/developers/#api-retrieve-checklists
-    """
-
-    page = 1
-    all_checklists = []
-
-    while True:
-        try:
-            response = _fetch_page(
-                os.environ["EZO_BASE_URL"] + "checklists.api",
-                headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-                params={"page": page},
-            )
-            response.raise_for_status()
-        except requests.exceptions.HTTPError as e:
-            logger.error(
-                f"Error, could not get checklists: {e.response.status_code} - {e.response.content}"
-            )
-            raise
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error, could not get checklists: {e}")
-            raise
-
-        data = response.json()
-
-        if "checklists" not in data:
-            logger.error(f"Error, could not get checklists: {response.content}")
-            raise Exception(f"Error, could not get checklists: {response.content}")
-
-        all_checklists.extend(data["checklists"])
-
-        if "total_pages" not in data:
-            break
-
-        if page >= data["total_pages"]:
-            break
-
-        page += 1
-
-    return all_checklists
-
-
-@Decorators.check_env_vars
-def create_service(asset_id: int, service: dict) -> dict:
-    """
-    Creates a service record against a given asset
-    https://ezo.io/ezofficeinventory/developers/#api-create-service
-
-    :param asset_id: The ID of the asset to create the service record against
-    :param service: A dictionary containing the service record details
-    """
-
-    # Required fields
-    if "service[end_date]" not in service:
-        raise ValueError("service must have 'service[end_date]' key")
-    if "service_end_time" not in service:
-        raise ValueError("service must have 'service_end_time' key")
-    if "service_type_name" not in service:
-        raise ValueError("service must have 'service_type_name' key")
-    if "service[description]" not in service:
-        raise ValueError("service must have 'service[description]' key")
-
-    # Remove any keys that are not valid
-    valid_keys = [
-        "service[start_date]",
-        "service_start_time",
-        "service[end_date]",
-        "service_end_time",
-        "service_type_name",
-        "service[description]",
-        "inventory_ids",
-    ]
-
-    service = {
-        k: v
-        for k, v in service.items()
-        if k in valid_keys or k.startswith("linked_inventory_items")
-    }
-
-    url = os.environ["EZO_BASE_URL"] + "assets/" + str(asset_id) + "/services.api"
-
-    try:
-        response = requests.post(
-            url,
-            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            params={"create_service_ticket_only": "true"},
-            data=service,
-            timeout=60,
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error, could not create service: {e.response.status_code} - {e.response.content}"
-        )
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error, could not create service: {e}")
-        raise
-
-    return response.json()
-
-
-def add_checklist_to_work_order(
-    service_call_id: int, checklist_id: int, asset_id: int
-) -> dict:
-    """
-    Add a single checklist to an existing service call.
-
-    Args:
-        service_call_id (int): User facing ID of service call.
-        checklist_id (int): Internal ID of checklist to link with service call.
-        asset_id (int): Internal ID of asset to assign this checklist to.
-
-    Raises:
-        ChecklistLinkError: General error thrown when link checklist API call fails.
-    """
-
-    url = (
-        os.environ["EZO_BASE_URL"]
-        + "tasks/"
-        + str(service_call_id)
-        + "/add_checklists.json"
-    )
-    data = {"checklist_ids": str(checklist_id), "asset_id": str(asset_id)}
-
-    try:
-        response = requests.post(
-            url,
-            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            data=data,
-            timeout=60,
-        )
-        response.raise_for_status()
-
-    except requests.exceptions.HTTPError as e:
-        raise ChecklistLinkError(
-            f"Error, could not link checklist to service call: {e.response.status_code} - {e.response.content}"
-        )
-
-    except requests.exceptions.RequestException as e:
-        raise ChecklistLinkError(
-            f"Error, could not link checklist to service call: {e}"
-        )
-
-    return response.json()
-
-
-def update_work_order(work_order_id: int, filter: dict) -> dict:
-    """
-    Updates an existing work order.
-
-    Args:
-        work_order_id (int): User facing ID of work order.
-        filter: API call options.
-
-    Raises: WorkOrderUpdateError
-
-    """
-
-    # Remove any keys that are not valid
-    valid_keys = [
-        "task[assigned_to_id]",
-        "task[task_type_id]",
-        "due_date",
-        "start_time",
-        "expected_start_date",
-        "expected_start_time",
-        "task[supervisor_id]",
-    ]
-    filter = {k: v for k, v in filter.items() if k in valid_keys}
-
-    url = os.environ["EZO_BASE_URL"] + "tasks/" + str(work_order_id) + ".api"
-
-    try:
-        response = requests.patch(
-            url,
-            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            params=filter,
-            timeout=60,
-        )
-        response.raise_for_status()
-
-    except requests.exceptions.HTTPError as e:
-        raise WorkOrderUpdateError(
-            f"Error, could not update work order {work_order_id}: {e.response.status_code} - {e.response.content}"
-        )
-
-    except requests.exceptions.RequestException as e:
-        raise WorkOrderUpdateError(
-            f"Error, could not update work order {work_order_id}: {e}"
-        )
-
-    return response.json()
-
-
 def update_work_order_routing(
     work_order_id: int,
     assigned_to_id: str,
@@ -682,9 +495,7 @@ def update_work_order_routing(
 
 
 @Decorators.check_env_vars
-def add_work_order_component_v2(
-    work_order_id: int, components: list[Component]
-) -> dict:
+def work_order_add_component(work_order_id: int, components: list[Component]) -> dict:
     """
     Adds a component to a work order.
     """
@@ -725,7 +536,43 @@ def add_work_order_component_v2(
 
 
 @Decorators.check_env_vars
-def complete_work_order_v2(work_order_id: int, completed_on_dttm: datetime) -> dict:
+def work_order_mark_in_progress(work_order_id: int) -> dict:
+    """
+    Start a work order
+    https://ezo.io/ezofficeinventory/developers/#api-start-task
+    """
+
+    url = (
+        os.environ["EZO_BASE_URL"]
+        + "tasks/"
+        + str(work_order_id)
+        + "/mark_in_progress.api"
+    )
+
+    try:
+        response = requests.patch(
+            url,
+            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+            timeout=60,
+        )
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        logger.error(
+            f"Error, could not start work order: {e.response.status_code} - {e.response.content}"
+        )
+        raise
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error, could not start work order: {e}")
+        raise
+
+    return response.json()
+
+
+# TODO Mark on hold
+
+
+@Decorators.check_env_vars
+def work_order_mark_complete(work_order_id: int, completed_on_dttm: datetime) -> dict:
     """
     Completes a work order.
     """
@@ -767,171 +614,56 @@ def complete_work_order_v2(work_order_id: int, completed_on_dttm: datetime) -> d
     return response.json()
 
 
-@Decorators.check_env_vars
-def create_work_order_v2(work_order: dict) -> dict:
+def work_order_add_checklist(
+    service_call_id: int, checklist_id: int, asset_id: int
+) -> dict:
     """
-    Creates a work order.
+    Add a single checklist to an existing service call.
+
+    Args:
+        service_call_id (int): User facing ID of service call.
+        checklist_id (int): Internal ID of checklist to link with service call.
+        asset_id (int): Internal ID of asset to assign this checklist to.
+
+    Raises:
+        ChecklistLinkError: General error thrown when link checklist API call fails.
     """
 
-    headers = {
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-        "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-        "Cache-Control": "no-cache",
-        "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Connection": "keep-alive",
-        "Content-Length": "75",
-    }
-    url = f"{os.environ['EZO_BASE_URL']}api/v2/work_orders"
-    payload = {"work_order": work_order}
+    url = (
+        os.environ["EZO_BASE_URL"]
+        + "tasks/"
+        + str(service_call_id)
+        + "/add_checklists.json"
+    )
+    data = {"checklist_ids": str(checklist_id), "asset_id": str(asset_id)}
 
     try:
         response = requests.post(
             url,
-            headers=headers,
-            data=json.dumps(payload),
+            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+            data=data,
             timeout=60,
         )
         response.raise_for_status()
+
     except requests.exceptions.HTTPError as e:
-        raise WorkOrderUpdateError(
-            f"Error, could not create work order: {e.response.status_code} - {e.response.content}"
+        raise ChecklistLinkError(
+            f"Error, could not link checklist to service call: {e.response.status_code} - {e.response.content}"
         )
+
     except requests.exceptions.RequestException as e:
-        raise WorkOrderUpdateError(f"Error, could not create work order: {str(e)}")
+        raise ChecklistLinkError(
+            f"Error, could not link checklist to service call: {e}"
+        )
 
     return response.json()
 
 
-@Decorators.check_env_vars
-def get_work_orders_v2_pd(filter: dict | None = None) -> dict[int, WorkOrder]:
-    """
-    Get filtered work orders.
-    Returns dictionary of pydantic objects keyed by work order id.
-    """
-    wo_dict = get_work_orders_v2(filter=filter)
-    work_orders = {}
-
-    for wo in wo_dict:
-        try:
-            work_orders[wo["id"]] = WorkOrder(**wo)
-
-        except Exception as e:
-            print("Error in get_work_orders_v2_pd()")
-            print(str(e))
-
-    return work_orders
-
-
-@_basic_retry
-@Decorators.check_env_vars
-def get_work_orders_v2(filter: dict | None = None) -> list[dict]:
-    """
-    Get filtered work orders.
-    """
-
-    url = os.environ["EZO_BASE_URL"] + "api/v2/work_orders"
-    page = 1
-    all_work_orders = []
-
-    # Add the 'filter' key if it doesn't already exist in the filter dict.
-    if filter is not None and "filters" not in filter:
-        filter = {"filters": filter}
-
-    while True:
-        params = {"page": page}
-
-        headers = {
-            "Accept": "application/json",
-            "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-            "Cache-Control": "no-cache",
-            "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
-            "Accept-Encoding": "gzip, deflate, br",
-            "Connection": "keep-alive",
-            "Content-Type": "application/json",
-        }
-
-        try:
-            response = _fetch_page(
-                url,
-                headers=headers,
-                params=params,
-                data=json.dumps(filter),
-            )
-            response.raise_for_status()
-
-        except requests.exceptions.HTTPError as e:
-            raise WorkOrderNotFound(
-                f"Error, could not get work orders: {e.response.status_code} - {e.response.content}"
-            )
-        except requests.exceptions.RequestException as e:
-            raise WorkOrderNotFound(f"Error, could not get work orders: {e}")
-
-        data = response.json()
-
-        if "tasks" not in data:
-            raise NoDataReturned(f"No work orders found: {response.content}")
-
-        all_work_orders = all_work_orders + data["tasks"]
-
-        if "metadata" not in data or "total_pages" not in data["metadata"]:
-            break
-
-        if page >= data["metadata"]["total_pages"]:
-            break
-
-        page += 1
-
-    return all_work_orders
+# TODO Add checklist (/tasks/{work_order_id}/add_checklists.json Not documented for some reason)
 
 
 @Decorators.check_env_vars
-def get_work_order_v2_pd(work_order_id: int) -> WorkOrder:
-    """
-    Get a single work order.
-    Returns a pydantic object.
-    """
-    wo_dict = get_work_order_v2(work_order_id=work_order_id)
-
-    return WorkOrder(**wo_dict["work_order"])
-
-
-@_basic_retry
-@Decorators.check_env_vars
-def get_work_order_v2(work_order_id: int) -> dict:
-    """
-    Get a single work order.
-    """
-    url = os.environ["EZO_BASE_URL"] + f"api/v2/work_orders/{work_order_id}"
-    headers = {
-        "Accept": "application/json",
-        "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-        "Cache-Control": "no-cache",
-        "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Connection": "keep-alive",
-    }
-
-    try:
-        response = requests.get(
-            url,
-            headers=headers,
-            timeout=60,
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        raise WorkOrderNotFound(
-            f"Error, could not get work order details: {e.response.status_code} - {e.response.content}"
-        )
-    except requests.exceptions.RequestException as e:
-        raise WorkOrderNotFound(f"Error, could not get work order details: {e}")
-
-    return response.json()
-
-
-@Decorators.check_env_vars
-def remove_checklist_work_order_v2(work_order_id: int, checklist_id: int) -> dict:
+def work_order_remove_checklist(work_order_id: int, checklist_id: int) -> dict:
     """
     Removes a checklist from a work order.
     """
@@ -965,41 +697,5 @@ def remove_checklist_work_order_v2(work_order_id: int, checklist_id: int) -> dic
         raise WorkOrderNotFound(
             f"Error, could not remove checklist from work order: {str(e)}"
         )
-
-    return response.json()
-
-
-@Decorators.check_env_vars
-def update_work_order_v2(work_order_id: int, work_order: dict) -> dict:
-    """
-    Updates a work order.
-    """
-
-    headers = {
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-        "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-        "Cache-Control": "no-cache",
-        "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Connection": "keep-alive",
-        "Content-Length": "75",
-    }
-    url = f"{os.environ['EZO_BASE_URL']}api/v2/work_orders/{str(work_order_id)}/"
-
-    try:
-        response = requests.put(
-            url,
-            headers=headers,
-            data=json.dumps(work_order),
-            timeout=60,
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        raise WorkOrderNotFound(
-            f"Error, could not update work order: {e.response.status_code} - {e.response.content}"
-        )
-    except requests.exceptions.RequestException as e:
-        raise WorkOrderNotFound(f"Error, could not update work order: {str(e)}")
 
     return response.json()
