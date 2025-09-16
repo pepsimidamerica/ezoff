@@ -86,7 +86,11 @@ from .projects import (
     project_return,
     projects_return,
 )
-from .purchase_orders import *
+from .purchase_orders import (
+    purchase_order_create,
+    purchase_order_return,
+    purchase_orders_return,
+)
 from .retire_reasons import *
 from .stock_assets import *
 from .vendors import *

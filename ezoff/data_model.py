@@ -601,3 +601,42 @@ class Bundle(BaseModel):
     updated_at: datetime
     line_items: list[dict]
     custom_fields: list[dict]
+
+
+class PurchaseOrder(BaseModel):
+    id: int
+    description: str | None
+    title: str | None
+    identification_number: str
+    requested_by_id: int | None
+    created_by_id: int | None
+    approved_by_id: int | None
+    approver_type: str | None
+    approver_id: int | None
+    payment_terms: str | None
+    notes: str | None
+    shipment_terms: str | None
+    vendor_id: int
+    state: str | None
+    net_amount: str | None
+    payable_amount: str | None
+    paid_amount: str | None
+    documents_count: int | None
+    comments_count: int | None
+    tax_amounts: str | None
+    po_type: str | None
+    project_id: int | None
+    contract_id: int | None
+    receiving_notes: str | None
+    invoice_number: str | None
+    time_to_respond: str | None
+    currency_id: int | None
+    delivery_location_id: int | None
+    created_at: datetime | None
+    updated_at: datetime | None
+    confirmed_at: datetime | None
+    requested_on: datetime | None
+    completed_on: datetime | None
+    delivery_date: datetime
+    custom_fields: list[dict]
+    line_items: list[dict]
