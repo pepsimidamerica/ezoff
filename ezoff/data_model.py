@@ -386,6 +386,15 @@ class WorkOrder(BaseModel):
                         self.depot_id = int(field["value"][:2])
 
 
+class WorkLog(BaseModel):
+    user_id: int
+    time_spent: str | None
+    work_detail: str | None
+    associated_to_asset_id: int | None
+    started_on: datetime | None
+    ended_on: datetime | None
+
+
 class DepreciationRate(BaseModel):
     id: int
     depreciation_method_id: int
@@ -726,3 +735,18 @@ class StockAsset(BaseModel):
     initial_stock_quantity: int | None
     default_excess_location_threshold: int | None
     average_cost_per_unit: str | None
+
+
+class LinkedInventory(BaseModel):
+    inventory_id: int
+    quantity: int
+    id: int | None
+    location_id: int | None
+    work_order_id: int | None
+    asset_id: int | None
+    cost_price: str | None
+    original_quantity: int | None
+    resource_id: int | None
+    resource_type: str | None
+    created_at: datetime | None
+    updated_at: datetime | None

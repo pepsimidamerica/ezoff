@@ -2,7 +2,7 @@
 This module contains functions to interact with work orders in EZOfficeInventory.
 
 Note: API will inconsistently use a 'tasks' or 'work_orders' key when returning
-info from these endpoints. Each endpoint just needs to be checked which.
+info from these endpoints. Each endpoint just needs to be checked which it is.
 """
 
 import json
@@ -15,10 +15,15 @@ from typing import Literal
 import requests
 from ezoff._auth import Decorators
 from ezoff._helpers import _basic_retry, _fetch_page
-from ezoff.data_model import Component, WorkOrder
+from ezoff.data_model import (
+    Component,
+    LinkedInventory,
+    ResponseMessages,
+    WorkLog,
+    WorkOrder,
+)
 from ezoff.exceptions import (
     ChecklistLinkError,
-    WorkOrderNotFound,
     WorkOrderUpdateError,
 )
 
@@ -102,7 +107,7 @@ def service_create(asset_id: int, service: dict) -> dict:
     Creates a service record against a given asset
     https://ezo.io/ezofficeinventory/developers/#api-create-service
 
-    TODO Don't see this directly mentioned in the API v2 docs.
+    TODO v1
 
     :param asset_id: The ID of the asset to create the service record against
     :param service: A dictionary containing the service record details
@@ -258,11 +263,158 @@ def work_orders_return(filter: dict | None = None) -> list[WorkOrder]:
     return [WorkOrder(**x) for x in all_work_orders]
 
 
+@Decorators.check_env_vars
+def work_orders_search(search_term: str) -> list[WorkOrder]:
+    """
+    Search for work orders.
+    """
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/search"
+
+    all_work_orders = []
+
+    while True:
+        try:
+            response = _fetch_page(
+                url,
+                headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+                params={"search": search_term},
+            )
+        except requests.exceptions.HTTPError as e:
+            logger.error(
+                f"Error, could not get work orders: {e.response.status_code} - {e.response.content}"
+            )
+            raise
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error, could not get work orders: {e}")
+            raise
+
+        data = response.json()
+
+        if "work_orders" not in data:
+            logger.error(f"Error, could not get work orders: {response.content}")
+            raise Exception(f"Error, could not get work orders: {response.content}")
+
+        all_work_orders.extend(data["work_orders"])
+
+        if (
+            "metadata" not in data
+            or "next_page" not in data["metadata"]
+            or data["metadata"]["next_page"] is None
+        ):
+            break
+
+        # Get the next page's url from the current page of data.
+        url = data["metadata"]["next_page"]
+
+        time.sleep(1)
+
+    return [WorkOrder(**x) for x in all_work_orders]
+
+
+@Decorators.check_env_vars
+def work_order_linked_work_orders_return(work_order_id: int) -> list[WorkOrder]:
+    """
+    Returns work orders that are linked to a particular work order.
+    """
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/linked_work_orders"
+
+    all_work_orders = []
+
+    while True:
+        try:
+            response = _fetch_page(
+                url,
+                headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+                data=filter,
+            )
+        except requests.exceptions.HTTPError as e:
+            logger.error(
+                f"Error, could not get work orders: {e.response.status_code} - {e.response.content}"
+            )
+            raise
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error, could not get work orders: {e}")
+            raise
+
+        data = response.json()
+
+        if "tasks" not in data:
+            logger.error(f"Error, could not get work orders: {response.content}")
+            raise Exception(f"Error, could not get work orders: {response.content}")
+
+        all_work_orders.extend(data["tasks"])
+
+        if (
+            "metadata" not in data
+            or "next_page" not in data["metadata"]
+            or data["metadata"]["next_page"] is None
+        ):
+            break
+
+        # Get the next page's url from the current page of data.
+        url = data["metadata"]["next_page"]
+
+        time.sleep(1)
+
+    return [WorkOrder(**x) for x in all_work_orders]
+
+
+@Decorators.check_env_vars
+def work_order_linked_inventory_return(work_order_id: int) -> list[LinkedInventory]:
+    """
+    Returns list of inventory items linked to a particular work order.
+    """
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/linked_inventory_items"
+
+    all_inven = []
+
+    while True:
+        try:
+            response = _fetch_page(
+                url,
+                headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+                data=filter,
+            )
+        except requests.exceptions.HTTPError as e:
+            logger.error(
+                f"Error, could not get linked inventory: {e.response.status_code} - {e.response.content}"
+            )
+            raise
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error, could not get linked inventory: {e}")
+            raise
+
+        data = response.json()
+
+        if "linked_inventory_items" not in data:
+            logger.error(f"Error, could not get linked inventory: {response.content}")
+            raise Exception(
+                f"Error, could not get linked inventory: {response.content}"
+            )
+
+        all_inven.extend(data["linked_inventory_items"])
+
+        if (
+            "metadata" not in data
+            or "next_page" not in data["metadata"]
+            or data["metadata"]["next_page"] is None
+        ):
+            break
+
+        # Get the next page's url from the current page of data.
+        url = data["metadata"]["next_page"]
+
+        time.sleep(1)
+
+    return [LinkedInventory(**x) for x in all_inven]
+
+
 @_basic_retry
 @Decorators.check_env_vars
 def work_order_types_return() -> list[dict]:
     """
     Get work order types
+    TODO v1
     Function doesn't appear to be paginated even though most other similar
     functions are.
     https://ezo.io/ezofficeinventory/developers/#api-get-task-types
@@ -293,16 +445,65 @@ def work_order_types_return() -> list[dict]:
     return response.json()["work_order_types"]
 
 
-# TODO Linked Work orders return
+@Decorators.check_env_vars
+def work_order_work_logs_return(work_order_id: int) -> list[WorkLog]:
+    """
+    Returns a list of work logs attached to a particular work order.
+    """
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}"
+
+    all_logs = []
+
+    while True:
+        try:
+            response = _fetch_page(
+                url,
+                headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+                data=filter,
+            )
+        except requests.exceptions.HTTPError as e:
+            logger.error(
+                f"Error, could not get logs: {e.response.status_code} - {e.response.content}"
+            )
+            raise
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error, could not get logs: {e}")
+            raise
+
+        data = response.json()
+
+        if "work_logs" not in data:
+            logger.error(f"Error, could not get logs: {response.content}")
+            raise Exception(f"Error, could not get logs: {response.content}")
+
+        all_logs.extend(data["work_logs"])
+
+        if (
+            "metadata" not in data
+            or "next_page" not in data["metadata"]
+            or data["metadata"]["next_page"] is None
+        ):
+            break
+
+        # Get the next page's url from the current page of data.
+        url = data["metadata"]["next_page"]
+
+        time.sleep(1)
+
+    return [WorkLog(**x) for x in all_logs]
 
 
 @Decorators.check_env_vars
-def work_order_update(work_order_id: int, work_order: dict) -> dict:
+def work_order_update(work_order_id: int, update_data: dict) -> WorkOrder | None:
     """
     Updates a work order.
     """
 
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}"
+    for field in update_data:
+        if field not in WorkOrder.model_fields:
+            raise ValueError(f"'{field}' is not a valid field for a group.")
+
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/work_logs"
 
     try:
         response = requests.put(
@@ -315,127 +516,120 @@ def work_order_update(work_order_id: int, work_order: dict) -> dict:
                 "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
                 "Accept-Encoding": "gzip, deflate, br",
                 "Connection": "keep-alive",
-                "Content-Length": "75",
             },
-            data=json.dumps(work_order),
+            data={"work_order": update_data},
             timeout=60,
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
-        raise WorkOrderNotFound(
-            f"Error, could not update work order: {e.response.status_code} - {e.response.content}"
+        logger.error(
+            f"Error updating work order: {e.response.status_code} - {e.response.content}"
         )
+        raise Exception(
+            f"Error updating work order: {e.response.status_code} - {e.response.content}"
+        )
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+        raise
     except requests.exceptions.RequestException as e:
-        raise WorkOrderNotFound(f"Error, could not update work order: {str(e)}")
+        logger.error(f"Error updating work order: {e}")
+        raise Exception(f"Error updating work order: {e}")
 
-    return response.json()
+    if response.status_code == 200 and "work_order" in response.json():
+        return WorkOrder(**response.json()["work_order"])
+    else:
+        return None
 
 
 @Decorators.check_env_vars
-def work_order_add_work_log(work_order_id: int, work_log: dict) -> dict:
+def work_order_add_work_log(
+    work_order_id: int,
+    started_on_dttm: datetime,
+    ended_on_dttm: datetime,
+    hours_spent: float = 1,
+    cost_per_hour: float = 0,
+    note: str | None = None,
+    custom_attributes: dict | None = None,
+) -> dict:
     """
-    Add a work log to a work order
-    resource id and resource type vary depending on type of component
-    work log is being added against. Asset vs Group vs Member etc. Docu has a table
-    https://ezo.io/ezofficeinventory/developers/#api-add-work-log-to-task
+    Add a work log to a particular work order
     """
 
-    # Required fields
-    if "task_work_log[time_spent]" not in work_log:
-        raise ValueError("work_log must have 'task_work_log[time_spent]' key")
-    if "task_work_log[user_id]" not in work_log:
-        raise ValueError("work_log must have 'task_work_log[user_id]' key")
-
-    # Remove any keys that are not valid
-    valid_keys = [
-        "task_work_log[time_spent]",
-        "task_work_log[user_id]",
-        "task_work_log[description]",
-        "task_work_log[resource_id]",
-        "task_work_log[resource_type]",
-        "started_on_date",
-        "started_on_time",
-        "ended_on_date",
-        "ended_on_time",
-    ]
-
-    work_log = {k: v for k, v in work_log.items() if k in valid_keys}
-
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/tasks/{work_order_id}/task_work_logs.api"
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/tasks/{work_order_id}/task_work_logs.json"
 
     try:
         response = requests.post(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            data=work_log,
+            data={
+                "task_work_log": {
+                    "resource_id": 2657,  # Is misc always going to be 2657?
+                    "rate_type": "standard",
+                    "cost_per_hour": cost_per_hour,
+                    "time_spent": hours_spent,
+                    "total_cost": cost_per_hour * hours_spent,  # Is this needed?
+                    "resource_type": "MiscellaneousComponent",
+                    "description": note,
+                    "custom_attributes": custom_attributes,
+                },
+                "started_on_date": started_on_dttm.strftime("%m/%d/%Y"),
+                "started_on_time": started_on_dttm.strftime("%I:%M %p"),
+                "ended_on_date": ended_on_dttm.strftime("%m/%d/%Y"),
+                "ended_on_time": ended_on_dttm.strftime("%I:%M %p"),
+            },
             timeout=60,
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         logger.error(
-            f"Error, could not add log to work order: {e.response.status_code} - {e.response.content}"
+            f"Error adding work log: {e.response.status_code} - {e.response.content}"
         )
+        raise Exception(
+            f"Error adding work log: {e.response.status_code} - {e.response.content}"
+        )
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
         raise
     except requests.exceptions.RequestException as e:
-        logger.error(f"Error, could not add log to work order: {e}")
-        raise
+        logger.error(f"Error adding work log: {e}")
+        raise Exception(f"Error adding work log: {e}")
 
     return response.json()
 
 
 @Decorators.check_env_vars
-def work_order_add_linked_inv(work_order_id: int, linked_inv: dict) -> dict:
+def work_order_add_linked_inv(
+    work_order_id: int, inv_items: list[LinkedInventory]
+) -> ResponseMessages | None:
     """
     Add linked inventory items to a work order
-    resource id and resource type vary depending on type of component
-    linked inventory is being added against. Asset vs Group vs Member etc. Docu has a table
-    https://ezo.io/ezofficeinventory/developers/#api-add-linked-inventory-to-task
     """
 
-    # Required fields
-    if "inventory_id" not in linked_inv:
-        raise ValueError("linked_inv must have 'inventory_id' key")
-    if not any(
-        key.startswith("linked_inventory_items[") and key.endswith("][quantity]")
-        for key in linked_inv.keys()
-    ):
-        raise ValueError(
-            "linked_inv must have a key that matches the format linked_inventory_items[{Inventory#}][quantity]"
-        )
-
-    # Remove any keys that are not valid
-    valid_keys = ["inventory_id"]
-
-    linked_inv = {
-        k: v
-        for k, v in linked_inv.items()
-        if k in valid_keys
-        or (k.startswith("linked_inventory_items[") and k.endswith("][quantity]"))
-        or (k.startswith("linked_inventory_items[") and k.endswith("][location_id]"))
-        or (k.startswith("linked_inventory_items[") and k.endswith("][resource_id]"))
-        or (k.startswith("linked_inventory_items[") and k.endswith("][resource_type]"))
-    }
-
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/tasks/{work_order_id}/link_inventory.api"
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/link_inventory"
 
     try:
-        response = requests.patch(
+        response = requests.post(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            data=linked_inv,
+            data={"work_order": {"linked_inventory_items": inv_items}},
             timeout=60,
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         logger.error(
-            f"Error, could not add linked inv to work order: {e.response.status_code} - {e.response.content}"
+            f"Error adding linked inv: {e.response.status_code} - {e.response.content}"
         )
+        raise Exception(
+            f"Error adding linked inv: {e.response.status_code} - {e.response.content}"
+        )
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
         raise
     except requests.exceptions.RequestException as e:
-        logger.error(f"Error, could not add linked inv to work order: {e}")
-        raise
+        logger.error(f"Error adding linked inv: {e}")
+        raise Exception(f"Error adding linked inv: {e}")
 
-    return response.json()
+    if response.status_code == 200 and "messages" in response.json():
+        return ResponseMessages(**response.json()["messages"])
+    else:
+        return None
 
 
 def update_work_order_routing(
@@ -484,15 +678,14 @@ def update_work_order_routing(
 
 
 @Decorators.check_env_vars
-def work_order_add_component(work_order_id: int, components: list[Component]) -> dict:
+def work_order_add_component(
+    work_order_id: int, components: list[Component]
+) -> ResponseMessages | None:
     """
     Adds a component to a work order.
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/add_components"
-    payload = {"work_order": {"components": []}}
-    for component in components:
-        payload["work_order"]["components"].append(component.model_dump())
 
     try:
         response = requests.post(
@@ -506,54 +699,126 @@ def work_order_add_component(work_order_id: int, components: list[Component]) ->
                 "Accept-Encoding": "gzip, deflate, br",
                 "Connection": "keep-alive",
             },
-            data=json.dumps(payload),
-            timeout=60,
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        raise WorkOrderUpdateError(
-            f"Error, could not create work order: {e.response.status_code} - {e.response.content}"
-        )
-    except requests.exceptions.RequestException as e:
-        raise WorkOrderUpdateError(f"Error, could not create work order: {str(e)}")
-
-    return response.json()
-
-
-@Decorators.check_env_vars
-def work_order_mark_in_progress(work_order_id: int) -> dict:
-    """
-    Start a work order
-    https://ezo.io/ezofficeinventory/developers/#api-start-task
-    """
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/tasks/{work_order_id}/mark_in_progress.api"
-
-    try:
-        response = requests.patch(
-            url,
-            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+            data={"work_order": {"components": components}},
             timeout=60,
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
         logger.error(
-            f"Error, could not start work order: {e.response.status_code} - {e.response.content}"
+            f"Error adding component: {e.response.status_code} - {e.response.content}"
         )
+        raise Exception(
+            f"Error adding component: {e.response.status_code} - {e.response.content}"
+        )
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
         raise
     except requests.exceptions.RequestException as e:
-        logger.error(f"Error, could not start work order: {e}")
-        raise
+        logger.error(f"Error adding component: {e}")
+        raise Exception(f"Error adding component: {e}")
 
-    return response.json()
-
-
-# TODO Mark on hold
+    if "messages" in response.json():
+        return ResponseMessages(**response.json()["messages"])
+    else:
+        return None
 
 
 @Decorators.check_env_vars
-def work_order_mark_complete(work_order_id: int, completed_on_dttm: datetime) -> dict:
+def work_order_mark_in_progress(
+    work_order_id: int,
+    start_work_on_all_assets: bool = True,
+    actual_start_date: datetime | None = None,
+    component_ids: list[int] | None = None,
+    supervisor_id: int | None = None,
+    assigned_to_id: int | None = None,
+    assigned_to_type: str | None = None,
+) -> ResponseMessages | None:
     """
-    Completes a work order.
+    Start a work order
+    """
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/mark_in_progress"
+
+    try:
+        response = requests.patch(
+            url,
+            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+            data={
+                "work_order": {
+                    "start_work_on_all_assets": start_work_on_all_assets,
+                    "actual_start_date": actual_start_date,
+                    "component_ids": component_ids,
+                    "supervisor_id": supervisor_id,
+                    "assigned_to_id": assigned_to_id,
+                    "assigned_to_type": assigned_to_type,
+                }
+            },
+            timeout=60,
+        )
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        logger.error(
+            f"Error marking in progress: {e.response.status_code} - {e.response.content}"
+        )
+        raise Exception(
+            f"Error marking in progress: {e.response.status_code} - {e.response.content}"
+        )
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+        raise
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error marking in progress: {e}")
+        raise Exception(f"Error marking in progress: {e}")
+
+    if "messages" in response.json():
+        return ResponseMessages(**response.json()["messages"])
+    else:
+        return None
+
+
+@Decorators.check_env_vars
+def work_order_mark_on_hold(
+    work_order_id: int, comment: str | None = None
+) -> ResponseMessages | None:
+    """
+    Start a particular work order
+    """
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/mark_on_hold"
+
+    try:
+        response = requests.patch(
+            url,
+            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+            data={
+                "work_order": {
+                    "comment": comment,
+                }
+            },
+            timeout=60,
+        )
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        logger.error(
+            f"Error marking on hold: {e.response.status_code} - {e.response.content}"
+        )
+        raise Exception(
+            f"Error marking on hold: {e.response.status_code} - {e.response.content}"
+        )
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+        raise
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error marking on hold: {e}")
+        raise Exception(f"Error marking on hold: {e}")
+
+    if "messages" in response.json():
+        return ResponseMessages(**response.json()["messages"])
+    else:
+        return None
+
+
+@Decorators.check_env_vars
+def work_order_mark_complete(
+    work_order_id: int, completed_on_dttm: datetime
+) -> ResponseMessages | None:
+    """
+    Completes a particular work order.
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/mark_complete"
@@ -569,7 +834,6 @@ def work_order_mark_complete(work_order_id: int, completed_on_dttm: datetime) ->
                 "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
                 "Accept-Encoding": "gzip, deflate, br",
                 "Connection": "keep-alive",
-                "Content-Length": "75",
             },
             data={
                 "work_order": {
@@ -582,31 +846,53 @@ def work_order_mark_complete(work_order_id: int, completed_on_dttm: datetime) ->
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
-        raise WorkOrderNotFound(
-            f"Error, could not complete work order: {e.response.status_code} - {e.response.content}"
+        logger.error(
+            f"Error marking complete: {e.response.status_code} - {e.response.content}"
         )
+        raise Exception(
+            f"Error marking complete: {e.response.status_code} - {e.response.content}"
+        )
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+        raise
     except requests.exceptions.RequestException as e:
-        raise WorkOrderNotFound(f"Error, could not complete work order: {str(e)}")
+        logger.error(f"Error marking complete: {e}")
+        raise Exception(f"Error marking complete: {e}")
 
-    return response.json()
+    if "messages" in response.json():
+        return ResponseMessages(**response.json()["messages"])
+    else:
+        return None
+
+
+# TODO Link Work Order
+
+# TODO Unlink work order
+
+# TODO Link PO
+
+# TODO Unlink PO
+
+# TODO Start component service
+
+# TODO End component service
 
 
 def work_order_add_checklist(
-    service_call_id: int, checklist_id: int, asset_id: int
+    work_order_id: int, checklist_id: int, asset_id: int
 ) -> dict:
     """
-    Add a single checklist to an existing service call.
+    Add a single checklist to an existing work order.
 
     Args:
-        service_call_id (int): User facing ID of service call.
-        checklist_id (int): Internal ID of checklist to link with service call.
+        work_order_id (int): User facing ID of work order.
+        checklist_id (int): Internal ID of checklist to link with work order.
         asset_id (int): Internal ID of asset to assign this checklist to.
 
     Raises:
         ChecklistLinkError: General error thrown when link checklist API call fails.
     """
 
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/tasks/{service_call_id}/add_checklists.json"
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/tasks/{work_order_id}/add_checklists.json"
 
     try:
         response = requests.post(
@@ -619,22 +905,24 @@ def work_order_add_checklist(
 
     except requests.exceptions.HTTPError as e:
         raise ChecklistLinkError(
-            f"Error, could not link checklist to service call: {e.response.status_code} - {e.response.content}"
+            f"Error, could not link checklist to work order: {e.response.status_code} - {e.response.content}"
         )
 
     except requests.exceptions.RequestException as e:
-        raise ChecklistLinkError(
-            f"Error, could not link checklist to service call: {e}"
-        )
+        raise ChecklistLinkError(f"Error, could not link checklist to work order: {e}")
 
     return response.json()
 
 
 # TODO Add checklist (/tasks/{work_order_id}/add_checklists.json Not documented for some reason)
 
+# TODO Update Checklist
+
 
 @Decorators.check_env_vars
-def work_order_remove_checklist(work_order_id: int, checklist_id: int) -> dict:
+def work_order_remove_checklist(
+    work_order_id: int, checklist_id: int
+) -> ResponseMessages | None:
     """
     Removes a checklist from a work order.
     """
@@ -657,12 +945,87 @@ def work_order_remove_checklist(work_order_id: int, checklist_id: int) -> dict:
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
-        raise WorkOrderNotFound(
-            f"Error, could not remove checklist from work order: {e.response.status_code} - {e.response.content}"
+        logger.error(
+            f"Error removing checklist: {e.response.status_code} - {e.response.content}"
         )
+        raise Exception(
+            f"Error removing checklist: {e.response.status_code} - {e.response.content}"
+        )
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+        raise
     except requests.exceptions.RequestException as e:
-        raise WorkOrderNotFound(
-            f"Error, could not remove checklist from work order: {str(e)}"
-        )
+        logger.error(f"Error removing checklist: {e}")
+        raise Exception(f"Error removing checklist: {e}")
 
-    return response.json()
+    if "messages" in response.json():
+        return ResponseMessages(**response.json()["messages"])
+    else:
+        return None
+
+
+@Decorators.check_env_vars
+def work_order_delete(work_order_id: int) -> WorkOrder | None:
+    """
+    Deletes a particular work order.
+    """
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}"
+
+    try:
+        response = requests.delete(
+            url,
+            headers={
+                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
+                "Accept": "application/json",
+            },
+        )
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        logger.error(f"Error deleting: {e.response.status_code} - {e.response.content}")
+        raise Exception(
+            f"Error deleting: {e.response.status_code} - {e.response.content}"
+        )
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+        raise
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error deleting: {e}")
+        raise Exception(f"Error deleting: {e}")
+
+    if response.status_code == 200 and "work_order" in response.json():
+        return WorkOrder(**response.json()["work_order"])
+    else:
+        return None
+
+
+@Decorators.check_env_vars
+def work_orders_delete(work_order_ids: list[int]) -> ResponseMessages | None:
+    """
+    Deletes multiple work orders.
+    Note: Mass deletion must be enabled in company settings.
+    """
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/mass_delete"
+
+    try:
+        response = requests.patch(
+            url,
+            headers={
+                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
+                "Accept": "application/json",
+            },
+            data={"work_order": {"ids": work_order_ids}},
+        )
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        logger.error(f"Error deleting: {e.response.status_code} - {e.response.content}")
+        raise Exception(
+            f"Error deleting: {e.response.status_code} - {e.response.content}"
+        )
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+        raise
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error deleting: {e}")
+        raise Exception(f"Error deleting: {e}")
+
+    if response.status_code == 200 and "messages" in response.json():
+        return ResponseMessages(**response.json()["messages"])
+    else:
+        return None
