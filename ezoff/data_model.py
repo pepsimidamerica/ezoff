@@ -253,9 +253,11 @@ class Member(BaseModel):
     status: int
     stock_asset_current_checkout_view: Optional[bool] = Field(default=None)
     subscribed_to_emails: Optional[bool] = Field(default=None)
-    # team_id can be used for filtering, responses will return 'team_ids' list, however
-    team_id: int | None = None
-    team_ids: list[int] | None
+    # Note: team is weird. Used to be just an int. Now, appears to be a multi-value
+    # situation where you get a list of values back. However, API is inconsistent.
+    # Sometimes you'll get back team_id, sometimes team_ids.
+    team_id: int | list[int] | None = None
+    team_ids: list[int] | None = None
     time_zone: Optional[str] = Field(default=None)
     unseen_app_updates_count: Optional[int] = Field(default=None)
     unsubscribed_by_id: Optional[int] = Field(default=None)
