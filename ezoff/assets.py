@@ -74,6 +74,11 @@ def asset_create(
         return None
 
 
+# TODO Bulk create
+
+# TODO Reservation create
+
+
 @_basic_retry
 @Decorators.check_env_vars
 def asset_return(asset_id: int) -> Asset | None:
@@ -111,7 +116,6 @@ def asset_return(asset_id: int) -> Asset | None:
         return None
 
 
-@_basic_retry
 @Decorators.check_env_vars
 def assets_return(filter: dict | None = None) -> list[Asset]:
     """
@@ -226,6 +230,51 @@ def assets_search(search_term: str) -> list[Asset]:
         time.sleep(1)
 
     return [Asset(**x) for x in all_assets]
+
+
+@_basic_retry
+@Decorators.check_env_vars
+def asset_public_link_return(asset_id: int) -> str | None:
+    """
+    Returns the public link for a particular asset.
+
+    Note: not sure if might get more than one link for a given asset. The API
+    endpoint 'get_public_links' implies so, but in my testing I've only gotten an individual link
+    for a given asset.
+    """
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/assets/{asset_id}/get_public_links"
+
+    try:
+        response = requests.get(
+            url,
+            headers={
+                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
+                "Accept": "application/json",
+            },
+        )
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        logger.error(
+            f"Error getting asset: {e.response.status_code} - {e.response.content}"
+        )
+        raise Exception(
+            f"Error getting asset: {e.response.status_code} - {e.response.content}"
+        )
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+        raise
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error getting asset: {e}")
+        raise Exception(f"Error getting asset: {e}")
+
+    if "link" in response.json():
+        return response.json()["link"]
+    else:
+        return None
+
+
+# TODO Booked dates return
+
+# TODO Reservations return
 
 
 @_basic_retry
@@ -357,6 +406,9 @@ def asset_update(asset_id: int, update_data: dict) -> Asset | None:
         return Asset(**response.json()["asset"])
     else:
         return None
+
+
+# TODO Bulk update
 
 
 @_basic_retry
@@ -633,8 +685,3 @@ def asset_delete(asset_id: int) -> ResponseMessages | None:
         return ResponseMessages(**response.json()["messages"])
     else:
         return None
-
-
-# TODO Add bulk operations
-
-# TODO Add reservation-related operations
