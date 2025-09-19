@@ -5,7 +5,6 @@ Note: API will inconsistently use a 'tasks' or 'work_orders' key when returning
 info from these endpoints. Each endpoint just needs to be checked which it is.
 """
 
-import json
 import logging
 import os
 import time
@@ -21,9 +20,6 @@ from ezoff.data_model import (
     ResponseMessages,
     WorkLog,
     WorkOrder,
-)
-from ezoff.exceptions import (
-    ChecklistLinkError,
 )
 
 logger = logging.getLogger(__name__)
@@ -1118,7 +1114,7 @@ def work_orders_end_component_service(
 
 
 def work_order_add_checklist(
-    work_order_id: int, checklist_id: int, asset_id: int
+    work_order_id: int, checklist_id: int, asset_id: int | None = None
 ) -> dict:
     """
     Add a single checklist to an existing work order.
@@ -1127,9 +1123,6 @@ def work_order_add_checklist(
         work_order_id (int): User facing ID of work order.
         checklist_id (int): Internal ID of checklist to link with work order.
         asset_id (int): Internal ID of asset to assign this checklist to.
-
-    Raises:
-        ChecklistLinkError: General error thrown when link checklist API call fails.
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/tasks/{work_order_id}/add_checklists.json"
@@ -1142,21 +1135,65 @@ def work_order_add_checklist(
             timeout=60,
         )
         response.raise_for_status()
-
     except requests.exceptions.HTTPError as e:
-        raise ChecklistLinkError(
-            f"Error, could not link checklist to work order: {e.response.status_code} - {e.response.content}"
+        logger.error(
+            f"Error adding checklist: {e.response.status_code} - {e.response.content}"
         )
-
+        raise Exception(
+            f"Error adding checklist: {e.response.status_code} - {e.response.content}"
+        )
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+        raise
     except requests.exceptions.RequestException as e:
-        raise ChecklistLinkError(f"Error, could not link checklist to work order: {e}")
+        logger.error(f"Error adding checklist: {e}")
+        raise Exception(f"Error adding checklist: {e}")
 
     return response.json()
 
 
-# TODO Add checklist (/tasks/{work_order_id}/add_checklists.json Not documented for some reason)
+def work_order_update_checklist(
+    work_order_id: int,
+    checklist_id: int,
+    checklist_values: list[dict],
+    asset_id: int | None = None,
+) -> ResponseMessages | None:
+    """
+    Updates an existing checklist in a work order.
+    """
 
-# TODO Update Checklist
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/update_work_order_checklist"
+
+    try:
+        response = requests.post(
+            url,
+            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+            data={
+                "work_order": {
+                    "checklist_id": checklist_id,
+                    "asset_id": asset_id,
+                    "checklist_values": checklist_values,
+                }
+            },
+            timeout=60,
+        )
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        logger.error(
+            f"Error updating checklist: {e.response.status_code} - {e.response.content}"
+        )
+        raise Exception(
+            f"Error updating checklist: {e.response.status_code} - {e.response.content}"
+        )
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+        raise
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error updating checklist: {e}")
+        raise Exception(f"Error updating checklist: {e}")
+
+    if "messages" in response.json():
+        return ResponseMessages(**response.json()["messages"])
+    else:
+        return None
 
 
 @Decorators.check_env_vars
