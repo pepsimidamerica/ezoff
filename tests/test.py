@@ -1,10 +1,13 @@
+import sys
+
 from dotenv import load_dotenv
 
 # Load env vars from a .env file
 load_dotenv()
 
-from ezoff.ezoff import get_members(filter={})
+sys.path.insert(0, "")
 
-res = get_teams()
-print(res)
+from ezoff import assets_return
+
+res = assets_return({"group_id": 356045})
 pass

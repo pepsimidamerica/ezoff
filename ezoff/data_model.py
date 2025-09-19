@@ -303,9 +303,9 @@ class CustomRole(BaseModel):
     visibility: str
     users_visibility: str
     system_generated: bool
-    group_ids: list[int] | None
-    team_ids: list[int] | None
-    location_ids: list[int] | None
+    group_ids: list[int] | None = None
+    team_ids: list[int] | None = None
+    location_ids: list[int] | None = None
 
 
 class UserListing(BaseModel):
