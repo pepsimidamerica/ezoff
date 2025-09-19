@@ -51,7 +51,7 @@ def member_create(
         response = requests.post(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            data={"member": params},
+            json={"member": params},
             timeout=60,
         )
         response.raise_for_status()
@@ -85,7 +85,7 @@ def members_create(members: list[MemberCreate]) -> list[Member] | None:
         response = requests.post(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            data={
+            json={
                 "members": [member.model_dump(exclude_none=True) for member in members]
             },
             timeout=60,
@@ -178,13 +178,8 @@ def members_return(filter: dict | None = None) -> list[Member]:
                 headers={
                     "Accept": "application/json",
                     "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                    "Cache-Control": "no-cache",
-                    "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
-                    "Accept-Encoding": "gzip, deflate, br",
-                    "Connection": "keep-alive",
-                    "Content-Type": "application/json",
                 },
-                data=filter,
+                json=filter,
             )
             response.raise_for_status()
         except requests.exceptions.HTTPError as e:
@@ -238,7 +233,7 @@ def member_update(member_id: int, update_data: dict) -> Member | None:
         response = requests.patch(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            data={"member": update_data},
+            json={"member": update_data},
             timeout=60,
         )
         response.raise_for_status()
@@ -392,7 +387,7 @@ def custom_role_update(custom_role_id: int, update_data) -> CustomRole | None:
         response = requests.patch(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            data={"custom_role": update_data},
+            json={"custom_role": update_data},
             timeout=60,
         )
         response.raise_for_status()

@@ -52,7 +52,7 @@ def asset_create(
                 "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
                 "Accept": "application/json",
             },
-            data={"asset": params},
+            json={"asset": params},
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -147,7 +147,7 @@ def assets_return(filter: dict | None = None) -> list[Asset]:
                     "Connection": "keep-alive",
                     "Content-Type": "application/json",
                 },
-                data=filter,
+                json=filter,
             )
             response.raise_for_status()
 
@@ -377,15 +377,10 @@ def asset_update(asset_id: int, update_data: dict) -> Asset | None:
         response = requests.patch(
             url,
             headers={
-                "Content-Type": "application/json",
                 "Accept": "application/json",
                 "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Cache-Control": "no-cache",
-                "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
-                "Accept-Encoding": "gzip, deflate, br",
-                "Connection": "keep-alive",
             },
-            data=update_data,
+            json=update_data,
             timeout=60,
         )
         response.raise_for_status()
@@ -430,7 +425,7 @@ def asset_checkin(
         response = requests.put(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            data={
+            json={
                 "asset": {
                     "comments": comments,
                     "location_id": location_id,
@@ -488,7 +483,7 @@ def asset_checkout(
         response = requests.put(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            data={
+            json={
                 "asset": {
                     "user_id": user_id,
                     "comments": comments,
@@ -543,7 +538,7 @@ def asset_retire(
         response = requests.put(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            data={
+            json={
                 "asset": {
                     "retired_on": retired_on,
                     "retire_reason_id": retire_reason_id,
@@ -587,7 +582,7 @@ def asset_activate(asset_id: int, location_id: int | None = None) -> Asset | Non
         response = requests.put(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            data={"asset": {"location_id": location_id}},
+            json={"asset": {"location_id": location_id}},
             timeout=60,
         )
         response.raise_for_status()
@@ -626,7 +621,7 @@ def asset_verification_request(asset_id: int, note: str) -> dict:
             timeout=60,
             # Not entirely sure on correct request body. Endpoint not documented in EZO v2
             # API, so just copying what I'm seeing in the browser's network tools when doing a verification request
-            data={
+            json={
                 "asset_id": asset_id,
                 "custom_substate_id": "",
                 "audit": {

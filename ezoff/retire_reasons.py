@@ -23,7 +23,7 @@ def retire_reasons_return() -> list[RetireReason]:
             response = _fetch_page(
                 url,
                 headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-                data=filter,
+                json=filter,
             )
         except requests.exceptions.HTTPError as e:
             logger.error(

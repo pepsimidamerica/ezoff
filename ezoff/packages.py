@@ -32,7 +32,7 @@ def package_create(
                 "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
                 "Accept": "application/json",
             },
-            data={"package": params},
+            json={"package": params},
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -104,7 +104,7 @@ def packages_return() -> list[Package]:
             response = _fetch_page(
                 url,
                 headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-                data=filter,
+                json=filter,
             )
         except requests.exceptions.HTTPError as e:
             logger.error(
@@ -151,7 +151,7 @@ def package_checkin(
         response = requests.put(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            data={
+            json={
                 "package": {
                     "comments": comments,
                     "location_id": location_id,

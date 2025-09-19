@@ -37,7 +37,7 @@ def vendor_create(
                 "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
                 "Accept": "application/json",
             },
-            data={"vendor": params},
+            json={"vendor": params},
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -109,7 +109,7 @@ def vendors_return() -> list[Vendor]:
             response = _fetch_page(
                 url,
                 headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-                data=filter,
+                json=filter,
             )
         except requests.exceptions.HTTPError as e:
             logger.error(
@@ -161,7 +161,7 @@ def vendor_update(vendor_id: int, update_data: dict) -> Vendor | None:
                 "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
                 "Accept": "application/json",
             },
-            data={"vendor": update_data},
+            json={"vendor": update_data},
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:

@@ -52,7 +52,7 @@ def location_create(
         response = requests.post(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            data={"location": params},
+            json={"location": params},
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -132,7 +132,7 @@ def locations_return(
             response = _fetch_page(
                 url,
                 headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-                data=filter_data,
+                json=filter_data,
             )
             response.raise_for_status()
         except requests.exceptions.HTTPError as e:
@@ -193,7 +193,7 @@ def location_activate(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             timeout=60,
-            data=data,
+            json=data,
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -266,7 +266,7 @@ def location_update(location_id: int, update_data: dict) -> Location | None:
         response = requests.patch(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            data={"location": update_data},
+            json={"location": update_data},
             timeout=60,
         )
         response.raise_for_status()

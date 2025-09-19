@@ -42,13 +42,15 @@ _basic_retry = retry(
 
 
 @_basic_retry
-def _fetch_page(url, headers, params=None, data=None):
+def _fetch_page(url, headers, params=None, data=None, json=None):
     """
     Wrapper around requests.get that retries on RequestException
 
     Exists as an alternative to the basic_retry decorator. For paginated functions,
     you don't want to retry the entire function, just the specific page call.
     """
-    response = requests.get(url, headers=headers, params=params, data=data, timeout=30)
+    response = requests.get(
+        url, headers=headers, params=params, data=data, json=json, timeout=30
+    )
     response.raise_for_status()
     return response

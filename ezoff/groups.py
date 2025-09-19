@@ -47,7 +47,7 @@ def group_create(
                 "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
                 "Accept": "application/json",
             },
-            data={"group": params},
+            json={"group": params},
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -172,7 +172,7 @@ def group_update(group_id: int, update_data: dict) -> Group | None:
                 "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
                 "Accept": "application/json",
             },
-            data={"group": update_data},
+            json={"group": update_data},
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -263,7 +263,7 @@ def subgroup_create(
                 "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
                 "Accept": "application/json",
             },
-            data=params,
+            json=params,
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -390,7 +390,7 @@ def subgroup_update(group_id: int, subgroup_id: int, update_data: dict) -> Group
                 "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
                 "Accept": "application/json",
             },
-            data=update_data,
+            json=update_data,
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:

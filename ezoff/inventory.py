@@ -60,7 +60,7 @@ def inventory_create(
                 "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
                 "Accept": "application/json",
             },
-            data={"inventory": params},
+            json={"inventory": params},
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -144,7 +144,7 @@ def inventories_return(filter: dict | None = None) -> list[Inventory]:
             response = _fetch_page(
                 url,
                 headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-                data=filter,
+                json=filter,
             )
         except requests.exceptions.HTTPError as e:
             logger.error(
@@ -255,7 +255,7 @@ def inventory_add_stock(
                 "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
                 "Accept": "application/json",
             },
-            data={"inventory": params},
+            json={"inventory": params},
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -307,7 +307,7 @@ def inventory_remove_stock(
                 "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
                 "Accept": "application/json",
             },
-            data={"inventory": params},
+            json={"inventory": params},
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -344,7 +344,7 @@ def inventory_update_location(inventory_id: int, location_id: int) -> Inventory 
                 "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
                 "Accept": "application/json",
             },
-            data={"inventory": {"location_id": location_id}},
+            json={"inventory": {"location_id": location_id}},
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -392,7 +392,7 @@ def inventory_transfer_stock(
                 "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
                 "Accept": "application/json",
             },
-            data={"inventory": params},
+            json={"inventory": params},
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -438,7 +438,7 @@ def inventory_retire(
                 "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
                 "Accept": "application/json",
             },
-            data={"inventory": params},
+            json={"inventory": params},
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:

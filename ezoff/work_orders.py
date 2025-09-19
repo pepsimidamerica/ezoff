@@ -65,15 +65,10 @@ def work_order_create(
         response = requests.post(
             url,
             headers={
-                "Content-Type": "application/json",
                 "Accept": "application/json",
                 "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Cache-Control": "no-cache",
-                "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
-                "Accept-Encoding": "gzip, deflate, br",
-                "Connection": "keep-alive",
             },
-            data={"work_order": params},
+            json={"work_order": params},
             timeout=60,
         )
         response.raise_for_status()
@@ -142,7 +137,7 @@ def service_create(asset_id: int, service: dict) -> dict:
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
             params={"create_service_ticket_only": "true"},
-            data=service,
+            json=service,
             timeout=60,
         )
         response.raise_for_status()
@@ -224,7 +219,7 @@ def work_orders_return(filter: dict | None = None) -> list[WorkOrder]:
             response = _fetch_page(
                 url,
                 headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-                data=filter,
+                json=filter,
             )
         except requests.exceptions.HTTPError as e:
             logger.error(
@@ -320,7 +315,7 @@ def work_order_linked_work_orders_return(work_order_id: int) -> list[WorkOrder]:
             response = _fetch_page(
                 url,
                 headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-                data=filter,
+                json=filter,
             )
         except requests.exceptions.HTTPError as e:
             logger.error(
@@ -368,7 +363,7 @@ def work_order_linked_inventory_return(work_order_id: int) -> list[LinkedInvento
             response = _fetch_page(
                 url,
                 headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-                data=filter,
+                json=filter,
             )
         except requests.exceptions.HTTPError as e:
             logger.error(
@@ -454,7 +449,7 @@ def work_order_work_logs_return(work_order_id: int) -> list[WorkLog]:
             response = _fetch_page(
                 url,
                 headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-                data=filter,
+                json=filter,
             )
         except requests.exceptions.HTTPError as e:
             logger.error(
@@ -504,15 +499,10 @@ def work_order_update(work_order_id: int, update_data: dict) -> WorkOrder | None
         response = requests.put(
             url,
             headers={
-                "Content-Type": "application/json",
                 "Accept": "application/json",
                 "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Cache-Control": "no-cache",
-                "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
-                "Accept-Encoding": "gzip, deflate, br",
-                "Connection": "keep-alive",
             },
-            data={"work_order": update_data},
+            json={"work_order": update_data},
             timeout=60,
         )
         response.raise_for_status()
@@ -555,7 +545,7 @@ def work_order_add_work_log(
         response = requests.post(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            data={
+            json={
                 "task_work_log": {
                     "resource_id": 2657,  # Is misc always going to be 2657?
                     "rate_type": "standard",
@@ -604,7 +594,7 @@ def work_order_add_linked_inv(
         response = requests.post(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            data={"work_order": {"linked_inventory_items": inv_items}},
+            json={"work_order": {"linked_inventory_items": inv_items}},
             timeout=60,
         )
         response.raise_for_status()
@@ -688,15 +678,10 @@ def work_order_add_component(
         response = requests.post(
             url,
             headers={
-                "Content-Type": "application/json",
                 "Accept": "application/json",
                 "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Cache-Control": "no-cache",
-                "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
-                "Accept-Encoding": "gzip, deflate, br",
-                "Connection": "keep-alive",
             },
-            data={"work_order": {"components": components}},
+            json={"work_order": {"components": components}},
             timeout=60,
         )
         response.raise_for_status()
@@ -738,7 +723,7 @@ def work_order_mark_in_progress(
         response = requests.patch(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            data={
+            json={
                 "work_order": {
                     "start_work_on_all_assets": start_work_on_all_assets,
                     "actual_start_date": actual_start_date,
@@ -783,7 +768,7 @@ def work_order_mark_on_hold(
         response = requests.patch(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            data={
+            json={
                 "work_order": {
                     "comment": comment,
                 }
@@ -832,7 +817,7 @@ def work_order_mark_complete(
                 "Accept-Encoding": "gzip, deflate, br",
                 "Connection": "keep-alive",
             },
-            data={
+            json={
                 "work_order": {
                     "completed_on_date": completed_on_dttm.strftime(
                         "%Y-%m-%dT%H:%M:%SZ"
@@ -882,7 +867,7 @@ def work_order_add_linked_wo(
                 "Accept-Encoding": "gzip, deflate, br",
                 "Connection": "keep-alive",
             },
-            data={"work_order": {"work_order_ids": wo_ids_to_link}},
+            json={"work_order": {"work_order_ids": wo_ids_to_link}},
             timeout=60,
         )
         response.raise_for_status()
@@ -926,7 +911,7 @@ def work_order_remove_linked_wo(
                 "Accept-Encoding": "gzip, deflate, br",
                 "Connection": "keep-alive",
             },
-            data={"work_order": {"work_order_ids": wo_ids_to_link}},
+            json={"work_order": {"work_order_ids": wo_ids_to_link}},
             timeout=60,
         )
         response.raise_for_status()
@@ -970,7 +955,7 @@ def work_order_add_linked_po(
                 "Accept-Encoding": "gzip, deflate, br",
                 "Connection": "keep-alive",
             },
-            data={"work_order": {"purchase_order_ids": po_ids_to_link}},
+            json={"work_order": {"purchase_order_ids": po_ids_to_link}},
             timeout=60,
         )
         response.raise_for_status()
@@ -1014,7 +999,7 @@ def work_order_remove_linked_po(
                 "Accept-Encoding": "gzip, deflate, br",
                 "Connection": "keep-alive",
             },
-            data={"work_order": {"purchase_order_ids": po_ids_to_link}},
+            json={"work_order": {"purchase_order_ids": po_ids_to_link}},
             timeout=60,
         )
         response.raise_for_status()
@@ -1053,7 +1038,7 @@ def work_orders_start_component_service(
                 "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
                 "Accept": "application/json",
             },
-            data={"component_ids": component_ids},
+            json={"component_ids": component_ids},
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -1091,7 +1076,7 @@ def work_orders_end_component_service(
                 "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
                 "Accept": "application/json",
             },
-            data={"component_ids": component_ids},
+            json={"component_ids": component_ids},
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -1131,7 +1116,7 @@ def work_order_add_checklist(
         response = requests.post(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            data={"checklist_ids": str(checklist_id), "asset_id": str(asset_id)},
+            json={"checklist_ids": str(checklist_id), "asset_id": str(asset_id)},
             timeout=60,
         )
         response.raise_for_status()
@@ -1167,7 +1152,7 @@ def work_order_update_checklist(
         response = requests.post(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            data={
+            json={
                 "work_order": {
                     "checklist_id": checklist_id,
                     "asset_id": asset_id,
@@ -1209,15 +1194,10 @@ def work_order_remove_checklist(
         response = requests.delete(
             url,
             headers={
-                "Content-Type": "application/json",
                 "Accept": "application/json",
                 "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Cache-Control": "no-cache",
-                "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
-                "Accept-Encoding": "gzip, deflate, br",
-                "Connection": "keep-alive",
             },
-            data={"work_order": {"checklist_id": checklist_id}},
+            json={"work_order": {"checklist_id": checklist_id}},
             timeout=60,
         )
         response.raise_for_status()
@@ -1288,7 +1268,7 @@ def work_orders_delete(work_order_ids: list[int]) -> ResponseMessages | None:
                 "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
                 "Accept": "application/json",
             },
-            data={"work_order": {"ids": work_order_ids}},
+            json={"work_order": {"ids": work_order_ids}},
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:

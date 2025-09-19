@@ -50,7 +50,7 @@ def project_create(
                 "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
                 "Accept": "application/json",
             },
-            data={"project": params},
+            json={"project": params},
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:

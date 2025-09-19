@@ -26,7 +26,7 @@ def purchase_order_create(title: str, vendor_id: int) -> PurchaseOrder | None:
                 "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
                 "Accept": "application/json",
             },
-            data={"purchase_order": params},
+            json={"purchase_order": params},
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -99,7 +99,7 @@ def purchase_orders_return(purchase_order_id: int) -> list[PurchaseOrder]:
             response = _fetch_page(
                 url,
                 headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-                data=filter,
+                json=filter,
             )
         except requests.exceptions.HTTPError as e:
             logger.error(

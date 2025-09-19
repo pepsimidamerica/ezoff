@@ -47,7 +47,7 @@ def stock_asset_create(
                 "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
                 "Accept": "application/json",
             },
-            data={"asset_stock": params},
+            json={"asset_stock": params},
         )
         response.raise_for_status()
     except requests.exceptions.HTTPError as e:
@@ -129,7 +129,7 @@ def stock_assets_return(filter: dict | None = None) -> list[StockAsset]:
             response = _fetch_page(
                 url,
                 headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-                data=filter,
+                json=filter,
             )
         except requests.exceptions.HTTPError as e:
             logger.error(

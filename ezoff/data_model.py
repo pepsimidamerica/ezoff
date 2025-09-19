@@ -229,12 +229,12 @@ class Member(BaseModel):
     employee_id: Optional[str] = Field(default=None)
     employee_identification_number: Optional[str] = Field(default=None)
     fax: Optional[str] = Field(default=None)
-    first_name: str
+    first_name: str | None
     hourly_rate: Optional[float] = Field(default=None)
     id: int
     inactive_by_id: Optional[int] = Field(default=None)
     jira_account_id: Optional[str] = Field(default=None)
-    last_name: str
+    last_name: str | None = None
     last_sync_date: Optional[datetime] = Field(default=None)
     last_sync_source: Optional[str] = Field(default=None)
     manager_id: Optional[int] = Field(default=None)
@@ -253,6 +253,9 @@ class Member(BaseModel):
     status: int
     stock_asset_current_checkout_view: Optional[bool] = Field(default=None)
     subscribed_to_emails: Optional[bool] = Field(default=None)
+    team_id: (
+        int | None
+    )  # Can be used for filtering, responses will return 'team_ids', however
     team_ids: list[int] | None
     time_zone: Optional[str] = Field(default=None)
     unseen_app_updates_count: Optional[int] = Field(default=None)
