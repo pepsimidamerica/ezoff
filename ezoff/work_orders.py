@@ -24,7 +24,6 @@ from ezoff.data_model import (
 )
 from ezoff.exceptions import (
     ChecklistLinkError,
-    WorkOrderUpdateError,
 )
 
 logger = logging.getLogger(__name__)
@@ -632,7 +631,7 @@ def work_order_add_linked_inv(
         return None
 
 
-def update_work_order_routing(
+def work_order_routing_update(
     work_order_id: int,
     assigned_to_id: str,
     task_type_id: int,
@@ -640,8 +639,9 @@ def update_work_order_routing(
     due_dttm: datetime,
     supervisor_id: str | None = None,
     reviewer_id: str | None = None,
-) -> dict:
-    """Update the assigned to user and start/end time of a workorder.
+) -> WorkOrder | None:
+    """
+    Update the assigned to user and start/end time of a workorder.
     Intended for use by an external routing system.
 
     Args:
@@ -656,6 +656,7 @@ def update_work_order_routing(
     Returns:
         dict: Response from the EZ Office API endpoint.
     """
+    # TODO Need to change the fields here
     filter = {
         "task[assigned_to_id]": assigned_to_id,
         "task[task_type_id]": str(task_type_id),
@@ -672,7 +673,7 @@ def update_work_order_routing(
     if reviewer_id is not None:
         filter["task[reviewer_id]"] = reviewer_id
 
-    result = update_work_order(work_order_id=work_order_id, filter=filter)
+    result = work_order_update(work_order_id=work_order_id, update_data=filter)
 
     return result
 
@@ -864,17 +865,256 @@ def work_order_mark_complete(
         return None
 
 
-# TODO Link Work Order
+@Decorators.check_env_vars
+def work_order_add_linked_wo(
+    work_order_id: int, wo_ids_to_link: list[int]
+) -> ResponseMessages | None:
+    """
+    Links one or more work orders to a particular work order.
+    """
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/link_work_orders"
 
-# TODO Unlink work order
+    try:
+        response = requests.post(
+            url,
+            headers={
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
+                "Cache-Control": "no-cache",
+                "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
+                "Accept-Encoding": "gzip, deflate, br",
+                "Connection": "keep-alive",
+            },
+            data={"work_order": {"work_order_ids": wo_ids_to_link}},
+            timeout=60,
+        )
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        logger.error(
+            f"Error linking work orders: {e.response.status_code} - {e.response.content}"
+        )
+        raise Exception(
+            f"Error linking work orders: {e.response.status_code} - {e.response.content}"
+        )
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+        raise
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error linking work orders: {e}")
+        raise Exception(f"Error linking work orders: {e}")
 
-# TODO Link PO
+    if "messages" in response.json():
+        return ResponseMessages(**response.json()["messages"])
+    else:
+        return None
 
-# TODO Unlink PO
 
-# TODO Start component service
+@Decorators.check_env_vars
+def work_order_remove_linked_wo(
+    work_order_id: int, wo_ids_to_link: list[int]
+) -> ResponseMessages | None:
+    """
+    Unlinks one or more work orders from a particular work order.
+    """
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/unlink_work_orders"
 
-# TODO End component service
+    try:
+        response = requests.post(
+            url,
+            headers={
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
+                "Cache-Control": "no-cache",
+                "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
+                "Accept-Encoding": "gzip, deflate, br",
+                "Connection": "keep-alive",
+            },
+            data={"work_order": {"work_order_ids": wo_ids_to_link}},
+            timeout=60,
+        )
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        logger.error(
+            f"Error unlinking work orders: {e.response.status_code} - {e.response.content}"
+        )
+        raise Exception(
+            f"Error unlinking work orders: {e.response.status_code} - {e.response.content}"
+        )
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+        raise
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error unlinking work orders: {e}")
+        raise Exception(f"Error unlinking work orders: {e}")
+
+    if "messages" in response.json():
+        return ResponseMessages(**response.json()["messages"])
+    else:
+        return None
+
+
+@Decorators.check_env_vars
+def work_order_add_linked_po(
+    work_order_id: int, po_ids_to_link: list[int]
+) -> ResponseMessages | None:
+    """
+    Links one or more purchase orders to a particular work order.
+    """
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/link_po"
+
+    try:
+        response = requests.post(
+            url,
+            headers={
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
+                "Cache-Control": "no-cache",
+                "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
+                "Accept-Encoding": "gzip, deflate, br",
+                "Connection": "keep-alive",
+            },
+            data={"work_order": {"purchase_order_ids": po_ids_to_link}},
+            timeout=60,
+        )
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        logger.error(
+            f"Error linking purchase orders: {e.response.status_code} - {e.response.content}"
+        )
+        raise Exception(
+            f"Error linking purchase orders: {e.response.status_code} - {e.response.content}"
+        )
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+        raise
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error linking purchase orders: {e}")
+        raise Exception(f"Error linking purchase orders: {e}")
+
+    if "messages" in response.json():
+        return ResponseMessages(**response.json()["messages"])
+    else:
+        return None
+
+
+@Decorators.check_env_vars
+def work_order_remove_linked_po(
+    work_order_id: int, po_ids_to_link: list[int]
+) -> ResponseMessages | None:
+    """
+    Unlinks one or more purchase orders from a particular work order.
+    """
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/unlink_po"
+
+    try:
+        response = requests.post(
+            url,
+            headers={
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
+                "Cache-Control": "no-cache",
+                "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
+                "Accept-Encoding": "gzip, deflate, br",
+                "Connection": "keep-alive",
+            },
+            data={"work_order": {"purchase_order_ids": po_ids_to_link}},
+            timeout=60,
+        )
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        logger.error(
+            f"Error unlinking purchase orders: {e.response.status_code} - {e.response.content}"
+        )
+        raise Exception(
+            f"Error unlinking purchase orders: {e.response.status_code} - {e.response.content}"
+        )
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+        raise
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error unlinking purchase orders: {e}")
+        raise Exception(f"Error unlinking purchase orders: {e}")
+
+    if "messages" in response.json():
+        return ResponseMessages(**response.json()["messages"])
+    else:
+        return None
+
+
+@Decorators.check_env_vars
+def work_orders_start_component_service(
+    work_order_id: int, component_ids: list[int]
+) -> ResponseMessages | None:
+    """
+    Starts service on one or more assets on a work order.
+    """
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/start_components_service"
+
+    try:
+        response = requests.patch(
+            url,
+            headers={
+                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
+                "Accept": "application/json",
+            },
+            data={"component_ids": component_ids},
+        )
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        logger.error(
+            f"Error starting service: {e.response.status_code} - {e.response.content}"
+        )
+        raise Exception(
+            f"Error starting service: {e.response.status_code} - {e.response.content}"
+        )
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+        raise
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error starting service: {e}")
+        raise Exception(f"Error starting service: {e}")
+
+    if "messages" in response.json():
+        return ResponseMessages(**response.json()["messages"])
+    else:
+        return None
+
+
+@Decorators.check_env_vars
+def work_orders_end_component_service(
+    work_order_id: int, component_ids: list[int]
+) -> ResponseMessages | None:
+    """
+    Ends service on one or more assets on a work order.
+    """
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/end_components_service"
+
+    try:
+        response = requests.patch(
+            url,
+            headers={
+                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
+                "Accept": "application/json",
+            },
+            data={"component_ids": component_ids},
+        )
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        logger.error(
+            f"Error ending service: {e.response.status_code} - {e.response.content}"
+        )
+        raise Exception(
+            f"Error ending service: {e.response.status_code} - {e.response.content}"
+        )
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+        raise
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error ending service: {e}")
+        raise Exception(f"Error ending service: {e}")
+
+    if "messages" in response.json():
+        return ResponseMessages(**response.json()["messages"])
+    else:
+        return None
 
 
 def work_order_add_checklist(
