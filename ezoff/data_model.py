@@ -68,34 +68,37 @@ class Asset(BaseModel):
     asset_class: Optional[AssetClass] = Field(default=None)
 
     def model_post_init(self, __context: Any) -> None:
-        """Parse custom fields."""
+        """
+        Parse custom fields.
+        """
 
-        for field in self.custom_fields:
-            # Assign Rent Flag
-            if "id" in field and field["id"] == CustomFieldID.RENT_FLAG.value:
-                if field["value"] is not None and isinstance(field["value"], list):
-                    if len(field["value"]) > 0:
-                        self.rent = True
-                    else:
-                        self.rent = False
+        if self.custom_fields:
+            for field in self.custom_fields:
+                # Assign Rent Flag
+                if "id" in field and field["id"] == CustomFieldID.RENT_FLAG.value:
+                    if field["value"] is not None and isinstance(field["value"], list):
+                        if len(field["value"]) > 0:
+                            self.rent = True
+                        else:
+                            self.rent = False
 
-            # Assign Serial Number
-            if "id" in field and field["id"] == CustomFieldID.ASSET_SERIAL_NO.value:
-                if field["value"] is not None and isinstance(field["value"], str):
-                    self.serial_number = field["value"]
+                # Assign Serial Number
+                if "id" in field and field["id"] == CustomFieldID.ASSET_SERIAL_NO.value:
+                    if field["value"] is not None and isinstance(field["value"], str):
+                        self.serial_number = field["value"]
 
-            # Assign Asset Class
-            if "id" in field and field["id"] == CustomFieldID.ASSET_CLASS.value:
-                if field["value"] is not None and isinstance(field["value"], list):
-                    if len(field["value"]) > 0:
-                        try:
-                            self.asset_class = AssetClass(field["value"][0])
-                        except ValueError as e:
-                            raise ValueError(
-                                (
-                                    f"Invalid asset class in asset {self.id}: {field['value'][0]}"
+                # Assign Asset Class
+                if "id" in field and field["id"] == CustomFieldID.ASSET_CLASS.value:
+                    if field["value"] is not None and isinstance(field["value"], list):
+                        if len(field["value"]) > 0:
+                            try:
+                                self.asset_class = AssetClass(field["value"][0])
+                            except ValueError as e:
+                                raise ValueError(
+                                    (
+                                        f"Invalid asset class in asset {self.id}: {field['value'][0]}"
+                                    )
                                 )
-                            )
 
 
 class Inventory(BaseModel):
