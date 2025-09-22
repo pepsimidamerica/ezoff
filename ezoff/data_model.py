@@ -722,13 +722,13 @@ class StockAsset(BaseModel):
     comments_count: int
     state: str | None = None
     salvage_value: str | None = None
-    vendor_id: int
+    vendor_id: int | None = None
     group_id: int
-    bulk_import_id: int
-    location_id: int
+    bulk_import_id: int | None = None
+    location_id: int | None = None
     depreciation_calculation_required: bool
-    package_id: int
-    purchase_order_id: int
+    package_id: int | None = None
+    purchase_order_id: int | None = None
     retire_comments: str | None = None
     retire_reason_id: int | None = None
     sub_group_id: int | None = None

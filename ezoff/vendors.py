@@ -109,7 +109,6 @@ def vendors_return() -> list[Vendor]:
             response = _fetch_page(
                 url,
                 headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-                json=filter,
             )
         except requests.exceptions.HTTPError as e:
             logger.error(
