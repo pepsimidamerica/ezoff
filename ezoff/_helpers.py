@@ -50,7 +50,7 @@ def _fetch_page(url, headers, params=None, data=None, json=None):
     you don't want to retry the entire function, just the specific page call.
     """
     response = requests.get(
-        url, headers=headers, params=params, data=data, json=json, timeout=30
+        url, headers=headers, params=params, data=data, json=json, timeout=60
     )
     response.raise_for_status()
     return response

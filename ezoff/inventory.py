@@ -113,7 +113,7 @@ def inventory_return(inventory_id: int) -> Inventory | None:
         logger.error(f"Error getting inventory: {e}")
         raise Exception(f"Error getting inventory: {e}")
 
-    if response.status_code == 200 and "inventory" in response.json():
+    if "inventory" in response.json():
         return Inventory(**response.json()["inventory"])
     else:
         return None
@@ -157,11 +157,11 @@ def inventories_return(filter: dict | None = None) -> list[Inventory]:
 
         data = response.json()
 
-        if "inventories" not in data:
+        if "inventory" not in data:
             logger.error(f"Error, could not get inventories: {response.content}")
             raise Exception(f"Error, could not get inventories: {response.content}")
 
-        all_inventories.extend(data["inventories"])
+        all_inventories.extend(data["inventory"])
 
         if (
             "metadata" not in data

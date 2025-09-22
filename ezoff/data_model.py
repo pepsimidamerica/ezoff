@@ -102,25 +102,44 @@ class Asset(BaseModel):
 
 
 class Inventory(BaseModel):
-    name: str
-    group_id: int
-    location_id: int
-    display_image: str
-    identifier: str
-    description: str
-    product_model_number: str
+    arbitration: int | None = None
+    asset_detail_attributes: dict | None = None
+    audit_pending: bool
+    available_quantity: int | None = None
+    bulk_import_id: int | None = None
+    comments_count: int
     cost_price: float
-    vendor_id: int
-    salvage_value: float
-    sub_group_id: int | None = None
-    inventory_threshold: int
-    default_low_location_threshold: int
+    created_at: datetime
+    custom_fields: list[dict] | None = None
     default_excess_location_threshold: int
+    default_low_location_threshold: int | None = None
+    depreciation_calculation_required: bool
+    description: str | None = None
+    display_image: str | None = None
+    documents_count: int
+    group_id: int
+    id: int
+    identifier: str
     initial_stock_quantity: int
-    line_items_attributes: list
-    location_thresholds_attributes: list
-    asset_detail_attributes: dict
-    custom_fields: list
+    inventory_threshold: int
+    line_items_attributes: list | None = None
+    location_id: int
+    location_thresholds_attributes: list | None = None
+    name: str
+    net_quantity: int | None = None
+    package_id: int | None = None
+    pending_verification: bool
+    product_model_number: str | None = None
+    purchase_order_id: int | None = None
+    purchased_on: datetime | None = None
+    retire_comments: str | None = None
+    retire_reason_id: int | None = None
+    retired_on: datetime | None = None
+    salvage_value: float
+    state: str | None = None
+    sub_group_id: int | None = None
+    updated_at: datetime
+    vendor_id: int | None = None
 
 
 class ChecklistLineItem(BaseModel):
