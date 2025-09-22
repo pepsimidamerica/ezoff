@@ -7,7 +7,7 @@ load_dotenv()
 
 sys.path.insert(0, "")
 
-from ezoff import groups_return
+from ezoff import purchase_orders_return
 
-res2 = groups_return()
+res = purchase_orders_return()
 pass

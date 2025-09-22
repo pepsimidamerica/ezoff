@@ -643,7 +643,7 @@ class PurchaseOrder(BaseModel):
     id: int
     description: str | None = None
     title: str | None = None
-    identification_number: str
+    identification_number: str | None = None
     requested_by_id: int | None = None
     created_by_id: int | None = None
     approved_by_id: int | None = None
@@ -652,20 +652,20 @@ class PurchaseOrder(BaseModel):
     payment_terms: str | None = None
     notes: str | None = None
     shipment_terms: str | None = None
-    vendor_id: int
+    vendor_id: int | None = None
     state: str | None = None
     net_amount: str | None = None
     payable_amount: str | None = None
     paid_amount: str | None = None
     documents_count: int | None = None
     comments_count: int | None = None
-    tax_amounts: str | None = None
+    tax_amounts: dict | None = None
     po_type: str | None = None
     project_id: int | None = None
     contract_id: int | None = None
     receiving_notes: str | None = None
     invoice_number: str | None = None
-    time_to_respond: str | None = None
+    time_to_respond: int | None = None
     currency_id: int | None = None
     delivery_location_id: int | None = None
     created_at: datetime | None = None
@@ -673,7 +673,7 @@ class PurchaseOrder(BaseModel):
     confirmed_at: datetime | None = None
     requested_on: datetime | None = None
     completed_on: datetime | None = None
-    delivery_date: datetime
+    delivery_date: datetime | None = None
     custom_fields: list[dict]
     line_items: list[dict]
 

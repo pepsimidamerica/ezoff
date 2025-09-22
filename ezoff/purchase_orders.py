@@ -86,7 +86,7 @@ def purchase_order_return(purchase_order_id: int) -> PurchaseOrder | None:
 
 @_basic_retry
 @Decorators.check_env_vars
-def purchase_orders_return(purchase_order_id: int) -> list[PurchaseOrder]:
+def purchase_orders_return() -> list[PurchaseOrder]:
     """
     Returns all purchase orders.
     """
@@ -99,7 +99,6 @@ def purchase_orders_return(purchase_order_id: int) -> list[PurchaseOrder]:
             response = _fetch_page(
                 url,
                 headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-                json=filter,
             )
         except requests.exceptions.HTTPError as e:
             logger.error(
