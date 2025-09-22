@@ -7,7 +7,7 @@ load_dotenv()
 
 sys.path.insert(0, "")
 
-from ezoff import vendors_return
+from ezoff import work_orders_return
 
-res = vendors_return()
+res = work_orders_return({"assigned_to_id": 1336290, "state": "Open"})
 pass
