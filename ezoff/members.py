@@ -163,7 +163,7 @@ def members_return(filter: dict | None = None) -> list[Member]:
         for field in filter:
             if field not in Member.model_fields:
                 raise ValueError(f"'{field}' is not a valid field for a member.")
-            filter = {"filters": filter}
+        filter = {"filters": filter}
     else:
         filter = None
 

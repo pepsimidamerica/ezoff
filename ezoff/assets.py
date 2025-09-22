@@ -126,7 +126,7 @@ def assets_return(filter: dict | None = None) -> list[Asset]:
         for field in filter:
             if field not in Asset.model_fields:
                 raise ValueError(f"'{field}' is not a valid field for an asset.")
-            filter = {"filters": filter}
+        filter = {"filters": filter}
     else:
         filter = None
 

@@ -9,12 +9,7 @@ Base URL for v2: https://{company name}.ezofficeinventory.com/api/v2/
 
 There will be a number of breaking changes.
 
-- Remove all v1 endoints where there is a corresponding v2 endpoint.
-- Normalize function names for easier discoverability, e.g. get_asset_details -> asset_get_details
-- ~~Rename some of the files so we don't have both hanging around. Consolidate v1 and v2 together.~~
-- Perhaps add flag to each Get function to return either the pydantic object or the raw request response? Could be useful to have the option. Or just say fuck it and have pydantic models for everything.
 - General cleanup of type hints and docstrings.
-- Maybe just ask for the subdomain for the os env var, as opposed to base URL? Would be easier with regards to slashes and the v1 and v2 endpoints.
 
 ## Installation
 
@@ -31,17 +26,8 @@ Several environment variables are required for ezo to function.
 
 ## Project Structure
 
-Project is split up into several files depending on what area of the EZOffice API is being dealt with. Purely for organizational purposes.
-
-- Assets
-- Checklists
-- Groups
-- Inventories
-- Locations
-- Members
-- Projects
-- Work Orders
+Project is split up into several files depending on what area of the EZOffice API is being dealt with. largely corresponds to how the API v2 documentation is laid out, purely for organizational purposes.
 
 ## Notes
 
-When wanting to clear a field out of its current value with an update function, generally the empty string ("") should be used.
+When wanting to clear a field out of its current value with an update function, generally the empty string ("") should be used as the new value.

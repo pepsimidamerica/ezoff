@@ -116,7 +116,7 @@ def stock_assets_return(filter: dict | None = None) -> list[StockAsset]:
         for field in filter:
             if field not in StockAsset.model_fields:
                 raise ValueError(f"'{field}' is not a valid field for an inventory.")
-            filter = {"filters": filter}
+        filter = {"filters": filter}
     else:
         filter = None
 

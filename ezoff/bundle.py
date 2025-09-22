@@ -101,7 +101,7 @@ def bundles_return(filter: dict | None = None) -> list[Bundle]:
         for field in filter:
             if field not in Bundle.model_fields:
                 raise ValueError(f"'{field}' is not a valid field for a bundle.")
-            filter = {"filters": filter}
+        filter = {"filters": filter}
     else:
         filter = None
 

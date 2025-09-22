@@ -206,7 +206,7 @@ def work_orders_return(filter: dict | None = None) -> list[WorkOrder]:
         for field in filter:
             if field not in WorkOrder.model_fields:
                 raise ValueError(f"'{field}' is not a valid field for a work order.")
-            filter = {"filters": filter}
+        filter = {"filters": filter}
     else:
         filter = None
 

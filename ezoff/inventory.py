@@ -129,7 +129,7 @@ def inventories_return(filter: dict | None = None) -> list[Inventory]:
         for field in filter:
             if field not in Inventory.model_fields:
                 raise ValueError(f"'{field}' is not a valid field for an inventory.")
-            filter = {"filters": filter}
+        filter = {"filters": filter}
     else:
         filter = None
 
