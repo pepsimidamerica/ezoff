@@ -127,7 +127,7 @@ def bundles_return(filter: dict | None = None) -> list[Bundle]:
 
         data = response.json()
 
-        if "inventories" not in data:
+        if "bundles" not in data:
             logger.error(f"Error, could not get bundles: {response.content}")
             raise Exception(f"Error, could not get bundles: {response.content}")
 

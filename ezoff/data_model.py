@@ -425,7 +425,8 @@ class DepreciationRate(BaseModel):
     id: int
     depreciation_method_id: int
     depreciation_method_name: str
-    rate: str
+    rate: str | None = None
+    useful_life: int | None = None
 
 
 class Group(BaseModel):
@@ -436,10 +437,10 @@ class Group(BaseModel):
 
     id: int
     name: str
-    description: str
+    description: str | None = None
     enable_service_triage: bool
-    triage_completion_period: int
-    triage_completion_period_basis: str
+    triage_completion_period: int | None = None
+    triage_completion_period_basis: str | None = None
     allow_staff_to_set_checkout_duration: bool
     staff_checkout_duration_months: int
     staff_checkout_duration_weeks: int
@@ -453,7 +454,7 @@ class Group(BaseModel):
     documents_count: int
     asset_depreciation_mode: str
     comments_count: int | None = None
-    depreciation_rates: list[DepreciationRate]
+    depreciation_rates: list[DepreciationRate] | None = None
     parent_id: int | None = None
     group_id: int | None = None
 
@@ -626,9 +627,9 @@ class Bundle(BaseModel):
     name: str
     description: str | None = None
     identification_number: str | None = None
-    location_id: int
-    documents_count: int
-    comments_count: int
+    location_id: int | None = None
+    documents_count: int | None = None
+    comments_count: int | None = None
     state: str
     enable_items_restricted_by_location: bool
     allow_add_bundle_without_specifying_items: bool
