@@ -6,6 +6,7 @@ Child classes extend EzoCache and add endpoint specific methods.
 
 import pickle
 
+from ezoff.assets import asset_return, assets_return
 from ezoff.data_model import Asset, Location, Member, WorkOrder
 from ezoff.exceptions import (
     AssetNotFound,
@@ -13,6 +14,9 @@ from ezoff.exceptions import (
     MemberNotFound,
     WorkOrderNotFound,
 )
+from ezoff.locations import location_return, locations_return
+from ezoff.members import member_return, members_return
+from ezoff.work_orders import work_order_return, work_orders_return
 from pydantic import BaseModel
 
 
@@ -48,6 +52,7 @@ class EzoCache:
         """
         if force_api or entry_id not in self.cache:
             try:
+                assert self._api_call_single is not None
                 self.cache[entry_id] = self._api_call_single(asset_id=entry_id)
                 return self.cache[entry_id]
 
@@ -98,10 +103,10 @@ class EzoCache:
 class AssetCache(EzoCache):
     def __init__(self, debug=False, use_saved=False):
         super().__init__(debug, use_saved)
-        self.cache: dict[int, Asset] = {}
+        self.cache: dict[int, Asset] = {}  # type: ignore
         self._pickle_file_name = "ezo_asset_cache.pkl"
-        self._api_call_single = ezoff.get_asset_v2_pd
-        self._api_call_multi = ezoff.get_assets_v2_pd
+        self._api_call_single = asset_return
+        self._api_call_multi = assets_return
         self._data_model = Asset
         self._not_found_exception = AssetNotFound
 
@@ -116,10 +121,10 @@ class AssetCache(EzoCache):
 class LocationCache(EzoCache):
     def __init__(self, debug=False, use_saved=False):
         super().__init__(debug, use_saved)
-        self.cache: dict[int, Location] = {}
+        self.cache: dict[int, Location] = {}  # type: ignore
         self._pickle_file_name = "ezo_location_cache.pkl"
-        self._api_call_single = ezoff.get_location_v2_pd
-        self._api_call_multi = ezoff.get_loctions_v2_pd
+        self._api_call_single = location_return
+        self._api_call_multi = locations_return
         self._data_model = Location
         self._not_found_exception = LocationNotFound
 
@@ -134,10 +139,10 @@ class LocationCache(EzoCache):
 class MemberCache(EzoCache):
     def __init__(self, debug=False, use_saved=False):
         super().__init__(debug, use_saved)
-        self.cache: dict[int, Member] = {}
+        self.cache: dict[int, Member] = {}  # type: ignore
         self._pickle_file_name = "ezo_member_cache.pkl"
-        self._api_call_single = ezoff.get_member_v2_pd
-        self._api_call_multi = ezoff.get_members_v2_pd
+        self._api_call_single = member_return
+        self._api_call_multi = members_return
         self._data_model = Member
         self._not_found_exception = MemberNotFound
 
@@ -152,10 +157,10 @@ class MemberCache(EzoCache):
 class WorkOrderCache(EzoCache):
     def __init__(self, debug=False, use_saved=False):
         super().__init__(debug, use_saved)
-        self.cache: dict[int, WorkOrder] = {}
+        self.cache: dict[int, WorkOrder] = {}  # type: ignore
         self._pickle_file_name = "ezo_workorder_cache.pkl"
-        self._api_call_single = ezoff.get_work_order_v2_pd
-        self._api_call_multi = ezoff.get_work_orders_v2_pd
+        self._api_call_single = work_order_return
+        self._api_call_multi = work_orders_return
         self._data_model = WorkOrder
         self._not_found_exception = WorkOrderNotFound
 
