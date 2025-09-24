@@ -3,6 +3,7 @@
 Python package for interacting with the EZOffice API. Includes support for v1 and v2 EZ Office API endpoints.
 
 Base URL for v1: https://{company name}.ezofficeinventory.com/
+
 Base URL for v2: https://{company name}.ezofficeinventory.com/api/v2/
 
 ## Rewrite

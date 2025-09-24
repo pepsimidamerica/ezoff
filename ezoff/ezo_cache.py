@@ -23,6 +23,16 @@ from pydantic import BaseModel
 class EzoCache:
     """
     Parent class for caching EZ Office API data.
+
+    :ivar cache: Local cache mapping entry IDs to Pydantic models.
+    :ivar cache_id_nums:
+    :ivar _debug: Debug mode
+    :ivar _use_saved: Whether to use saved pickle files, as opposed to the API.
+    :ivar _pickle_file_name: The name of the pickle file to use.
+    :ivar _api_call_single: The function to use to retrieve a particular item (using an entry ID).
+    :ivar _api_call_multi: The function to use to retrieve multiple items (getting all or optionally using a filter).
+    :ivar _data_model: The pydantic model corresponding to the cache class.
+    :ivar _not_found_exception: The exception that will be raised if no corresponding entry is found with the API.
     """
 
     def __init__(self, debug: bool = False, use_saved: bool = False):
@@ -42,23 +52,21 @@ class EzoCache:
         Returns BaseModel object representing the entry identified by entry_id.
         Subsequent calls referencing the same entry_id will be retrieved from
         the local cache instead of making further calls to the EZO API.
-        Args:
-            entry_id (int): ID of entry to return.
-            force_api (bool): Get data from API even when cached copy exists.
-        Raises:
-            self._not_found_exception: Raised when entry_id is not found.
-        Returns:
-            BaseModel: Pydantic object.
+
+        :param entry_id: ID of entry to return.
+        :param force_api: Wether to get data from the API even if a cached copy exists.
+        :raises _not_found_exception: Raised when entry_id is not found.
+        :returns BaseModel: Pydantic object.
         """
         if force_api or entry_id not in self.cache:
             try:
                 assert self._api_call_single is not None
-                self.cache[entry_id] = self._api_call_single(asset_id=entry_id)
+                self.cache[entry_id] = self._api_call_single(entry_id=entry_id)
                 return self.cache[entry_id]
 
             except self._not_found_exception as e:
                 raise self._not_found_exception(
-                    f"Asset ID {entry_id} not found. {str(e)}"
+                    f"Entry ID {entry_id} not found. {str(e)}"
                 )
 
         return self.cache[entry_id]
@@ -73,8 +81,8 @@ class EzoCache:
         """
         Downloads EZO data into local cache.
         New data is appended to or overwrites locally cached data.
-        Args:
-            filter (dict, optional): Body/payload filter data for limiting results. See EZ Office API v2 for filter schema.
+
+        :param filter: Body/payload filter data for limiting results. See EZ Office API v2 for filter schema.
         """
         print("Downloading from EZ Office.")
 
