@@ -487,12 +487,12 @@ def asset_checkin(
     :param location_id: The ID of the location to check the asset in to.
     :type location_id: int
     :param comments: Comments to add to the check-in.
-    :type comments: str | None
+    :type comments: str, optional
     :param checkin_date: The date to record the check-in as. Defaults to today if not provided.
-    :type checkin_date: date | None
+    :type checkin_date: date, optional
     :param custom_fields: List of custom fields to set on check-in. Each item in
         the list should be a dictionary with 'id' and 'value' keys.
-    :type custom_fields: list[dict] | None
+    :type custom_fields: list[dict], optional
     :return: ResponseMessages object if there are any messages, else None.
     :rtype: ResponseMessages | None
     """
@@ -563,23 +563,23 @@ def asset_checkout(
     :param request_verification: Whether to request verification of the asset after checkout.
     :type request_verification: bool
     :param comments: Comments to add to the checkout.
-    :type comments: str | None
+    :type comments: str, optional
     :param checkout_forever: Whether to check the asset out indefinitely.
         If False, the 'till' parameter must be provided.
-    :type checkout_forever: bool | None
+    :type checkout_forever: bool, optional
     :param till: The date/time to check the asset back in. Required if checkout_forever is False.
-    :type till: datetime | None
+    :type till: datetime, optional
     :param project_id: The ID of the project to associate the checkout with.
-    :type project_id: int | None
+    :type project_id: int, optional
     :param ignore_conflicting_reservations: Whether to ignore any conflicting reservations
         for the asset when checking out.
-    :type ignore_conflicting_reservations: bool | None
+    :type ignore_conflicting_reservations: bool, optional
     :param fulfill_user_conflicting_reservations: Whether to fulfill any conflicting reservations
         for the user when checking out.
-    :type fulfill_user_conflicting_reservations: bool | None
+    :type fulfill_user_conflicting_reservations: bool, optional
     :param custom_fields: List of custom fields to set on checkout. Each item in
         the list should be a dictionary with 'id' and 'value' keys.
-    :type custom_fields: list[dict] | None
+    :type custom_fields: list[dict], optional
     :return: ResponseMessages object if there are any messages, else None.
     """
 
@@ -645,11 +645,11 @@ def asset_retire(
     :param retire_reason_id: The ID of the reason for retiring the asset.
     :type retire_reason_id: int
     :param salvage_value: The salvage value of the asset.
-    :type salvage_value: float | None
+    :type salvage_value: float, optional
     :param retire_comments: Comments to add to the retirement.
-    :type retire_comments: str | None
+    :type retire_comments: str, optional
     :param location_id: The ID of the location to move the asset to upon retirement.
-    :type location_id: int | None
+    :type location_id: int, optional
     :return: The updated asset object with retired status if successful, else None.
     :rtype: Asset | None
     """
@@ -701,7 +701,7 @@ def asset_activate(asset_id: int, location_id: int | None = None) -> Asset | Non
     :type asset_id: int
     :param location_id: The ID of the location to move the asset to upon reactivation.
         If not provided, asset will remain in its current location.
-    :type location_id: int | None
+    :type location_id: int, optional
     :return: The updated asset object with active status if successful, else None.
     :rtype: Asset | None
     """

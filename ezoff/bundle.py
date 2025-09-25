@@ -22,6 +22,23 @@ def bundle_create(
 ) -> Bundle | None:
     """
     Creates a new bundle of items.
+
+    :param name: The name of the bundle.
+    :type name: str
+    :param description: A description of the bundle.
+    :type description: str
+    :param identification_number: A unique identification number for the bundle.
+    :type identification_number: str
+    :param location_id: The ID of the location the bundle is associated with.
+    :type location_id: int
+    :param enable_items_restricted_by_location: Whether to enable items restricted by location.
+    :type enable_items_restricted_by_location: bool
+    :param bundle_line_items: A list of dictionaries representing the items in the bundle.
+    :type bundle_line_items: list[dict]
+    :param allow_add_bundle_without_specifying_items: Whether to allow adding the bundle without specifying items.
+    :type allow_add_bundle_without_specifying_items: bool
+    :return: The created Bundle object if successful, else None.
+    :rtype: Bundle | None
     """
     params = {k: v for k, v in locals().items() if v is not None}
 
@@ -60,7 +77,12 @@ def bundle_create(
 @Decorators.check_env_vars
 def bundle_return(bundle_id: int) -> Bundle | None:
     """
-    Returns a particular bundle
+    Returns a particular bundle.
+
+    :param bundle_id: The ID of the bundle to retrieve.
+    :type bundle_id: int
+    :return: The Bundle object if found, else None.
+    :rtype: Bundle | None
     """
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/bundles/{bundle_id}"
 
@@ -95,7 +117,12 @@ def bundle_return(bundle_id: int) -> Bundle | None:
 @Decorators.check_env_vars
 def bundles_return(filter: dict | None = None) -> list[Bundle]:
     """
-    Returns all bundles. Optionally, filter by one or more of the bundle fields.
+    Returns all bundles.
+
+    :param filter: A dictionary of bundle fields and the values to filter by.
+    :type filter: dict, optional
+    :return: A list of Bundle objects.
+    :rtype: list[Bundle]
     """
     if filter:
         for field in filter:
