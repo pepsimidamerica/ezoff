@@ -7,10 +7,8 @@ load_dotenv()
 
 sys.path.insert(0, "")
 
-from ezoff import assets_return
+from ezoff import assets_return, members_return
 
-res = assets_return({"group_id": 356045, "sub_group_id": 442903})
+# res = assets_return({"group_id": 356045, "sub_group_id": 442903})
+res = members_return({"team_id": 16})
 pass
-for asset in res:
-    if asset.identifier == "8203":
-        print("Found asset")

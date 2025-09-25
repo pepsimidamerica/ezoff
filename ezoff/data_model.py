@@ -252,6 +252,7 @@ class Member(BaseModel):
     employee_identification_number: Optional[str] = Field(default=None)
     fax: Optional[str] = Field(default=None)
     first_name: str | None = None
+    full_name: str | None = None
     hourly_rate: Optional[float] = Field(default=None)
     id: int
     inactive_by_id: Optional[int] = Field(default=None)
@@ -279,8 +280,38 @@ class Member(BaseModel):
     # situation where you get a list of values back. However, API is inconsistent.
     # Sometimes you'll get back team_id, sometimes team_ids.
     team_id: int | list[int] | None = None
-    team_ids: list[int] | None = None
+    team_ids: int | list[int] | None = None
     time_zone: Optional[str] = Field(default=None)
+
+    def model_post_init(self, __context: Any) -> None:
+        """
+        Normalize team_id / team_ids inconsistencies from API responses.
+        Ensures team_ids is always a list[int], even if API returns a single int or null.
+        """
+        # Prefer team_ids if present
+        if self.team_ids is not None:
+            if isinstance(self.team_ids, int):
+                self.team_ids = [self.team_ids]
+            elif isinstance(self.team_ids, list):
+                self.team_ids = [int(x) for x in self.team_ids if x is not None]
+        elif self.team_id is not None:
+            # Handle team_id if team_ids not provided
+            if isinstance(self.team_id, int):
+                self.team_ids = [self.team_id]
+            elif isinstance(self.team_id, list):
+                self.team_ids = [int(x) for x in self.team_id if x is not None]
+            else:
+                self.team_ids = []
+        else:
+            # Neither provided
+            self.team_ids = []
+
+        # Ensure consistency: keep team_id as first element if exists
+        if self.team_ids:
+            self.team_id = self.team_ids[0]
+        else:
+            self.team_id = None
+
     unseen_app_updates_count: Optional[int] = Field(default=None)
     unsubscribed_by_id: Optional[int] = Field(default=None)
     updated_at: Optional[datetime] = Field(default=None)
@@ -343,6 +374,8 @@ class WorkOrder(BaseModel):
     approver_id: Optional[int] = Field(default=None)
     assigned_to_id: Optional[int] = Field(default=None)
     assigned_to_type: str
+    asset_id: int | None = None
+    associated_assets: list[dict] | None = None
     associated_checklists: list
     base_cost: float
     completed_on: Optional[str] = Field(default=None)

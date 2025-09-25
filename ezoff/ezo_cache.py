@@ -4,6 +4,7 @@ The parent class EzoCache contains basic caching functionality.
 Child classes extend EzoCache and add endpoint specific methods.
 """
 
+import logging
 import pickle
 
 from ezoff.assets import asset_return, assets_return
@@ -18,6 +19,8 @@ from ezoff.locations import location_return, locations_return
 from ezoff.members import member_return, members_return
 from ezoff.work_orders import work_order_return, work_orders_return
 from pydantic import BaseModel
+
+logger = logging.getLogger(__name__)
 
 
 class EzoCache:
@@ -64,10 +67,10 @@ class EzoCache:
                 self.cache[entry_id] = self._api_call_single(entry_id=entry_id)
                 return self.cache[entry_id]
 
-            except self._not_found_exception as e:
+            except self._not_found_exception as e:  # type: ignore
                 raise self._not_found_exception(
                     f"Entry ID {entry_id} not found. {str(e)}"
-                )
+                )  # type: ignore
 
         return self.cache[entry_id]
 
@@ -84,28 +87,28 @@ class EzoCache:
 
         :param filter: Body/payload filter data for limiting results. See EZ Office API v2 for filter schema.
         """
-        print("Downloading from EZ Office.")
-
-        if filter:
-            print(f"Using filter: {filter}")
+        logger.info(f"Downloading from EZ Office. Filter: {filter}")
 
         # Use saved pickle or save a pickle when running in debug mode.
         if self._debug:
+            assert self._pickle_file_name is not None
             if self._use_saved:
                 with open(self._pickle_file_name, "rb") as f:
                     cache = pickle.load(f)
 
             else:
+                assert self._api_call_multi is not None
                 cache = self._api_call_multi(filter=filter)
                 with open(self._pickle_file_name, "wb") as f:
                     pickle.dump(cache, f)
 
         # Call EZO API if not running in debug mode.
         else:
+            assert self._api_call_multi is not None
             cache = self._api_call_multi(filter=filter)
 
-        print(f"Returned {len(cache)} results.")
-        self.cache = {**self.cache, **cache}
+        logger.info(f"Returned {len(cache)} results.")
+        self.cache = {**self.cache, **{x.id: x for x in cache}}
 
 
 class AssetCache(EzoCache):
