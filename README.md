@@ -1,16 +1,9 @@
 # ezoff
 
-Python package for interacting with the EZOffice API. Includes support for v1 and v2 EZ Office API endpoints.
+Python package for interacting with the EZOffice API. Largely uses v2 API endpoints, a couple v1 are used in cases where there aren't any documented v2 versions. Additionally, a few of the JSON API endpoints (found using the browser console) are supported.
 
-Base URL for v1: https://{company name}.ezofficeinventory.com/
-
-Base URL for v2: https://{company name}.ezofficeinventory.com/api/v2/
-
-## Rewrite
-
-There will be a number of breaking changes.
-
-- General cleanup of type hints and docstrings.
+- [v1 API Documentation](https://ezo.io/ezofficeinventory/developers/)
+- [v2 API Documentation](https://www.ezofficeinventory.com/api-docs/index.html)
 
 ## Installation
 
@@ -18,12 +11,14 @@ There will be a number of breaking changes.
 
 ## Usage
 
-Several environment variables are required for ezo to function.
+Two environment variables are required for ezoff to function.
 
-| Required? | Env Variable | Description |
-| --------- | ------------ | ----------- |
-| EZO_SUBDOMAIN | Yes | Should be your company name. Can be found in the URL of your EZO instance, https://{companyname}.ezofficeinventory.com/ |
-| EZO_TOKEN | Yes | The access token used to authenticate requests |
+| Env Variable | Description |
+| --------- | ----------- |
+| EZO_SUBDOMAIN | Should be your company name. Can be found in the URL of your EZO instance, https://{companyname}.ezofficeinventory.com/ |
+| EZO_TOKEN | The access token used to authenticate requests |
+
+`python-dotenv` package is useful for loading variables from an `.env` file. Otherwise, can be done directly with `os`.
 
 ## Project Structure
 
