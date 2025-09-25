@@ -25,6 +25,30 @@ def vendor_create(
 ) -> Vendor | None:
     """
     Creates a new vendor.
+
+    :param name: The name of the vendor.
+    :type name: str
+    :param address: The address of the vendor.
+    :type address: str, optional
+    :param description: A description of the vendor.
+    :type description: str, optional
+    :param email: The email address of the vendor.
+    :type email: str, optional
+    :param fax: The fax number of the vendor.
+    :type fax: str, optional
+    :param phone: The phone number of the vendor.
+    :type phone: str, optional
+    :param website: The website of the vendor.
+    :type website: str, optional
+    :param contact_person_name: The name of the contact person for the vendor.
+    :type contact_person_name: str, optional
+    :param status: The status of the vendor. True for active, False for inactive.
+    :type status: bool, optional
+    :param custom_fields: List of custom fields to set on the vendor. Each item in
+        the list should be a dictionary with 'id' and 'value' keys.
+    :type custom_fields: list[dict], optional
+    :return: The created vendor object if successful, else None.
+    :rtype: Vendor | None
     """
     params = {k: v for k, v in locals().items() if v is not None}
 
@@ -64,6 +88,11 @@ def vendor_create(
 def vendor_return(vendor_id: int) -> Vendor | None:
     """
     Returns a particular vendor.
+
+    :param vendor_id: The ID of the vendor to return.
+    :type vendor_id: int
+    :return: The vendor object if found, else None.
+    :rtype: Vendor | None
     """
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/vendors/{vendor_id}"
 
@@ -98,7 +127,10 @@ def vendor_return(vendor_id: int) -> Vendor | None:
 @Decorators.check_env_vars
 def vendors_return() -> list[Vendor]:
     """
-    Returns all vendors
+    Returns all vendors.
+
+    :return: List of all vendor objects.
+    :rtype: list[Vendor]
     """
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/vendors"
 
@@ -146,6 +178,13 @@ def vendors_return() -> list[Vendor]:
 def vendor_update(vendor_id: int, update_data: dict) -> Vendor | None:
     """
     Updates a particular vendor.
+
+    :param vendor_id: The ID of the vendor to update.
+    :type vendor_id: int
+    :param update_data: A dictionary of fields to update on the vendor.
+    :type update_data: dict
+    :return: The updated vendor object if successful, else None.
+    :rtype: Vendor | None
     """
     for field in update_data:
         if field not in Vendor.model_fields:
