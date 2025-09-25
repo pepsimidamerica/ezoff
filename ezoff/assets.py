@@ -68,6 +68,8 @@ def asset_create(
     :param custom_fields: List of custom fields to set on the asset. Each item in
         the list should be a dictionary with 'id' and 'value' keys.
     :type custom_fields: list[dict], optional
+    :return: The created asset object if successful, else None.
+    :rtype: Asset | None
     """
 
     params = {k: v for k, v in locals().items() if v is not None}

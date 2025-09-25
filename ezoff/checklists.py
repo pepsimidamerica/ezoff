@@ -19,6 +19,9 @@ logger = logging.getLogger(__name__)
 def checklists_return() -> list[Checklist]:
     """
     Returns all checklists.
+
+    :return: A list of Checklist objects.
+    :rtype: list[Checklist]
     """
 
     url = (
