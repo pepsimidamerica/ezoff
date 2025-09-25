@@ -31,7 +31,6 @@ def location_create(
     country: str | None = None,
     identification_number: str | None = None,
     manual_coordinates_provided: bool | None = None,
-    checkout_indefinitely: bool | None = None,
     default_return_duration: int | None = None,
     default_return_deuration_unit: str | None = None,
     default_return_time: str | None = None,
@@ -40,6 +39,47 @@ def location_create(
 ) -> Location | None:
     """
     Creates a new location.
+
+    :param name: Name of the location
+    :type name: str
+    :param city: City where the location is situated
+    :type city: str, optional
+    :param status: Status of the location (e.g., 'active', 'inactive')
+    :type status: str, optional
+    :param street1: First line of the street address
+    :type street1: str, optional
+    :param street2: Second line of the street address
+    :type street2: str, optional
+    :param state: State where the location is situated
+    :type state: str, optional
+    :param zip_code: ZIP code of the location
+    :type zip_code: str, optional
+    :param description: Description of the location
+    :type description: str, optional
+    :param parent_id: ID of the parent location, if any
+    :type parent_id: int, optional
+    :param latitude: Latitude coordinate of the location
+    :type latitude: int, optional
+    :param longitude: Longitude coordinate of the location
+    :type longitude: int, optional
+    :param country: Country where the location is situated
+    :type country: str, optional
+    :param identification_number: Identification number for the location
+    :type identification_number: str, optional
+    :param manual_coordinates_provided: Whether manual coordinates are provided
+    :type manual_coordinates_provided: bool, optional
+    :param default_return_duration: Default return duration for items at this location
+    :type default_return_duration: int, optional
+    :param default_return_deuration_unit: Unit for the default return duration (e.g., 'days', 'weeks')
+    :type default_return_deuration_unit: str, optional
+    :param default_return_time: Default return time for items at this location
+    :type default_return_time: str, optional
+    :param apply_default_return_date_to_child_locations: Whether to apply default return date to child
+    :type apply_default_return_date_to_child_locations: bool, optional
+    :param custom_fields: List of custom fields for the location
+    :type custom_fields: list of dict, optional
+    :return: The created location, or None if creation failed
+    :rtype: Location | None
     """
 
     params = {k: v for k, v in locals().items() if v is not None}
@@ -79,6 +119,11 @@ def location_create(
 def location_return(location_id: int) -> Location | None:
     """
     Returns a particular location.
+
+    :param location_id: The ID of the location to return
+    :type location_id: int
+    :return: The location with the specified ID, or None if not found
+    :rtype: Location | None
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/locations/{location_id}"
@@ -114,7 +159,15 @@ def locations_return(
     state: Literal["all", "active", "inactive"] | None = None,
 ) -> list[Location]:
     """
-    Returns all locations. Optionally filter by state.
+    Returns all locations. Optionally filter by state (all, active, inactive).
+    Note: Unfortunately, EZO doesn't appear to have any further filtering options
+    for the locations endpoint, only state. Otherwise, a more generic filter_data
+    parameter would be used here.
+
+    :param state: Filter locations by state ('all', 'active', 'inactive')
+    :type state: str, optional
+    :return: A list of all locations
+    :rtype: list of Location
     """
     if state is not None:
         filter_data = {"filters": {"state": state}}
@@ -178,7 +231,14 @@ def location_activate(
     location_id: int, activate_children: bool | None = None
 ) -> Location | None:
     """
-    Activates a particular location. Optionally, also activate all children locations.
+    Activates a particular location.
+
+    :param location_id: The ID of the location to activate
+    :type location_id: int
+    :param activate_children: Whether to activate all child locations as well
+    :type activate_children: bool, optional
+    :return: The activated location, or None if activation failed
+    :rtype: Location | None
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/locations/{location_id}/activate"
@@ -219,6 +279,11 @@ def location_activate(
 def location_deactivate(location_id: int) -> Location | None:
     """
     Deactivates a particular location.
+
+    :param location_id: The ID of the location to deactivate
+    :type location_id: int
+    :return: The deactivated location, or None if deactivation failed
+    :rtype: Location | None
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/locations/{location_id}/deactivate"
@@ -254,6 +319,13 @@ def location_deactivate(location_id: int) -> Location | None:
 def location_update(location_id: int, update_data: dict) -> Location | None:
     """
     Updates a particular location.
+
+    :param location_id: The ID of the location to update
+    :type location_id: int
+    :param update_data: A dictionary of fields to update and their new values
+    :type update_data: dict
+    :return: The updated location, or None if the update failed
+    :rtype: Location | None
     """
 
     for field in update_data:
