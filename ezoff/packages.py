@@ -20,6 +20,17 @@ def package_create(
 ) -> Package | None:
     """
     Create a new asset package.
+
+    :param name: Name of the package
+    :type name: str
+    :param description: Description of the package
+    :type description: str, optional
+    :param asset_ids: List of asset IDs to include in the package
+    :type asset_ids: list[int], optional
+    :param arbitration: Arbitration details for the package
+    :type arbitration: str, optional
+    :return: The created package if successful, else None
+    :rtype: Package | None
     """
     params = {k: v for k, v in locals().items() if v is not None}
 
@@ -59,6 +70,10 @@ def package_create(
 def package_return(package_id: int) -> Package | None:
     """
     Returns a particular package.
+
+    :param package_id: The ID of the package to retrieve
+    :return: The package if found, else None
+    :rtype: Package | None
     """
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/packages/{package_id}"
 
@@ -94,6 +109,9 @@ def package_return(package_id: int) -> Package | None:
 def packages_return() -> list[Package]:
     """
     Returns all packages.
+
+    :return: List of all packages
+    :rtype: list[Package]
     """
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/packages"
 
@@ -143,6 +161,17 @@ def package_checkin(
 ) -> ResponseMessages | None:
     """
     Checks in an asset package.
+
+    :param package_id: The ID of the package to check in
+    :type package_id: int
+    :param comments: Comments regarding the check-in
+    :type comments: str
+    :param location_id: The ID of the location where the package is being checked in
+    :type location_id: int
+    :param checkin_date: The date and time of the check-in
+    :type checkin_date: datetime
+    :return: Response messages if successful, else None
+    :rtype: ResponseMessages | None
     """
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/packages/{package_id}/checkin"
 
