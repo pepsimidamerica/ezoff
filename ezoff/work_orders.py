@@ -37,7 +37,7 @@ def work_order_create(
     warranty: bool = False,
     supervisor_id: int | None = None,
     assigned_to_id: int | None = None,
-    assigned_to_type: str | None = None,
+    assigned_to_type: Literal["User", "Team", "Vendor"] | None = None,
     secondary_assignee_ids: list[int] | None = None,
     reviewer_id: int | None = None,
     require_approval_from_reviewer: bool = False,
@@ -55,6 +55,60 @@ def work_order_create(
 ) -> WorkOrder | None:
     """
     Creates a work order.
+
+    :param title: The title of the work order.
+    :type title: str
+    :param state: The state of the work order. Not sure what other valid values might be.
+    :type state: str
+    :param priority: The priority of the work order. Valid values are "High", "Medium", and "Low".
+    :type priority: str
+    :param description: A description of the work order.
+    :type description: str, optional
+    :param created_by_id: The ID of the user creating the work order.
+    :type created_by_id: int, optional
+    :param work_type_name: The name of the work type for the work order.
+    :type work_type_name: str, optional
+    :param mark_items_unavailable: Whether to mark items linked to the work order as unavailable.
+    :type mark_items_unavailable: bool, optional
+    :param warranty: Whether the work order is under warranty.
+    :type warranty: bool, optional
+    :param supervisor_id: The ID of the supervisor for the work order.
+    :type supervisor_id: int, optional
+    :param assigned_to_id: The ID of the user assigned to the work order.
+    :type assigned_to_id: int, optional
+    :param assigned_to_type: The type of the user assigned to the work order. Valid values are "User", "Team", and "Vendor".
+    :type assigned_to_type: str, optional
+    :param secondary_assignee_ids: A list of IDs of secondary assignees for the work order.
+    :type secondary_assignee_ids: list[int], optional
+    :param reviewer_id: The ID of the reviewer for the work order.
+    :type reviewer_id: int, optional
+    :param require_approval_from_reviewer: Whether the work order requires approval from the reviewer.
+    :type require_approval_from_reviewer: bool, optional
+    :param location_id: The ID of the location for the work order.
+    :type location_id: int, optional
+    :param expected_start_date: The expected start date of the work order.
+    :type expected_start_date: datetime, optional
+    :param due_date: The due date of the work order.
+    :type due_date: datetime, optional
+    :param repetition: Whether the work order is a repeating work order.
+    :type repetition: bool, optional
+    :param repetition_start_date: The start date of the repetition.
+    :type repetition_start_date: datetime, optional
+    :param repetition_end_date: The end date of the repetition.
+    :type repetition_end_date: datetime, optional
+    :param repeat_every_duration: The duration of the repetition. For example, "Month".
+    :type repeat_every_duration: str, optional
+    :param repeat_every_basis: The basis of the repetition.
+    :type repeat_every_basis: int, optional
+    :param recurrence_based_on_completion: Whether the repetition is based on completion of the work order.
+    :type recurrence_based_on_completion: bool, optional
+    :param recurrence_based_on_interval: Whether the repetition is based on a fixed interval.
+    :type recurrence_based_on_interval: bool, optional
+    :param custom_fields: A list of custom fields to set on the work order. Each item in
+        the list should be a dictionary with 'id' and 'value' keys.
+    :type custom_fields: list[dict], optional
+    :return: The created work order object if successful, else None.
+    :rtype: WorkOrder | None
     """
 
     params = {k: v for k, v in locals().items() if v is not None}
@@ -97,10 +151,14 @@ def service_create(asset_id: int, service: dict) -> dict:
     Creates a service record against a given asset
     https://ezo.io/ezofficeinventory/developers/#api-create-service
 
-    TODO v1
+    Note: API v1 endpoint, not sure what equivalent in v2 is.
 
     :param asset_id: The ID of the asset to create the service record against
+    :type asset_id: int
     :param service: A dictionary containing the service record details
+    :type service: dict
+    :return: The created service record/response from API
+    :rtype: dict
     """
 
     # Required fields
@@ -158,6 +216,11 @@ def service_create(asset_id: int, service: dict) -> dict:
 def work_order_return(work_order_id: int) -> WorkOrder | None:
     """
     Get a single work order.
+
+    :param work_order_id: The ID of the work order to retrieve.
+    :type work_order_id: int
+    :return: The work order object if found, else None.
+    :rtype: WorkOrder | None
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}"
@@ -200,6 +263,11 @@ def work_order_return(work_order_id: int) -> WorkOrder | None:
 def work_orders_return(filter: dict | None = None) -> list[WorkOrder]:
     """
     Get all work orders. Optionally filter using one or more work order fields.
+
+    :param filter: A dictionary of fields to filter the work orders by.
+    :type filter: dict, optional
+    :return: A list of work order objects.
+    :rtype: list[WorkOrder]
     """
 
     if filter:
@@ -256,7 +324,15 @@ def work_orders_return(filter: dict | None = None) -> list[WorkOrder]:
 @Decorators.check_env_vars
 def work_orders_search(search_term: str) -> list[WorkOrder]:
     """
-    Search for work orders.
+    Search for work orders. Generally equivalent to usingthe search box in the UI.
+    Generally recommended to use the work_orders_return function if you have any
+    specific filters to go off of. But this is still useful for some cases, such as
+    searching via user input.
+
+    :param search_term: The term to search for in work orders.
+    :type search_term: str
+    :return: A list of work order objects that match the search term.
+    :rtype: list[WorkOrder]
     """
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/search"
 
@@ -305,6 +381,11 @@ def work_orders_search(search_term: str) -> list[WorkOrder]:
 def work_order_linked_work_orders_return(work_order_id: int) -> list[WorkOrder]:
     """
     Returns work orders that are linked to a particular work order.
+
+    :param work_order_id: The ID of the work order to retrieve linked work orders for.
+    :type work_order_id: int
+    :return: A list of work order objects that are linked to the specified work order.
+    :rtype: list[WorkOrder]
     """
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/linked_work_orders"
 
@@ -353,6 +434,11 @@ def work_order_linked_work_orders_return(work_order_id: int) -> list[WorkOrder]:
 def work_order_linked_inventory_return(work_order_id: int) -> list[LinkedInventory]:
     """
     Returns list of inventory items linked to a particular work order.
+
+    :param work_order_id: The ID of the work order to retrieve linked inventory for.
+    :type work_order_id: int
+    :return: A list of linked inventory items.
+    :rtype: list[LinkedInventory]
     """
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/linked_inventory_items"
 
@@ -404,10 +490,13 @@ def work_order_linked_inventory_return(work_order_id: int) -> list[LinkedInvento
 def work_order_types_return() -> list[dict]:
     """
     Get work order types
-    TODO v1
+    TODO v1 Not sure if there is a v2 equivalent.
     Function doesn't appear to be paginated even though most other similar
     functions are.
     https://ezo.io/ezofficeinventory/developers/#api-get-task-types
+
+    :return: A list of work order types.
+    :rtype: list[dict]
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/assets/task_types.api"
@@ -439,6 +528,11 @@ def work_order_types_return() -> list[dict]:
 def work_order_work_logs_return(work_order_id: int) -> list[WorkLog]:
     """
     Returns a list of work logs attached to a particular work order.
+
+    :param work_order_id: The ID of the work order to retrieve work logs for.
+    :type work_order_id: int
+    :return: A list of work log objects.
+    :rtype: list[WorkLog]
     """
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}"
 
@@ -487,6 +581,13 @@ def work_order_work_logs_return(work_order_id: int) -> list[WorkLog]:
 def work_order_update(work_order_id: int, update_data: dict) -> WorkOrder | None:
     """
     Updates a work order.
+
+    :param work_order_id: The ID of the work order to update.
+    :type work_order_id: int
+    :param update_data: A dictionary of fields to update on the work order.
+    :type update_data: dict
+    :return: The updated work order object if successful, else None.
+    :rtype: WorkOrder | None
     """
 
     for field in update_data:
@@ -536,7 +637,27 @@ def work_order_add_work_log(
     custom_attributes: dict | None = None,
 ) -> dict:
     """
-    Add a work log to a particular work order
+    Add a work log to a particular work order.
+
+    Note: Found this one via the browser console. So not positive on all the
+    valid values for parameters or return values.
+
+    :param work_order_id: The ID of the work order to add the work log to.
+    :type work_order_id: int
+    :param started_on_dttm: The datetime the work started.
+    :type started_on_dttm: datetime
+    :param ended_on_dttm: The datetime the work ended.
+    :type ended_on_dttm: datetime
+    :param hours_spent: The number of hours spent on the work.
+    :type hours_spent: float, optional
+    :param cost_per_hour: The cost per hour of the work.
+    :type cost_per_hour: float, optional
+    :param note: A note to include with the work log.
+    :type note: str, optional
+    :param custom_attributes: A dictionary of custom attributes to include with the work log.
+    :type custom_attributes: dict, optional
+    :return: The response from the API.
+    :rtype: dict
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/tasks/{work_order_id}/task_work_logs.json"
@@ -585,7 +706,14 @@ def work_order_add_linked_inv(
     work_order_id: int, inv_items: list[LinkedInventory]
 ) -> ResponseMessages | None:
     """
-    Add linked inventory items to a work order
+    Add linked inventory items to a work order.
+
+    :param work_order_id: The ID of the work order to add linked inventory to.
+    :type work_order_id: int
+    :param inv_items: A list of LinkedInventory items to add to the work order.
+    :type inv_items: list[LinkedInventory]
+    :return: Response messages from the API if any, else None.
+    :rtype: ResponseMessages | None
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/link_inventory"
@@ -630,22 +758,26 @@ def work_order_routing_update(
     Update the assigned to user and start/end time of a workorder.
     Intended for use by an external routing system.
 
-    Args:
-        work_order_id (int): User facing work order ID.
-        assigned_to_id (str): System ID of user to assign to work order.
-        task_type_id (int): Task type of the work order.
-        start_dttm (date): Start datetime of the work order.
-        due_dttm (date): Due datetime of the work order.
-        supervisor_id (str): Supervisor ID to assign the work order.
-        reviewer_id (str): Reviewer ID to assign the work order.
-
-    Returns:
-        dict: Response from the EZ Office API endpoint.
+    :param work_order_id: User facing work order ID.
+    :type work_order_id: int
+    :param assigned_to_id: System ID of user to assign to work order.
+    :type assigned_to_id: str
+    :param task_type_id: Task type of the work order.
+    :type task_type_id: int
+    :param start_dttm: Start datetime of the work order.
+    :type start_dttm: datetime
+    :param due_dttm: Due datetime of the work order.
+    :type due_dttm: datetime
+    :param supervisor_id: Supervisor ID to assign the work order.
+    :type supervisor_id: str, optional
+    :param reviewer_id: Reviewer ID to assign the work order.
+    :type reviewer_id: str, optional
+    :return: Response from the EZ Office API endpoint.
+    :rtype: WorkOrder | None
     """
-    # TODO Need to change the fields here
     filter = {
-        "task[assigned_to_id]": assigned_to_id,
-        "task[task_type_id]": str(task_type_id),
+        "assigned_to_id": assigned_to_id,
+        "task_type_id": str(task_type_id),
         "due_date": due_dttm.strftime("%m/%d/%Y"),
         "start_time": due_dttm.strftime("%H:%M"),
         "expected_start_date": start_dttm.strftime("%m/%d/%Y"),
@@ -653,11 +785,11 @@ def work_order_routing_update(
     }
 
     if supervisor_id is not None:
-        filter["task[supervisor_id]"] = supervisor_id
+        filter["supervisor_id"] = supervisor_id
         print(f"Updating work order supervisor to: {supervisor_id}")
 
     if reviewer_id is not None:
-        filter["task[reviewer_id]"] = reviewer_id
+        filter["reviewer_id"] = reviewer_id
 
     result = work_order_update(work_order_id=work_order_id, update_data=filter)
 
@@ -670,6 +802,13 @@ def work_order_add_component(
 ) -> ResponseMessages | None:
     """
     Adds a component to a work order.
+
+    :param work_order_id: The ID of the work order to add the component to.
+    :type work_order_id: int
+    :param components: A list of Component objects to add to the work order.
+    :type components: list[Component]
+    :return: Response messages from the API if any, else None.
+    :rtype: ResponseMessages | None
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/add_components"
@@ -715,7 +854,25 @@ def work_order_mark_in_progress(
     assigned_to_type: str | None = None,
 ) -> ResponseMessages | None:
     """
-    Start a work order
+    Start a work order.
+
+    :param work_order_id: The ID of the work order to start.
+    :type work_order_id: int
+    :param start_work_on_all_assets: Whether to start work on all assets linked to the work order.
+    :type start_work_on_all_assets: bool, optional
+    :param actual_start_date: The actual start date of the work order.
+    :type actual_start_date: datetime, optional
+    :param component_ids: A list of component IDs to start work on.
+    :type component_ids: list[int], optional
+    :param supervisor_id: The ID of the supervisor for the work order.
+    :type supervisor_id: int, optional
+    :param assigned_to_id: The ID of the user assigned to the work order.
+    :type assigned_to_id: int, optional
+    :param assigned_to_type: The type of the user assigned to the work order. Valid
+        values are "User", "Team", and "Vendor".
+    :type assigned_to_type: str, optional
+    :return: Response messages from the API if any, else None.
+    :rtype: ResponseMessages | None
     """
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/mark_in_progress"
 
@@ -760,7 +917,14 @@ def work_order_mark_on_hold(
     work_order_id: int, comment: str | None = None
 ) -> ResponseMessages | None:
     """
-    Start a particular work order
+    Start a particular work order.
+
+    :param work_order_id: The ID of the work order to mark on hold.
+    :type work_order_id: int
+    :param comment: An optional comment to add when marking the work order on hold.
+    :type comment: str, optional
+    :return: Response messages from the API if any, else None.
+    :rtype: ResponseMessages | None
     """
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/mark_on_hold"
 
@@ -801,6 +965,13 @@ def work_order_mark_complete(
 ) -> ResponseMessages | None:
     """
     Completes a particular work order.
+
+    :param work_order_id: The ID of the work order to mark complete.
+    :type work_order_id: int
+    :param completed_on_dttm: The datetime the work order was completed.
+    :type completed_on_dttm: datetime
+    :return: Response messages from the API if any, else None.
+    :rtype: ResponseMessages | None
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/mark_complete"
@@ -852,6 +1023,13 @@ def work_order_add_linked_wo(
 ) -> ResponseMessages | None:
     """
     Links one or more work orders to a particular work order.
+
+    :param work_order_id: The ID of the work order to link other work orders to.
+    :type work_order_id: int
+    :param wo_ids_to_link: A list of work order IDs to link to the specified work order.
+    :type wo_ids_to_link: list[int]
+    :return: Response messages from the API if any, else None.
+    :rtype: ResponseMessages | None
     """
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/link_work_orders"
 
@@ -896,6 +1074,12 @@ def work_order_remove_linked_wo(
 ) -> ResponseMessages | None:
     """
     Unlinks one or more work orders from a particular work order.
+    :param work_order_id: The ID of the work order to unlink other work orders from.
+    :type work_order_id: int
+    :param wo_ids_to_link: A list of work order IDs to unlink from the specified work order.
+    :type wo_ids_to_link: list[int]
+    :return: Response messages from the API if any, else None.
+    :rtype: ResponseMessages | None
     """
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/unlink_work_orders"
 
@@ -940,6 +1124,13 @@ def work_order_add_linked_po(
 ) -> ResponseMessages | None:
     """
     Links one or more purchase orders to a particular work order.
+
+    :param work_order_id: The ID of the work order to link other work orders to.
+    :type work_order_id: int
+    :param po_ids_to_link: A list of purchase order IDs to link to the specified work order.
+    :type po_ids_to_link: list[int]
+    :return: Response messages from the API if any, else None.
+    :rtype: ResponseMessages | None
     """
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/link_po"
 
@@ -984,6 +1175,13 @@ def work_order_remove_linked_po(
 ) -> ResponseMessages | None:
     """
     Unlinks one or more purchase orders from a particular work order.
+
+    :param work_order_id: The ID of the work order to unlink other work orders from.
+    :type work_order_id: int
+    :param po_ids_to_link: A list of purchase order IDs to unlink from the specified work order.
+    :type po_ids_to_link: list[int]
+    :return: Response messages from the API if any, else None.
+    :rtype: ResponseMessages | None
     """
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/unlink_po"
 
@@ -1028,6 +1226,13 @@ def work_orders_start_component_service(
 ) -> ResponseMessages | None:
     """
     Starts service on one or more assets on a work order.
+
+    :param work_order_id: The ID of the work order to start service on.
+    :type work_order_id: int
+    :param component_ids: A list of component IDs to start service on.
+    :type component_ids: list[int]
+    :return: Response messages from the API if any, else None.
+    :rtype: ResponseMessages | None
     """
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/start_components_service"
 
@@ -1066,6 +1271,13 @@ def work_orders_end_component_service(
 ) -> ResponseMessages | None:
     """
     Ends service on one or more assets on a work order.
+
+    :param work_order_id: The ID of the work order to end service on.
+    :type work_order_id: int
+    :param component_ids: A list of component IDs to end service on.
+    :type component_ids: list[int]
+    :return: Response messages from the API if any, else None.
+    :rtype: ResponseMessages | None
     """
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/end_components_service"
 
@@ -1104,10 +1316,17 @@ def work_order_add_checklist(
     """
     Add a single checklist to an existing work order.
 
-    Args:
-        work_order_id (int): User facing ID of work order.
-        checklist_id (int): Internal ID of checklist to link with work order.
-        asset_id (int): Internal ID of asset to assign this checklist to.
+    Note: Found this one via the browser console. So not positive on all the
+    valid values for parameters or return values.
+
+    :param work_order_id: The ID of the work order to add checklist to.
+    :type work_order_id: int
+    :param checklist_id: ID of checklist to link with work order.
+    :type checklist_id: int
+    :param asset_id: ID of asset to assign this checklist to.
+    :type asset_id: int, optional
+    :return: The response from the API endpoint.
+    :rtype: dict
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/tasks/{work_order_id}/add_checklists.json"
@@ -1144,6 +1363,17 @@ def work_order_update_checklist(
 ) -> ResponseMessages | None:
     """
     Updates an existing checklist in a work order.
+
+    :param work_order_id: ID of the work order to update checklist on.
+    :type work_order_id: int
+    :param checklist_id: ID of checklist to update.
+    :type checklist_id: int
+    :param checklist_values: A list of dictionaries containing checklist item IDs and their new values.
+    :type checklist_values: list[dict]
+    :param asset_id: ID of asset to assign this checklist to.
+    :type asset_id: int, optional
+    :return: Response messages from the API if any, else None.
+    :rtype: ResponseMessages | None
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/update_work_order_checklist"
@@ -1187,6 +1417,13 @@ def work_order_remove_checklist(
 ) -> ResponseMessages | None:
     """
     Removes a checklist from a work order.
+
+    :param work_order_id: ID of the work order to remove checklist from.
+    :type work_order_id: int
+    :param checklist_id: ID of checklist to remove.
+    :type checklist_id: int
+    :return: Response messages from the API if any, else None.
+    :rtype: ResponseMessages | None
     """
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/remove_checklist"
 
@@ -1224,6 +1461,11 @@ def work_order_remove_checklist(
 def work_order_delete(work_order_id: int) -> WorkOrder | None:
     """
     Deletes a particular work order.
+
+    :param work_order_id: The ID of the work order to delete.
+    :type work_order_id: int
+    :return: The deleted WorkOrder object if successful, else None.
+    :rtype: WorkOrder | None
     """
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}"
 
@@ -1257,7 +1499,12 @@ def work_order_delete(work_order_id: int) -> WorkOrder | None:
 def work_orders_delete(work_order_ids: list[int]) -> ResponseMessages | None:
     """
     Deletes multiple work orders.
-    Note: Mass deletion must be enabled in company settings.
+    Note: Mass deletion must be enabled in company settings. Off by default.
+
+    :param work_order_ids: A list of work order IDs to delete.
+    :type work_order_ids: list[int]
+    :return: Response messages from the API if any, else None.
+    :rtype: ResponseMessages | None
     """
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/mass_delete"
 
