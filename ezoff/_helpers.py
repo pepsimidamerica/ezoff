@@ -36,8 +36,8 @@ _basic_retry = retry(
     stop=stop_after_attempt(5),
     wait=wait_exponential(multiplier=1, min=4, max=10),
     retry=retry_if_exception(should_retry_http_or_network_error),
-    before=before_log(logger, logging.INFO),
-    after=after_log(logger, logging.INFO),
+    before=before_log(logger, logging.DEBUG),
+    after=after_log(logger, logging.DEBUG),
 )
 
 
