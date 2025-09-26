@@ -960,6 +960,38 @@ def work_order_mark_on_hold(
 
 
 @Decorators.check_env_vars
+def work_order_force_complete(work_order_id: int):
+    """Forces a work order into a completed state.
+    Work order will have any checklists cleared, then be marked in-progress,
+    then be marked completed.
+
+    Args:
+        work_order_id (int): Work order to force to a state of completed.
+    """
+    wo = work_order_return(work_order_id=work_order_id)
+
+    for checklist in wo.associated_checklists:
+        checklist_id = checklist["checklist_id"]
+        print(f"Removing checklist id: {checklist_id}")
+        work_order_remove_checklist(
+            work_order_id=work_order_id, checklist_id=checklist_id
+        )
+
+    if wo.assigned_to_id is not None:
+        assigned_to_id = wo.assigned_to_id
+    else:
+        # Default assigned to dispatch department.
+        assigned_to_id = 1336290
+
+    # The assigned to field of the work order must have data before marking in-progress.
+    work_order_mark_in_progress(work_order_id=work_order_id, assigned_to_id=assigned_to_id)
+
+    work_order_mark_complete(
+        work_order_id=work_order_id, completed_on_dttm=datetime.now()
+    )
+
+
+@Decorators.check_env_vars
 def work_order_mark_complete(
     work_order_id: int, completed_on_dttm: datetime
 ) -> ResponseMessages | None:
