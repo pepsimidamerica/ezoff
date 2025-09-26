@@ -123,7 +123,7 @@ class Inventory(BaseModel):
     initial_stock_quantity: int
     inventory_threshold: int
     line_items_attributes: list | None = None
-    location_id: int
+    location_id: int | None = None
     location_thresholds_attributes: list | None = None
     name: str
     net_quantity: int | None = None
