@@ -24,6 +24,7 @@ from .assets import (
 )
 from .bundle import bundle_create, bundle_return, bundles_return
 from .checklists import checklists_return
+from .data_model import *
 from .enums import AssetClass, CustomFieldID, LocationClass, RentLoan, ResourceType
 from .ezo_cache import AssetCache, EzoCache, LocationCache, MemberCache, WorkOrderCache
 from .groups import (
@@ -78,6 +79,7 @@ from .members import (
     teams_return,
     user_listings_return,
 )
+from .members_v1 import members_return_v1
 from .packages import package_checkin, package_create, package_return, packages_return
 from .projects import (
     project_create,
@@ -191,6 +193,7 @@ __all__ = [
     "member_create",
     "member_deactivate",
     "member_return",
+    "members_return_v1",
     "member_update",
     "MemberCache",
     "members_create",

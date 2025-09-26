@@ -32,6 +32,15 @@ def check_members_return():
     pprint(members)
 
 
+def check_members_return_v1():
+    filter = {
+        "filter": "employee_identification_number",
+        "filter_val": "7606",
+    }
+    members = members_return_v1(filter=filter)
+    pprint(members)
+
+
 def check_location_return():
     loc = location_return(location_id=13075)
     pprint(loc.model_dump())
@@ -82,10 +91,12 @@ def check_work_order_force_complete():
 
 
 check_work_order_return()
+check_work_orders_return()
 check_checklist_return()
 
-check_work_orders_return()
 check_members_return()
+check_members_return_v1()
+
 check_assets_return()
 
 check_locations_return()

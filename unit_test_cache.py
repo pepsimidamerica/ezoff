@@ -1,15 +1,16 @@
 import logging
 import sys
 
-from dotenv import load_dotenv
-from ezoff import AssetCache, LocationCache, MemberCache, WorkOrderCache
+# from dotenv import load_dotenv
+from ezoff import *
 
 # Load env vars from a .env file
-load_dotenv()
+# load_dotenv()
 
-sys.path.insert(0, "")
+# sys.path.insert(0, "")
 
 logger = logging.getLogger(__name__)
+
 
 
 def print_test_heading(title: str):
@@ -72,8 +73,10 @@ def test_workorder_cache():
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.DEBUG)
+
+    print('Running EZ-Office Cache Unit Tests')
     test_asset_cache()
     # test_location_cache()
     test_member_cache()
     test_workorder_cache()
-    pass
