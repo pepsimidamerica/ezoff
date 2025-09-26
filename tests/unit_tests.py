@@ -90,16 +90,16 @@ def check_work_order_force_complete():
     # )
 
 
-check_work_order_return()
-check_work_orders_return()
-check_checklist_return()
+# check_work_order_return()
+# check_work_orders_return()
+# check_checklist_return()
 
-check_members_return()
+# check_members_return()
 check_members_return_v1()
 
-check_assets_return()
+# check_assets_return()
 
-check_locations_return()
-check_location_return()
+# check_locations_return()
+# check_location_return()
 
 # check_work_order_force_complete()

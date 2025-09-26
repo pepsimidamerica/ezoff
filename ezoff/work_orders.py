@@ -594,7 +594,7 @@ def work_order_update(work_order_id: int, update_data: dict) -> WorkOrder | None
         if field not in WorkOrder.model_fields:
             raise ValueError(f"'{field}' is not a valid field for a group.")
 
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/work_logs"
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}"
 
     try:
         response = requests.put(
@@ -778,10 +778,11 @@ def work_order_routing_update(
     filter = {
         "assigned_to_id": assigned_to_id,
         "task_type_id": str(task_type_id),
-        "due_date": due_dttm.strftime("%m/%d/%Y"),
-        "start_time": due_dttm.strftime("%H:%M"),
-        "expected_start_date": start_dttm.strftime("%m/%d/%Y"),
-        "expected_start_time": start_dttm.strftime("%H:%M"),
+        "due_date": due_dttm.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        # "start_time": due_dttm.strftime("%H:%M"),
+        # "expected_start_date": start_dttm.strftime("%m/%d/%Y"),
+        # "expected_start_time": start_dttm.strftime("%H:%M"),
+        "expected_start_date": start_dttm.strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
 
     if supervisor_id is not None:
