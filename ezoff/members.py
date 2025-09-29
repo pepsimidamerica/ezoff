@@ -21,23 +21,25 @@ def member_create(
     last_name: str,
     role_id: int,
     email: str,
-    employee_identification_number: str | None,
-    team_ids: list[int] | None,
-    user_listing_id: int | None,
-    login_enabled: bool | None,
-    subscribed_to_emails: bool | None,
-    skip_confirmation_email: bool | None,
-    address_name: str | None,
-    address: str | None,
-    address_line_2: str | None,
-    city: str | None,
-    state: str | None,
-    zip_code: str | None,
-    country: str | None,
-    fax: str | None,
-    phone_number: str | None,
-    image_url: str | None,
-    custom_fields: list[dict] | None,
+    employee_identification_number: str | None = None,
+    description: str | None = None,
+    department: str | None = None,
+    team_ids: list[int] | None = None,
+    user_listing_id: int | None = None,
+    login_enabled: bool | None = None,
+    subscribed_to_emails: bool | None = None,
+    skip_confirmation_email: bool | None = None,
+    address_name: str | None = None,
+    address: str | None = None,
+    address_line_2: str | None = None,
+    city: str | None = None,
+    state: str | None = None,
+    zip_code: str | None = None,
+    country: str | None = None,
+    fax: str | None = None,
+    phone_number: str | None = None,
+    image_url: str | None = None,
+    custom_fields: list[dict] | None = None,
 ) -> Member | None:
     """
     Create a new member.
@@ -52,6 +54,10 @@ def member_create(
     :type email: str
     :param employee_identification_number: Employee ID number for the member
     :type employee_identification_number: str, optional
+    :param description: Description of the member
+    :type description: str, optional
+    :param department: Department the member belongs to
+    :type department: str, optional
     :param team_ids: List of team IDs to assign the member to
     :type team_ids: list[int], optional
     :param user_listing_id: User listing ID to associate with the member

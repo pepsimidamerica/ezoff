@@ -329,6 +329,8 @@ class MemberCreate(BaseModel):
     role_id: int
     email: str
     employee_identification_number: str | None = None
+    department: str | None = None
+    description: str | None = None
     team_ids: list[int] | None = None
     user_listing_id: int | None = None
     login_enabled: bool | None = None
