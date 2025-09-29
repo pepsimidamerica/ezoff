@@ -22,6 +22,8 @@ def member_create(
     role_id: int,
     email: str,
     employee_identification_number: str | None = None,
+    description: str | None = None,
+    department: str | None = None,
     team_ids: list[int] | None = None,
     user_listing_id: int | None = None,
     login_enabled: bool | None = None,
@@ -52,6 +54,10 @@ def member_create(
     :type email: str
     :param employee_identification_number: Employee ID number for the member
     :type employee_identification_number: str, optional
+    :param description: Description of the member
+    :type description: str, optional
+    :param department: Department the member belongs to
+    :type department: str, optional
     :param team_ids: List of team IDs to assign the member to
     :type team_ids: list[int], optional
     :param user_listing_id: User listing ID to associate with the member
