@@ -52,10 +52,9 @@ def check_locations_return():
 
 
 def check_work_order_return():
-    wo_id = 26531    
+    wo_id = 26531
     wopd = work_order_return(work_order_id=wo_id)
     pprint(wopd.model_dump())
-
 
 
 def check_work_orders_return():
@@ -72,22 +71,12 @@ def check_work_order_force_complete():
     work_order_id = 27996
     work_order_force_complete(work_order_id=work_order_id)
 
-    # wo = work_order_return(work_order_id=work_order_id)
 
-    # print(wo.associated_checklists)
+def check_work_order_update():
+    work_order_id = 17087
+    update_data = {"custom_fields": [{"id": 739, "value": "11 Marion"}]}
 
-    # for checklist in wo.associated_checklists:
-    #     checklist_id = checklist["checklist_id"]
-    #     print(f"Removing checklist id: {checklist_id}")
-    #     work_order_remove_checklist(
-    #         work_order_id=work_order_id, checklist_id=checklist_id
-    #     )
-
-    # print(f"Completing work order: {work_order_id}")
-
-    # work_order_mark_complete(
-    #     work_order_id=work_order_id, completed_on_dttm=datetime.now()
-    # )
+    work_order_update(work_order_id=work_order_id, update_data=update_data)
 
 
 # check_work_order_return()
@@ -95,7 +84,7 @@ def check_work_order_force_complete():
 # check_checklist_return()
 
 # check_members_return()
-check_members_return_v1()
+# check_members_return_v1()
 
 # check_assets_return()
 
@@ -103,3 +92,4 @@ check_members_return_v1()
 # check_location_return()
 
 # check_work_order_force_complete()
+# check_work_order_update()

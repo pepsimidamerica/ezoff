@@ -30,7 +30,6 @@ def test_asset_cache():
     for asset_id in ac.assets:
         asset = ac.assets[asset_id]
         logger.debug(f"ID: {asset.id} Name: {asset.name}")
-    pass
 
 
 def test_location_cache():
@@ -55,7 +54,6 @@ def test_member_cache():
     for member_id in mc.members:
         member = mc.members[member_id]
         logger.debug(f"ID: {member.id} Name: {member.full_name}")
-    pass
 
 
 def test_workorder_cache():
@@ -69,14 +67,13 @@ def test_workorder_cache():
     for workorder_id in wc.work_orders:
         workorder = wc.work_orders[workorder_id]
         logger.debug(f"ID: {workorder.id} Name: {workorder.title}")
-    pass
 
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
 
     print('Running EZ-Office Cache Unit Tests')
-    test_asset_cache()
-    # test_location_cache()
-    test_member_cache()
-    test_workorder_cache()
+    # test_asset_cache()
+    test_location_cache()
+    # test_member_cache()
+    # test_workorder_cache()
