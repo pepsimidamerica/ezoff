@@ -3,7 +3,7 @@
 Python package for interacting with the EZOffice API. Largely uses v2 API endpoints, a couple v1 are used in cases where there aren't any documented v2 versions. Additionally, a few of the JSON API endpoints (found using the browser console) are supported.
 
 - [v1 API Documentation](https://ezo.io/ezofficeinventory/developers/)
-- [v2 API Documentation](https://www.ezofficeinventory.com/api-docs/index.html)
+- [v2 API Documentation](https://ezo.io/ezofficeinventory/api-v2/)
 
 ## Installation
 
