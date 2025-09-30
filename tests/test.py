@@ -7,8 +7,8 @@ load_dotenv()
 
 sys.path.insert(0, "")
 
-from ezoff import inventories_return
+from ezoff import assets_return, locations_return
 
-# res = assets_return({"group_id": 356045, "sub_group_id": 442903})
-res = inventories_return()
+res = assets_return({"group_id": 356045})
+# res = locations_return(state="inactive")
 pass

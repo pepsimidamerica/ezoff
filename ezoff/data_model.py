@@ -73,32 +73,39 @@ class Asset(BaseModel):
         """
 
         if self.custom_fields:
-            for field in self.custom_fields:
-                # Assign Rent Flag
-                if "id" in field and field["id"] == CustomFieldID.RENT_FLAG.value:
-                    if field["value"] is not None and isinstance(field["value"], list):
-                        if len(field["value"]) > 0:
-                            self.rent = True
-                        else:
-                            self.rent = False
+            # Create lookup dictionary
+            field_values = {
+                field.get("id"): field.get("value")
+                for field in self.custom_fields
+                if "id" in field
+            }
 
-                # Assign Serial Number
-                if "id" in field and field["id"] == CustomFieldID.ASSET_SERIAL_NO.value:
-                    if field["value"] is not None and isinstance(field["value"], str):
-                        self.serial_number = field["value"]
+            # Process Rent Flag
+            if CustomFieldID.RENT_FLAG.value in field_values:
+                value = field_values[CustomFieldID.RENT_FLAG.value]
+                if value is not None and isinstance(value, list):
+                    if len(value) > 0:
+                        self.rent = True
+                    else:
+                        self.rent = False
 
-                # Assign Asset Class
-                if "id" in field and field["id"] == CustomFieldID.ASSET_CLASS.value:
-                    if field["value"] is not None and isinstance(field["value"], list):
-                        if len(field["value"]) > 0:
-                            try:
-                                self.asset_class = AssetClass(field["value"][0])
-                            except ValueError as e:
-                                raise ValueError(
-                                    (
-                                        f"Invalid asset class in asset {self.id}: {field['value'][0]}"
-                                    )
-                                )
+            # Process Serial Number
+            if CustomFieldID.ASSET_SERIAL_NO.value in field_values:
+                value = field_values[CustomFieldID.ASSET_SERIAL_NO.value]
+                if value and isinstance(value, str):
+                    self.serial_number = value
+
+            # Process Asset Class
+            if CustomFieldID.ASSET_CLASS.value in field_values:
+                value = field_values[CustomFieldID.ASSET_CLASS.value]
+                if value is not None and isinstance(value, list):
+                    if len(value) > 0:
+                        try:
+                            self.asset_class = AssetClass(value[0])
+                        except ValueError as e:
+                            raise ValueError(
+                                f"Invalid asset class in asset {self.id}: {value[0]}"
+                            )
 
 
 class Inventory(BaseModel):
@@ -163,6 +170,9 @@ class Component(BaseModel):
 
 
 class Location(BaseModel):
+    # Class attribute to control custom fields clearing behavior
+    _clear_custom_fields: bool = True
+
     apply_default_return_date_to_child_locations: Optional[bool] = Field(default=None)
     checkout_indefinitely: Optional[bool] = Field(default=None)
     city: Optional[str] = Field(default=None)
@@ -196,31 +206,46 @@ class Location(BaseModel):
     parent_cust_code: Optional[str] = Field(default=None)
     exclude_rent_fees: Optional[bool] = Field(default=None)
     location_class: Optional[LocationClass] = Field(default=LocationClass.NONE)
+    tax_jurisdiction: Optional[str] = Field(default=None)
 
     def model_post_init(self, __context: Any) -> None:
-        # Parse custom fields.
-        for field in self.custom_fields:
-            # Assign 'Exclude Rent Fees'
-            if "id" in field and field["id"] == CustomFieldID.EXCLUDE_RENT_FEES.value:
-                if field["value"] is not None and isinstance(field["value"], str):
-                    if field["value"].lower() == "yes":
-                        self.exclude_rent_fees = True
-                    else:
-                        self.exclude_rent_fees = False
+        """
+        Parse custom fields into specific model attributes.
+        """
+        if self.custom_fields:
+            # Create lookup dictionary
+            field_values = {
+                field.get("id"): field.get("value")
+                for field in self.custom_fields
+                if "id" in field
+            }
 
-            # Assign 'Parent Customer Code'
-            if "id" in field and field["id"] == CustomFieldID.PARENT_CUST_CODE.value:
-                if field["value"] is not None and isinstance(field["value"], str):
-                    self.parent_cust_code = field["value"]
+            # Process 'Exclude Rent Fees'
+            if CustomFieldID.EXCLUDE_RENT_FEES.value in field_values:
+                value = field_values[CustomFieldID.EXCLUDE_RENT_FEES.value]
+                if value and isinstance(value, str):
+                    self.exclude_rent_fees = value.lower() == "yes"
 
-            # Assign 'Location Class'
-            if "id" in field and field["id"] == CustomFieldID.LOCATION_CLASS.value:
-                self.location_class = LocationClass(
-                    field["value"] or LocationClass.NONE
-                )
+            # Process 'Parent Customer Code'
+            if CustomFieldID.PARENT_CUST_CODE.value in field_values:
+                value = field_values[CustomFieldID.PARENT_CUST_CODE.value]
+                if value and isinstance(value, str):
+                    self.parent_cust_code = value
 
-        # Clear out custom field list, to save space.
-        self.custom_fields = None
+            # Process 'Location Class'
+            if CustomFieldID.LOCATION_CLASS.value in field_values:
+                value = field_values[CustomFieldID.LOCATION_CLASS.value]
+                self.location_class = LocationClass(value or LocationClass.NONE)
+
+            # Process 'Tax Jurisdiction'
+            if CustomFieldID.TAX_JURISDICTION.value in field_values:
+                value = field_values[CustomFieldID.TAX_JURISDICTION.value]
+                if value and isinstance(value, str):
+                    self.tax_jurisdiction = value
+
+            # Clear out custom field list, to save space (if enabled).
+            if self._clear_custom_fields:
+                self.custom_fields = None
 
 
 class Member(BaseModel):
@@ -439,12 +464,19 @@ class WorkOrder(BaseModel):
     def model_post_init(self, __context: Any) -> None:
         # Parse custom fields.
         if self.custom_fields:
-            for field in self.custom_fields:
-                # Assign Depot and Depot ID
-                if "id" in field and field["id"] == CustomFieldID.DEPOT.value:
-                    if field["value"] is not None:
-                        self.depot = field["value"]
-                        self.depot_id = int(field["value"][:2])
+            # Create lookup dictionary
+            field_values = {
+                field.get("id"): field.get("value")
+                for field in self.custom_fields
+                if "id" in field
+            }
+
+            # Process Depot
+            if CustomFieldID.DEPOT.value in field_values:
+                value = field_values[CustomFieldID.DEPOT.value]
+                if value and isinstance(value, str):
+                    self.depot = value
+                    self.depot_id = int(value[:2])
 
 
 class WorkLog(BaseModel):
