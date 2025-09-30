@@ -843,12 +843,6 @@ def work_order_add_component(
 @Decorators.check_env_vars
 def work_order_mark_in_progress(
     work_order_id: int,
-    start_work_on_all_assets: bool = True,
-    actual_start_date: datetime | None = None,
-    component_ids: list[int] | None = None,
-    supervisor_id: int | None = None,
-    assigned_to_id: int | None = None,
-    assigned_to_type: str | None = None,
 ) -> ResponseMessages | None:
     """
     Start a work order.
@@ -877,16 +871,6 @@ def work_order_mark_in_progress(
         response = requests.patch(
             url,
             headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            json={
-                "work_order": {
-                    "start_work_on_all_assets": start_work_on_all_assets,
-                    "actual_start_date": actual_start_date,
-                    "component_ids": component_ids,
-                    "supervisor_id": supervisor_id,
-                    "assigned_to_id": assigned_to_id,
-                    "assigned_to_type": assigned_to_type,
-                }
-            },
             timeout=60,
         )
         response.raise_for_status()
