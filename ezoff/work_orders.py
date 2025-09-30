@@ -849,19 +849,6 @@ def work_order_mark_in_progress(
 
     :param work_order_id: The ID of the work order to start.
     :type work_order_id: int
-    :param start_work_on_all_assets: Whether to start work on all assets linked to the work order.
-    :type start_work_on_all_assets: bool, optional
-    :param actual_start_date: The actual start date of the work order.
-    :type actual_start_date: datetime, optional
-    :param component_ids: A list of component IDs to start work on.
-    :type component_ids: list[int], optional
-    :param supervisor_id: The ID of the supervisor for the work order.
-    :type supervisor_id: int, optional
-    :param assigned_to_id: The ID of the user assigned to the work order.
-    :type assigned_to_id: int, optional
-    :param assigned_to_type: The type of the user assigned to the work order. Valid
-        values are "User", "Team", and "Vendor".
-    :type assigned_to_type: str, optional
     :return: Response messages from the API if any, else None.
     :rtype: ResponseMessages | None
     """
