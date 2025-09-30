@@ -777,11 +777,7 @@ def work_order_routing_update(
     """
     filter = {
         "assigned_to_id": assigned_to_id,
-        "task_type_id": str(task_type_id),
         "due_date": due_dttm.strftime("%Y-%m-%dT%H:%M:%SZ"),
-        # "start_time": due_dttm.strftime("%H:%M"),
-        # "expected_start_date": start_dttm.strftime("%m/%d/%Y"),
-        # "expected_start_time": start_dttm.strftime("%H:%M"),
         "expected_start_date": start_dttm.strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
 
