@@ -79,7 +79,7 @@ from .members import (
     teams_return,
     user_listings_return,
 )
-from .members_v1 import members_return_v1
+from .members_v1 import member_update_v1, members_return_v1
 from .packages import package_checkin, package_create, package_return, packages_return
 from .projects import (
     project_create,
@@ -112,9 +112,9 @@ from .work_orders import (
     work_order_add_work_log,
     work_order_create,
     work_order_delete,
+    work_order_force_complete,
     work_order_linked_inventory_return,
     work_order_linked_work_orders_return,
-    work_order_force_complete,
     work_order_mark_complete,
     work_order_mark_in_progress,
     work_order_mark_on_hold,
@@ -194,6 +194,7 @@ __all__ = [
     "member_deactivate",
     "member_return",
     "members_return_v1",
+    "member_update_v1",
     "member_update",
     "MemberCache",
     "members_create",
