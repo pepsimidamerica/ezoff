@@ -65,6 +65,11 @@ class Asset(BaseModel):
     # Custom fields, parsed from the custom_fields attribute.
     rent: Optional[bool] = Field(default=None)
     serial_number: Optional[str] = Field(default=None)
+    telemetry_serial_number: Optional[str] = Field(default=None)
+    pma_number: Optional[str] = Field(default=None)
+    acquired_from: Optional[str] = Field(default=None)
+    manufactured_date: Optional[str] = Field(default=None)
+    mfr_part_number: Optional[str] = Field(default=None)
     asset_class: Optional[AssetClass] = Field(default=None)
 
     def model_post_init(self, __context: Any) -> None:
@@ -94,6 +99,36 @@ class Asset(BaseModel):
                 value = field_values[CustomFieldID.ASSET_SERIAL_NO.value]
                 if value and isinstance(value, str):
                     self.serial_number = value
+
+            # Process Telemetry Serial Number
+            if CustomFieldID.TELEMETRY_SERIAL_NO.value in field_values:
+                value = field_values[CustomFieldID.TELEMETRY_SERIAL_NO.value]
+                if value and isinstance(value, str):
+                    self.telemetry_serial_number = value
+
+            # Process PMA Number
+            if CustomFieldID.PMA_NO.value in field_values:
+                value = field_values[CustomFieldID.PMA_NO.value]
+                if value and isinstance(value, str):
+                    self.pma_number = value
+
+            # Process Acquired From
+            if CustomFieldID.ACQUIRED_FROM.value in field_values:
+                value = field_values[CustomFieldID.ACQUIRED_FROM.value]
+                if value and isinstance(value, str):
+                    self.acquired_from = value
+
+            # Process Manufactured Date
+            if CustomFieldID.MANUFACTURED_DATE.value in field_values:
+                value = field_values[CustomFieldID.MANUFACTURED_DATE.value]
+                if value and isinstance(value, str):
+                    self.manufactured_date = value
+
+            # Process MFR Part Number
+            if CustomFieldID.MFR_PART_NO.value in field_values:
+                value = field_values[CustomFieldID.MFR_PART_NO.value]
+                if value and isinstance(value, str):
+                    self.mfr_part_number = value
 
             # Process Asset Class
             if CustomFieldID.ASSET_CLASS.value in field_values:
