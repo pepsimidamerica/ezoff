@@ -24,17 +24,17 @@ def asset_create(
     name: str,
     group_id: int,
     location_id: int,
-    sub_group_id: int | None,
-    purchased_on: datetime | None,
-    display_image: str | None,
-    identifier: str | None,
-    description: str | None,
-    vendor_id: int | None,
-    product_model_number: str | None,
-    cost_price: float | None,
-    salvage_value: float | None,
-    arbitration: int | None,
-    custom_fields: list[dict] | None,
+    sub_group_id: int | None = None,
+    purchased_on: datetime | None = None,
+    display_image: str | None = None,
+    identifier: str | None = None,
+    description: str | None = None,
+    vendor_id: int | None = None,
+    product_model_number: str | None = None,
+    cost_price: float | None = None,
+    salvage_value: float | None = None,
+    arbitration: int | None = None,
+    custom_fields: list[dict] | None = None,
 ) -> Asset | None:
     """
     Creates a new asset.
@@ -477,7 +477,7 @@ def asset_update(asset_id: int, update_data: dict) -> Asset | None:
 def asset_checkin(
     asset_id: int,
     location_id: int,
-    comments: str | None,
+    comments: str | None = None,
     checkin_date: date | None = None,
     custom_fields: list[dict] | None = None,
 ) -> ResponseMessages | None:
