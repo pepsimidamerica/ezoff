@@ -436,12 +436,12 @@ class WorkOrder(BaseModel):
     class AssociatedAsset(BaseModel):
         name: str
         id: int
-        
+
     approver_id: Optional[int] = Field(default=None)
     assigned_to_id: Optional[int] = Field(default=None)
     assigned_to_type: str
     asset_id: int | None = None
-    associated_assets: list[dict] | None = None
+    associated_assets: list[AssociatedAsset] | None = None
     associated_checklists: list
     base_cost: float
     completed_on: Optional[str] = Field(default=None)
