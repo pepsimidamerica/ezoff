@@ -22,7 +22,7 @@ def print_test_heading(title: str):
 def test_asset_cache():
     print_test_heading(title="Asset")
     ac = AssetCache(debug=True, use_saved=False)
-    locations = [11336, 12388]
+    locations = [13275, 2259]
     for location in locations:
         asset_filter = {"location_id": location}
         ac.download(filter=asset_filter)
@@ -73,7 +73,7 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
 
     print('Running EZ-Office Cache Unit Tests')
-    # test_asset_cache()
-    test_location_cache()
+    test_asset_cache()
+    # test_location_cache()
     # test_member_cache()
     # test_workorder_cache()

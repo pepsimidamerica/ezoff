@@ -44,6 +44,10 @@ class CustomFieldID(Enum):
     PEPSICO_PARENT_OUTLET_ID = 1308
 
 
+class EzoErrorMessage(str, Enum):
+    COMPLETED_STATE = "you cant complete a Service Call when it is in completed state"
+
+
 class LocationClass(Enum):
     NONE = "None"
     MARKET = "Micro Market"

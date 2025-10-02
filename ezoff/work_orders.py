@@ -951,8 +951,9 @@ def work_order_force_complete(work_order_id: int):
         # Default assigned to dispatch department.
         assigned_to_id = 1336290
 
-    # The assigned to field of the work order must have data before marking in-progress.
-    work_order_mark_in_progress(work_order_id=work_order_id, assigned_to_id=assigned_to_id)
+    if wo.state == "Open":
+        # The assigned to field of the work order must have data before marking in-progress.
+        work_order_mark_in_progress(work_order_id=work_order_id, assigned_to_id=assigned_to_id)
 
     work_order_mark_complete(
         work_order_id=work_order_id, completed_on_dttm=datetime.now()

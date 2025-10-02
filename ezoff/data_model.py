@@ -433,6 +433,10 @@ class UserListing(BaseModel):
 
 
 class WorkOrder(BaseModel):
+    class AssociatedAsset(BaseModel):
+        name: str
+        id: int
+        
     approver_id: Optional[int] = Field(default=None)
     assigned_to_id: Optional[int] = Field(default=None)
     assigned_to_type: str

@@ -42,6 +42,10 @@ class NoDataReturned(Exception):
     pass
 
 
+class WorkOrderCompleted(Exception):
+    pass
+
+
 class WorkOrderNotFound(Exception):
     pass
 
