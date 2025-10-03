@@ -157,20 +157,29 @@ def location_return(location_id: int) -> Location | None:
 @Decorators.check_env_vars
 def locations_return(
     state: Literal["active", "inactive"] | None = None,
+    filter: dict = None,
 ) -> list[Location]:
     """
     Returns all locations. Optionally filter by state (active, inactive).
     Note: Unfortunately, EZO doesn't appear to have any further filtering options
     for the locations endpoint, only state. Otherwise, a more generic filter_data
     parameter would be used here.
+    Optional filter parameter is for compatibility with ezo_cache class.
 
     :param state: Filter locations by state ('active', 'inactive')
-    :type state: str, optional
+    :type state: str, optional    
+    :param filter: Raw filter json for EZO API.
+    :type filter: dict, optional
     :return: A list of all locations
     :rtype: list of Location
     """
+    if state is not None and filter is not None:
+        raise ValueError('State and filter are mutually exclusive options for ezoff.locations_return()')
+
     if state is not None:
         filter_data = {"filters": {"state": state}}
+    elif filter is not None:
+        filter_data = {"filters": filter}
     else:
         filter_data = None
 

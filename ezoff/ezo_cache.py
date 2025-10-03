@@ -46,6 +46,7 @@ class EzoCache:
         self._use_saved = use_saved
         self._pickle_file_name: str | None = None
         self._api_call_single = None
+        self._api_call_single_param_name = "entry_id"
         self._api_call_multi = None
         self._data_model: type[BaseModel] | None = None
         self._not_found_exception: type[Exception] | None = None
@@ -62,9 +63,10 @@ class EzoCache:
         :returns BaseModel: Pydantic object.
         """
         if force_api or entry_id not in self.cache:
+            params = {self._api_call_single_param_name: entry_id}
             try:
                 assert self._api_call_single is not None
-                self.cache[entry_id] = self._api_call_single(entry_id=entry_id)
+                self.cache[entry_id] = self._api_call_single(**params)
                 return self.cache[entry_id]
 
             except self._not_found_exception as e:  # type: ignore
@@ -117,6 +119,7 @@ class AssetCache(EzoCache):
         self.cache: dict[int, Asset] = {}  # type: ignore
         self._pickle_file_name = "ezo_asset_cache.pkl"
         self._api_call_single = asset_return
+        self._api_call_single_param_name = "asset_id"
         self._api_call_multi = assets_return
         self._data_model = Asset
         self._not_found_exception = AssetNotFound
@@ -135,6 +138,7 @@ class LocationCache(EzoCache):
         self.cache: dict[int, Location] = {}  # type: ignore
         self._pickle_file_name = "ezo_location_cache.pkl"
         self._api_call_single = location_return
+        self._api_call_single_param_name = "location_id"
         self._api_call_multi = locations_return
         self._data_model = Location
         self._not_found_exception = LocationNotFound
@@ -153,6 +157,7 @@ class MemberCache(EzoCache):
         self.cache: dict[int, Member] = {}  # type: ignore
         self._pickle_file_name = "ezo_member_cache.pkl"
         self._api_call_single = member_return
+        self._api_call_single_param_name = "member_id"
         self._api_call_multi = members_return
         self._data_model = Member
         self._not_found_exception = MemberNotFound
@@ -171,6 +176,7 @@ class WorkOrderCache(EzoCache):
         self.cache: dict[int, WorkOrder] = {}  # type: ignore
         self._pickle_file_name = "ezo_workorder_cache.pkl"
         self._api_call_single = work_order_return
+        self._api_call_single_param_name = "work_order_id"
         self._api_call_multi = work_orders_return
         self._data_model = WorkOrder
         self._not_found_exception = WorkOrderNotFound
