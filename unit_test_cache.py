@@ -1,16 +1,8 @@
 import logging
-import sys
-
-# from dotenv import load_dotenv
+from pprint import pprint
 from ezoff import *
 
-# Load env vars from a .env file
-# load_dotenv()
-
-# sys.path.insert(0, "")
-
 logger = logging.getLogger(__name__)
-
 
 
 def print_test_heading(title: str):
@@ -22,7 +14,11 @@ def print_test_heading(title: str):
 def test_asset_cache():
     print_test_heading(title="Asset")
     ac = AssetCache(debug=True, use_saved=False)
-    locations = [13275, 2259]
+
+    asset = ac.asset(asset_id=14753)
+    pprint(asset.model_dump())
+
+    locations = [2259]
     for location in locations:
         asset_filter = {"location_id": location}
         ac.download(filter=asset_filter)
@@ -35,6 +31,10 @@ def test_asset_cache():
 def test_location_cache():
     print_test_heading(title="Location")
     lc = LocationCache(debug=True, use_saved=False)
+
+    location = lc.location(location_id=160)
+    pprint(location.model_dump())
+
     location_filter = {"state": "active"}
     lc.download(filter=location_filter)
 
@@ -46,6 +46,10 @@ def test_location_cache():
 def test_member_cache():
     print_test_heading(title="Member")
     mc = MemberCache(debug=True, use_saved=False)
+
+    member = mc.member(member_id=244379)
+    pprint(member.model_dump())
+
     manager_ids = [223968, 497695]
     for mgr_id in manager_ids:
         member_filter = {"manager_id": mgr_id}
@@ -59,6 +63,10 @@ def test_member_cache():
 def test_workorder_cache():
     print_test_heading(title="Work Order")
     wc = WorkOrderCache(debug=True, use_saved=False)
+
+    work_order = wc.work_order(work_order_id=1717)
+    pprint(work_order.model_dump())
+
     assets_ids = [27325, 14753]
     for asset_id in assets_ids:
         asset_filter = {"asset_id": asset_id}
@@ -72,8 +80,8 @@ def test_workorder_cache():
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
 
-    print('Running EZ-Office Cache Unit Tests')
+    print("Running EZ-Office Cache Unit Tests")
     test_asset_cache()
-    # test_location_cache()
-    # test_member_cache()
-    # test_workorder_cache()
+    test_location_cache()
+    test_member_cache()
+    test_workorder_cache()
