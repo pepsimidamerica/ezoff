@@ -15,7 +15,7 @@ def test_asset_cache():
     print_test_heading(title="Asset")
     ac = AssetCache(debug=True, use_saved=False)
 
-    asset = ac.get_cache_entry(entry_id=14753)
+    asset = ac.asset(asset_id=14753)
     pprint(asset.model_dump())
 
     locations = [2259]
@@ -32,7 +32,7 @@ def test_location_cache():
     print_test_heading(title="Location")
     lc = LocationCache(debug=True, use_saved=False)
 
-    location = lc.get_cache_entry(entry_id=160)
+    location = lc.location(location_id=160)
     pprint(location.model_dump())
 
     location_filter = {"state": "active"}
@@ -47,7 +47,7 @@ def test_member_cache():
     print_test_heading(title="Member")
     mc = MemberCache(debug=True, use_saved=False)
 
-    member = mc.get_cache_entry(entry_id=244379)
+    member = mc.member(member_id=244379)
     pprint(member.model_dump())
 
     manager_ids = [223968, 497695]
@@ -64,7 +64,7 @@ def test_workorder_cache():
     print_test_heading(title="Work Order")
     wc = WorkOrderCache(debug=True, use_saved=False)
 
-    work_order = wc.get_cache_entry(entry_id=1717)
+    work_order = wc.work_order(work_order_id=1717)
     pprint(work_order.model_dump())
 
     assets_ids = [27325, 14753]
