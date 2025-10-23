@@ -9,7 +9,7 @@ import time
 import requests
 from ezoff._auth import Decorators
 from ezoff._helpers import _fetch_page
-from ezoff.data_model import Checklist
+from ezoff.data_model import Checklist, ChecklistLineItem
 from ezoff.exceptions import NoDataReturned
 
 logger = logging.getLogger(__name__)
@@ -29,6 +29,16 @@ def checklists_return() -> list[Checklist]:
     )
 
     all_checklists = []
+
+    # Create a dummy index 0 entry so list indexes match checklist ids.
+    all_checklists.append(
+        Checklist(
+            id=0,
+            name="dummy",
+            created_by_id=0,
+            line_items=ChecklistLineItem(title="dummy", type="dummy"),
+        )
+    )
 
     while True:
         try:
