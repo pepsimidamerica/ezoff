@@ -32,12 +32,12 @@ def checklists_return() -> list[Checklist]:
 
     # Create a dummy index 0 entry so list indexes match checklist ids.
     all_checklists.append(
-        Checklist(
-            id=0,
-            name="dummy",
-            created_by_id=0,
-            line_items=ChecklistLineItem(title="dummy", type="dummy"),
-        )
+        {
+            "id": 0,
+            "name": "dummy",
+            "created_by_id": 0,
+            "line_items": [{"title": "dummy", "type": "dummy"}],
+        }
     )
 
     while True:
