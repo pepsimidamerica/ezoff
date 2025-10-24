@@ -81,7 +81,7 @@ def check_work_order_update():
 
 # check_work_order_return()
 # check_work_orders_return()
-# check_checklist_return()
+check_checklist_return()
 
 # check_members_return()
 # check_members_return_v1()

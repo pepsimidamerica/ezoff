@@ -5,6 +5,7 @@ This module contains functions to interact with the checklist v2 API in EZOffice
 import logging
 import os
 import time
+from typing import Dict
 
 import requests
 from ezoff._auth import Decorators
@@ -16,29 +17,19 @@ logger = logging.getLogger(__name__)
 
 
 @Decorators.check_env_vars
-def checklists_return() -> list[Checklist]:
+def checklists_return() -> Dict[int, Checklist]:
     """
     Returns all checklists.
 
-    :return: A list of Checklist objects.
-    :rtype: list[Checklist]
+    :return: A dictionary of Checklist objects. Keyed by checklist id.
+    :rtype: Dict[int, Checklist]
     """
 
     url = (
         f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/checklists"
     )
 
-    all_checklists = []
-
-    # Create a dummy index 0 entry so list indexes match checklist ids.
-    all_checklists.append(
-        {
-            "id": 0,
-            "name": "dummy",
-            "created_by_id": 0,
-            "line_items": [{"title": "dummy", "type": "dummy"}],
-        }
-    )
+    all_checklists = {}
 
     while True:
         try:
@@ -66,7 +57,8 @@ def checklists_return() -> list[Checklist]:
         if "checklists" not in data:
             raise NoDataReturned(f"No checklists found: {response.content}")
 
-        all_checklists.extend(data["checklists"])
+        for checklist in data['checklists']:
+            all_checklists[checklist['id']] = Checklist(**checklist)
 
         if (
             "metadata" not in data
@@ -80,4 +72,4 @@ def checklists_return() -> list[Checklist]:
 
         time.sleep(1)
 
-    return [Checklist(**x) for x in all_checklists]
+    return all_checklists
