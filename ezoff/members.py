@@ -225,7 +225,18 @@ def members_return(filter: dict | None = None) -> list[Member]:
 
     if filter:
         for field in filter:
-            if field not in Member.model_fields:
+            if field not in (
+                list(Member.model_fields.keys())
+                # Additional valid filters
+                + [
+                    "all",
+                    "login_enabled",
+                    "external",
+                    "inactive",
+                    "inactive_members_with_items",
+                    "inactive_members_with_pending_associations",
+                ]
+            ):
                 raise ValueError(f"'{field}' is not a valid field for a member.")
         filter = {"filters": filter}
     else:
