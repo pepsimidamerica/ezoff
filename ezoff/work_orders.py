@@ -779,6 +779,7 @@ def work_order_routing_update(
         "assigned_to_id": assigned_to_id,
         "due_date": due_dttm.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "expected_start_date": start_dttm.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "secondary_assignee_ids": [],
     }
 
     if supervisor_id is not None:
