@@ -474,6 +474,7 @@ class WorkOrder(BaseModel):
     requested_by_id: Optional[int] = Field(default=None)
     require_approval_from_reviewer: bool
     reviewer_id: Optional[int] = Field(default=None)
+    secondary_assignee_ids: Optional[List[int]] = Field(default=[])
     service_for_sub_groups_only: bool
     service_type_id: Optional[int] = Field(default=None)
     shipping_address_id: Optional[int] = Field(default=None)
