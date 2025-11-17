@@ -235,6 +235,7 @@ def members_return(filter: dict | None = None) -> list[Member]:
                     "inactive",
                     "inactive_members_with_items",
                     "inactive_members_with_pending_associations",
+                    "location_id"
                 ]
             ):
                 raise ValueError(f"'{field}' is not a valid field for a member.")
