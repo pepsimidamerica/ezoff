@@ -51,7 +51,7 @@ def check_locations_return():
 
 
 def check_work_order_return():
-    wo_id = 33627
+    wo_id = 35220
     wopd = work_order_return(work_order_id=wo_id)
     pprint(wopd.model_dump())
 
@@ -100,7 +100,7 @@ def check_work_order_routing_update():
 # check_locations_return()
 # check_location_return()
 
-# check_work_order_force_complete()
-check_work_order_update()
+check_work_order_force_complete()
+# check_work_order_update()
 
-check_work_order_routing_update()
+# check_work_order_routing_update()
