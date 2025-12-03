@@ -114,30 +114,8 @@ def work_order_create(
     params = {k: v for k, v in locals().items() if v is not None}
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders"
-
-    try:
-        response = requests.post(
-            url,
-            headers={
-                "Accept": "application/json",
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-            },
-            json={"work_order": params},
-            timeout=60,
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error creating work order: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error creating work order: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error creating work order: {e}")
-        raise Exception(f"Error creating work order: {e}")
+    payload = {"work_order": params}
+    response = http_post(url=url, payload=payload, title="Work Order Create")
 
     if response.status_code == 200 and "work_order" in response.json():
         return WorkOrder(**response.json()["work_order"])
@@ -189,24 +167,8 @@ def service_create(asset_id: int, service: dict) -> dict:
     }
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/assets/{asset_id}/services.api"
-
-    try:
-        response = requests.post(
-            url,
-            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            params={"create_service_ticket_only": "true"},
-            json=service,
-            timeout=60,
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error, could not create service: {e.response.status_code} - {e.response.content}"
-        )
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error, could not create service: {e}")
-        raise
+    payload = {"create_service_ticket_only": "true"}
+    response = http_post(url=url, payload=payload, title="Service Record Create")
 
     return response.json()
 
@@ -595,12 +557,14 @@ def work_order_update(work_order_id: int, update_data: dict) -> WorkOrder | None
             raise ValueError(f"'{field}' is not a valid field for a group.")
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}"
-    headers={
-                "Accept": "application/json",
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-            }
-    payload={"work_order": update_data}
-    response = http_post(url=url, headers=headers, payload=payload, title='Work Order Update')
+    headers = {
+        "Accept": "application/json",
+        "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
+    }
+    payload = {"work_order": update_data}
+    response = http_post(
+        url=url, headers=headers, payload=payload, title="Work Order Update"
+    )
 
     if response.status_code == 200 and "work_order" in response.json():
         return WorkOrder(**response.json()["work_order"])
@@ -801,30 +765,32 @@ def work_order_add_component(
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/add_components"
+    payload = {"work_order": {"components": components}}
+    response = http_post(url=url, payload=payload, title="Work Order Add Component")
 
-    try:
-        response = requests.post(
-            url,
-            headers={
-                "Accept": "application/json",
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-            },
-            json={"work_order": {"components": components}},
-            timeout=60,
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error adding component: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error adding component: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error adding component: {e}")
-        raise Exception(f"Error adding component: {e}")
+    # try:
+    #     response = requests.post(
+    #         url,
+    #         headers={
+    #             "Accept": "application/json",
+    #             "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
+    #         },
+    #         json={"work_order": {"components": components}},
+    #         timeout=60,
+    #     )
+    #     response.raise_for_status()
+    # except requests.exceptions.HTTPError as e:
+    #     logger.error(
+    #         f"Error adding component: {e.response.status_code} - {e.response.content}"
+    #     )
+    #     raise Exception(
+    #         f"Error adding component: {e.response.status_code} - {e.response.content}"
+    #     )
+    # except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+    #     raise
+    # except requests.exceptions.RequestException as e:
+    #     logger.error(f"Error adding component: {e}")
+    #     raise Exception(f"Error adding component: {e}")
 
     if "messages" in response.json():
         return ResponseMessages(**response.json()["messages"])
@@ -1027,35 +993,37 @@ def work_order_add_linked_wo(
     :rtype: ResponseMessages | None
     """
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/link_work_orders"
+    payload = {"work_order": {"work_order_ids": wo_ids_to_link}}
+    response = http_post(url=url, payload=payload, title="Work Order Link Work Order")
 
-    try:
-        response = requests.post(
-            url,
-            headers={
-                "Content-Type": "application/json",
-                "Accept": "application/json",
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Cache-Control": "no-cache",
-                "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
-                "Accept-Encoding": "gzip, deflate, br",
-                "Connection": "keep-alive",
-            },
-            json={"work_order": {"work_order_ids": wo_ids_to_link}},
-            timeout=60,
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error linking work orders: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error linking work orders: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error linking work orders: {e}")
-        raise Exception(f"Error linking work orders: {e}")
+    # try:
+    #     response = requests.post(
+    #         url,
+    #         headers={
+    #             "Content-Type": "application/json",
+    #             "Accept": "application/json",
+    #             "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
+    #             "Cache-Control": "no-cache",
+    #             "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
+    #             "Accept-Encoding": "gzip, deflate, br",
+    #             "Connection": "keep-alive",
+    #         },
+    #         json={"work_order": {"work_order_ids": wo_ids_to_link}},
+    #         timeout=60,
+    #     )
+    #     response.raise_for_status()
+    # except requests.exceptions.HTTPError as e:
+    #     logger.error(
+    #         f"Error linking work orders: {e.response.status_code} - {e.response.content}"
+    #     )
+    #     raise Exception(
+    #         f"Error linking work orders: {e.response.status_code} - {e.response.content}"
+    #     )
+    # except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+    #     raise
+    # except requests.exceptions.RequestException as e:
+    #     logger.error(f"Error linking work orders: {e}")
+    #     raise Exception(f"Error linking work orders: {e}")
 
     if "messages" in response.json():
         return ResponseMessages(**response.json()["messages"])
@@ -1077,35 +1045,48 @@ def work_order_remove_linked_wo(
     :rtype: ResponseMessages | None
     """
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/unlink_work_orders"
+    headers = {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
+        "Cache-Control": "no-cache",
+        "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Connection": "keep-alive",
+    }
+    payload = {"work_order": {"work_order_ids": wo_ids_to_link}}
+    response = http_post(
+        url=url, headers=headers, payload=payload, title="Work Order Un-Link Work Order"
+    )
 
-    try:
-        response = requests.post(
-            url,
-            headers={
-                "Content-Type": "application/json",
-                "Accept": "application/json",
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Cache-Control": "no-cache",
-                "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
-                "Accept-Encoding": "gzip, deflate, br",
-                "Connection": "keep-alive",
-            },
-            json={"work_order": {"work_order_ids": wo_ids_to_link}},
-            timeout=60,
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error unlinking work orders: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error unlinking work orders: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error unlinking work orders: {e}")
-        raise Exception(f"Error unlinking work orders: {e}")
+    # try:
+    #     response = requests.post(
+    #         url,
+    #         headers={
+    #             "Content-Type": "application/json",
+    #             "Accept": "application/json",
+    #             "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
+    #             "Cache-Control": "no-cache",
+    #             "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
+    #             "Accept-Encoding": "gzip, deflate, br",
+    #             "Connection": "keep-alive",
+    #         },
+    #         json={"work_order": {"work_order_ids": wo_ids_to_link}},
+    #         timeout=60,
+    #     )
+    #     response.raise_for_status()
+    # except requests.exceptions.HTTPError as e:
+    #     logger.error(
+    #         f"Error unlinking work orders: {e.response.status_code} - {e.response.content}"
+    #     )
+    #     raise Exception(
+    #         f"Error unlinking work orders: {e.response.status_code} - {e.response.content}"
+    #     )
+    # except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+    #     raise
+    # except requests.exceptions.RequestException as e:
+    #     logger.error(f"Error unlinking work orders: {e}")
+    #     raise Exception(f"Error unlinking work orders: {e}")
 
     if "messages" in response.json():
         return ResponseMessages(**response.json()["messages"])
@@ -1128,35 +1109,48 @@ def work_order_add_linked_po(
     :rtype: ResponseMessages | None
     """
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/link_po"
+    headers = {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
+        "Cache-Control": "no-cache",
+        "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Connection": "keep-alive",
+    }
+    payload = {"work_order": {"purchase_order_ids": po_ids_to_link}}
+    response = http_post(
+        url=url, headers=headers, payload=payload, title="Work Order Link PO"
+    )
 
-    try:
-        response = requests.post(
-            url,
-            headers={
-                "Content-Type": "application/json",
-                "Accept": "application/json",
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Cache-Control": "no-cache",
-                "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
-                "Accept-Encoding": "gzip, deflate, br",
-                "Connection": "keep-alive",
-            },
-            json={"work_order": {"purchase_order_ids": po_ids_to_link}},
-            timeout=60,
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error linking purchase orders: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error linking purchase orders: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error linking purchase orders: {e}")
-        raise Exception(f"Error linking purchase orders: {e}")
+    # try:
+    #     response = requests.post(
+    #         url,
+    #         headers={
+    #             "Content-Type": "application/json",
+    #             "Accept": "application/json",
+    #             "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
+    #             "Cache-Control": "no-cache",
+    #             "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
+    #             "Accept-Encoding": "gzip, deflate, br",
+    #             "Connection": "keep-alive",
+    #         },
+    #         json={"work_order": {"purchase_order_ids": po_ids_to_link}},
+    #         timeout=60,
+    #     )
+    #     response.raise_for_status()
+    # except requests.exceptions.HTTPError as e:
+    #     logger.error(
+    #         f"Error linking purchase orders: {e.response.status_code} - {e.response.content}"
+    #     )
+    #     raise Exception(
+    #         f"Error linking purchase orders: {e.response.status_code} - {e.response.content}"
+    #     )
+    # except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+    #     raise
+    # except requests.exceptions.RequestException as e:
+    #     logger.error(f"Error linking purchase orders: {e}")
+    #     raise Exception(f"Error linking purchase orders: {e}")
 
     if "messages" in response.json():
         return ResponseMessages(**response.json()["messages"])
@@ -1179,35 +1173,48 @@ def work_order_remove_linked_po(
     :rtype: ResponseMessages | None
     """
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/unlink_po"
+    headers = {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
+        "Cache-Control": "no-cache",
+        "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Connection": "keep-alive",
+    }
+    payload = {"work_order": {"purchase_order_ids": po_ids_to_link}}
+    response = http_post(
+        url=url, headers=headers, payload=payload, title="Work Order Un-Link PO"
+    )
 
-    try:
-        response = requests.post(
-            url,
-            headers={
-                "Content-Type": "application/json",
-                "Accept": "application/json",
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Cache-Control": "no-cache",
-                "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
-                "Accept-Encoding": "gzip, deflate, br",
-                "Connection": "keep-alive",
-            },
-            json={"work_order": {"purchase_order_ids": po_ids_to_link}},
-            timeout=60,
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error unlinking purchase orders: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error unlinking purchase orders: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error unlinking purchase orders: {e}")
-        raise Exception(f"Error unlinking purchase orders: {e}")
+    # try:
+    #     response = requests.post(
+    #         url,
+    #         headers={
+    #             "Content-Type": "application/json",
+    #             "Accept": "application/json",
+    #             "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
+    #             "Cache-Control": "no-cache",
+    #             "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
+    #             "Accept-Encoding": "gzip, deflate, br",
+    #             "Connection": "keep-alive",
+    #         },
+    #         json={"work_order": {"purchase_order_ids": po_ids_to_link}},
+    #         timeout=60,
+    #     )
+    #     response.raise_for_status()
+    # except requests.exceptions.HTTPError as e:
+    #     logger.error(
+    #         f"Error unlinking purchase orders: {e.response.status_code} - {e.response.content}"
+    #     )
+    #     raise Exception(
+    #         f"Error unlinking purchase orders: {e.response.status_code} - {e.response.content}"
+    #     )
+    # except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+    #     raise
+    # except requests.exceptions.RequestException as e:
+    #     logger.error(f"Error unlinking purchase orders: {e}")
+    #     raise Exception(f"Error unlinking purchase orders: {e}")
 
     if "messages" in response.json():
         return ResponseMessages(**response.json()["messages"])
@@ -1325,27 +1332,29 @@ def work_order_add_checklist(
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/tasks/{work_order_id}/add_checklists.json"
+    payload = {"checklist_ids": str(checklist_id), "asset_id": str(asset_id)}
+    response = http_post(url=url, payload=payload, title="Work Order Add Checklist")
 
-    try:
-        response = requests.post(
-            url,
-            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            json={"checklist_ids": str(checklist_id), "asset_id": str(asset_id)},
-            timeout=60,
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error adding checklist: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error adding checklist: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error adding checklist: {e}")
-        raise Exception(f"Error adding checklist: {e}")
+    # try:
+    #     response = requests.post(
+    #         url,
+    #         headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+    #         json={"checklist_ids": str(checklist_id), "asset_id": str(asset_id)},
+    #         timeout=60,
+    #     )
+    #     response.raise_for_status()
+    # except requests.exceptions.HTTPError as e:
+    #     logger.error(
+    #         f"Error adding checklist: {e.response.status_code} - {e.response.content}"
+    #     )
+    #     raise Exception(
+    #         f"Error adding checklist: {e.response.status_code} - {e.response.content}"
+    #     )
+    # except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+    #     raise
+    # except requests.exceptions.RequestException as e:
+    #     logger.error(f"Error adding checklist: {e}")
+    #     raise Exception(f"Error adding checklist: {e}")
 
     return response.json()
 
@@ -1372,33 +1381,41 @@ def work_order_update_checklist(
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/update_work_order_checklist"
+    payload = {
+        "work_order": {
+            "checklist_id": checklist_id,
+            "asset_id": asset_id,
+            "checklist_values": checklist_values,
+        }
+    }
+    response = http_post(url=url, payload=payload, title="Work Order Add Checklist")
 
-    try:
-        response = requests.post(
-            url,
-            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            json={
-                "work_order": {
-                    "checklist_id": checklist_id,
-                    "asset_id": asset_id,
-                    "checklist_values": checklist_values,
-                }
-            },
-            timeout=60,
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error updating checklist: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error updating checklist: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error updating checklist: {e}")
-        raise Exception(f"Error updating checklist: {e}")
+    # try:
+    #     response = requests.post(
+    #         url,
+    #         headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+    #         json={
+    #             "work_order": {
+    #                 "checklist_id": checklist_id,
+    #                 "asset_id": asset_id,
+    #                 "checklist_values": checklist_values,
+    #             }
+    #         },
+    #         timeout=60,
+    #     )
+    #     response.raise_for_status()
+    # except requests.exceptions.HTTPError as e:
+    #     logger.error(
+    #         f"Error updating checklist: {e.response.status_code} - {e.response.content}"
+    #     )
+    #     raise Exception(
+    #         f"Error updating checklist: {e.response.status_code} - {e.response.content}"
+    #     )
+    # except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+    #     raise
+    # except requests.exceptions.RequestException as e:
+    #     logger.error(f"Error updating checklist: {e}")
+    #     raise Exception(f"Error updating checklist: {e}")
 
     if "messages" in response.json():
         return ResponseMessages(**response.json()["messages"])

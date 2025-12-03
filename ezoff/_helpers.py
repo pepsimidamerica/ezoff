@@ -55,9 +55,17 @@ def _fetch_page(url, headers, params=None, data=None, json=None):
     response.raise_for_status()
     return response
 
+
+@_basic_retry
 def http_post(
-    url: str, headers: dict, payload: dict, title: str, timeout: int = 60
+    url: str, payload: dict, title: str, timeout: int = 60, headers: dict = None
 ) -> requests.Response:
+
+    if headers is None:
+        headers = {
+            "Accept": "application/json",
+            "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
+        }
 
     try:
         response = requests.put(
