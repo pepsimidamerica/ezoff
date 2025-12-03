@@ -54,3 +54,36 @@ def _fetch_page(url, headers, params=None, data=None, json=None):
     )
     response.raise_for_status()
     return response
+
+def http_post(
+    url: str, headers: dict, payload: dict, title: str, timeout: int = 60
+) -> requests.Response:
+
+    try:
+        response = requests.put(
+            url,
+            headers=headers,
+            json=payload,
+            timeout=timeout,
+        )
+        response.raise_for_status()
+
+    except requests.exceptions.HTTPError as e:
+        msg = f"HTTP error while posting {title}: {e.response.status_code} - {e.response.content}"
+        logger.error(msg)
+        logger.error(f"Payload: {payload}")
+        raise
+
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+        msg = f"Connection error while posting {title}: {e}"
+        logger.error(msg)
+        logger.error(f"Payload: {payload}")
+        raise
+
+    except requests.exceptions.RequestException as e:
+        msg = f"Request error while posting {title}: {e}"
+        logger.error(msg)
+        logger.error(f"Payload: {payload}")
+        raise
+
+    return response

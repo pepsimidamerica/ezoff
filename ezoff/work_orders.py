@@ -13,7 +13,7 @@ from typing import Literal
 
 import requests
 from ezoff._auth import Decorators
-from ezoff._helpers import _basic_retry, _fetch_page
+from ezoff._helpers import _basic_retry, _fetch_page, http_post
 from ezoff.data_model import (
     Component,
     LinkedInventory,
@@ -595,30 +595,12 @@ def work_order_update(work_order_id: int, update_data: dict) -> WorkOrder | None
             raise ValueError(f"'{field}' is not a valid field for a group.")
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}"
-
-    try:
-        response = requests.put(
-            url,
-            headers={
+    headers={
                 "Accept": "application/json",
                 "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-            },
-            json={"work_order": update_data},
-            timeout=60,
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error updating work order: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error updating work order: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error updating work order: {e}")
-        raise Exception(f"Error updating work order: {e}")
+            }
+    payload={"work_order": update_data}
+    response = http_post(url=url, headers=headers, payload=payload, title='Work Order Update')
 
     if response.status_code == 200 and "work_order" in response.json():
         return WorkOrder(**response.json()["work_order"])
@@ -717,27 +699,36 @@ def work_order_add_linked_inv(
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/link_inventory"
+    headers = {"Authorization": "Bearer " + os.environ["EZO_TOKEN"]}
+    payload = {"work_order": {"linked_inventory_items": inv_items}}
 
-    try:
-        response = requests.post(
-            url,
-            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            json={"work_order": {"linked_inventory_items": inv_items}},
-            timeout=60,
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error adding linked inv: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error adding linked inv: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error adding linked inv: {e}")
-        raise Exception(f"Error adding linked inv: {e}")
+    response = http_post(
+        url=url,
+        headers=headers,
+        payload=payload,
+        title="Work Order Add Linked Inventory",
+    )
+
+    # try:
+    #     response = requests.post(
+    #         url,
+    #         headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+    #         json={"work_order": {"linked_inventory_items": inv_items}},
+    #         timeout=60,
+    #     )
+    #     response.raise_for_status()
+    # except requests.exceptions.HTTPError as e:
+    #     logger.error(
+    #         f"Error adding linked inv: {e.response.status_code} - {e.response.content}"
+    #     )
+    #     raise Exception(
+    #         f"Error adding linked inv: {e.response.status_code} - {e.response.content}"
+    #     )
+    # except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+    #     raise
+    # except requests.exceptions.RequestException as e:
+    #     logger.error(f"Error adding linked inv: {e}")
+    #     raise Exception(f"Error adding linked inv: {e}")
 
     if response.status_code == 200 and "messages" in response.json():
         return ResponseMessages(**response.json()["messages"])
@@ -748,9 +739,9 @@ def work_order_add_linked_inv(
 def work_order_routing_update(
     work_order_id: int,
     assigned_to_id: str,
-    task_type_id: int,
     start_dttm: datetime,
     due_dttm: datetime,
+    task_type_id: int = None,
     supervisor_id: str | None = None,
     reviewer_id: str | None = None,
 ) -> WorkOrder | None:
@@ -954,7 +945,9 @@ def work_order_force_complete(work_order_id: int):
 
     if wo.state == "Open":
         # The assigned to field of the work order must have data before marking in-progress.
-        work_order_mark_in_progress(work_order_id=work_order_id, assigned_to_id=assigned_to_id)
+        work_order_mark_in_progress(
+            work_order_id=work_order_id, assigned_to_id=assigned_to_id
+        )
 
     work_order_mark_complete(
         work_order_id=work_order_id, completed_on_dttm=datetime.now()
