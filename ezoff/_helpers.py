@@ -58,6 +58,50 @@ def _fetch_page(url, headers, params=None, data=None, json=None):
 
 
 @_basic_retry
+def http_delete(
+    url: str,
+    title: str,
+    timeout: int = 60,
+    headers: dict = None,
+    payload: dict = None,
+    params: dict = None,
+) -> requests.Response:
+
+    if headers is None:
+        headers = {
+            "Accept": "application/json",
+            "Authorization": f"Bearer {os.environ['EZO_TOKEN']}",
+        }
+
+    try:
+        response = requests.delete(
+            url,
+            headers=headers,
+            params=params,
+            json=payload,
+            timeout=timeout,
+        )
+        response.raise_for_status()
+
+    except requests.exceptions.HTTPError as e:
+        msg = f"HTTP error while deleting {title}: {e.response.status_code} - {e.response.content}"
+        logger.error(msg)
+        raise
+
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+        msg = f"Connection error while deleting {title}: {e}"
+        logger.error(msg)
+        raise
+
+    except requests.exceptions.RequestException as e:
+        msg = f"Request error while deleting {title}: {e}"
+        logger.error(msg)
+        raise
+
+    return response
+
+
+@_basic_retry
 def http_get(
     url: str,
     title: str,
@@ -96,6 +140,47 @@ def http_get(
     except requests.exceptions.RequestException as e:
         msg = f"Request error while getting {title}: {e}"
         logger.error(msg)
+        raise
+
+    return response
+
+
+@_basic_retry
+def http_patch(
+    url: str, title: str, timeout: int = 60, headers: dict = None, payload: dict = None
+) -> requests.Response:
+
+    if headers is None:
+        headers = {
+            # "Accept": "application/json",
+            "Authorization": f"Bearer {os.environ['EZO_TOKEN']}",
+        }
+
+    try:
+        response = requests.patch(
+            url,
+            headers=headers,
+            json=payload,
+            timeout=timeout,
+        )
+        response.raise_for_status()
+
+    except requests.exceptions.HTTPError as e:
+        msg = f"HTTP error while patching {title}: {e.response.status_code} - {e.response.content}"
+        logger.error(msg)
+        logger.error(f"Payload: {payload}")
+        raise
+
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+        msg = f"Connection error while patching {title}: {e}"
+        logger.error(msg)
+        logger.error(f"Payload: {payload}")
+        raise
+
+    except requests.exceptions.RequestException as e:
+        msg = f"Request error while patching {title}: {e}"
+        logger.error(msg)
+        logger.error(f"Payload: {payload}")
         raise
 
     return response

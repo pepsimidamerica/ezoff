@@ -11,9 +11,8 @@ import time
 from datetime import datetime
 from typing import Literal
 
-import requests
 from ezoff._auth import Decorators
-from ezoff._helpers import _basic_retry, _fetch_page, http_post, http_get
+from ezoff._helpers import _basic_retry, _fetch_page, http_post, http_get, http_patch, http_delete
 from ezoff.data_model import (
     Component,
     LinkedInventory,
@@ -505,43 +504,23 @@ def work_order_add_work_log(
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/tasks/{work_order_id}/task_work_logs.json"
-
-    try:
-        response = requests.post(
-            url,
-            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            json={
-                "task_work_log": {
-                    "resource_id": 2657,  # Is misc always going to be 2657?
-                    "rate_type": "standard",
-                    "cost_per_hour": cost_per_hour,
-                    "time_spent": hours_spent,
-                    "total_cost": cost_per_hour * hours_spent,  # Is this needed?
-                    "resource_type": "MiscellaneousComponent",
-                    "description": note,
-                    "custom_attributes": custom_attributes,
-                },
-                "started_on_date": started_on_dttm.strftime("%m/%d/%Y"),
-                "started_on_time": started_on_dttm.strftime("%I:%M %p"),
-                "ended_on_date": ended_on_dttm.strftime("%m/%d/%Y"),
-                "ended_on_time": ended_on_dttm.strftime("%I:%M %p"),
-            },
-            timeout=60,
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error adding work log: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error adding work log: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error adding work log: {e}")
-        raise Exception(f"Error adding work log: {e}")
-
+    payload = {
+        "task_work_log": {
+            "resource_id": 2657,  # Is misc always going to be 2657?
+            "rate_type": "standard",
+            "cost_per_hour": cost_per_hour,
+            "time_spent": hours_spent,
+            "total_cost": cost_per_hour * hours_spent,  # Is this needed?
+            "resource_type": "MiscellaneousComponent",
+            "description": note,
+            "custom_attributes": custom_attributes,
+        },
+        "started_on_date": started_on_dttm.strftime("%m/%d/%Y"),
+        "started_on_time": started_on_dttm.strftime("%I:%M %p"),
+        "ended_on_date": ended_on_dttm.strftime("%m/%d/%Y"),
+        "ended_on_time": ended_on_dttm.strftime("%I:%M %p"),
+    }
+    response = http_post(url=url, payload=payload, title="Work Order Add Work Log")
     return response.json()
 
 
@@ -664,26 +643,7 @@ def work_order_mark_in_progress(
     :rtype: ResponseMessages | None
     """
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/mark_in_progress"
-
-    try:
-        response = requests.patch(
-            url,
-            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            timeout=60,
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error marking in progress: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error marking in progress: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error marking in progress: {e}")
-        raise Exception(f"Error marking in progress: {e}")
+    response = http_patch(url=url, title="Work Order Mark In-Progress")
 
     if "messages" in response.json():
         return ResponseMessages(**response.json()["messages"])
@@ -706,31 +666,12 @@ def work_order_mark_on_hold(
     :rtype: ResponseMessages | None
     """
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/mark_on_hold"
-
-    try:
-        response = requests.patch(
-            url,
-            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            json={
-                "work_order": {
-                    "comment": comment,
-                }
-            },
-            timeout=60,
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error marking on hold: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error marking on hold: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error marking on hold: {e}")
-        raise Exception(f"Error marking on hold: {e}")
+    payload = {
+        "work_order": {
+            "comment": comment,
+        }
+    }
+    response = http_patch(url=url, payload=payload, title="Work Order Mark On-Hold")
 
     if "messages" in response.json():
         return ResponseMessages(**response.json()["messages"])
@@ -786,41 +727,23 @@ def work_order_mark_complete(
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/mark_complete"
-
-    try:
-        response = requests.patch(
-            url,
-            headers={
-                "Content-Type": "application/json",
-                "Accept": "application/json",
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Cache-Control": "no-cache",
-                "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
-                "Accept-Encoding": "gzip, deflate, br",
-                "Connection": "keep-alive",
-            },
-            json={
-                "work_order": {
-                    "completed_on_date": completed_on_dttm.strftime(
-                        "%Y-%m-%dT%H:%M:%SZ"
-                    )
-                }
-            },
-            timeout=60,
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error marking complete: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error marking complete: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error marking complete: {e}")
-        raise Exception(f"Error marking complete: {e}")
+    headers = {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
+        "Cache-Control": "no-cache",
+        "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Connection": "keep-alive",
+    }
+    payload = {
+        "work_order": {
+            "completed_on_date": completed_on_dttm.strftime("%Y-%m-%dT%H:%M:%SZ")
+        }
+    }
+    response = http_patch(
+        url=url, headers=headers, payload=payload, title="Work Order Mark Complete"
+    )
 
     if "messages" in response.json():
         return ResponseMessages(**response.json()["messages"])
@@ -971,29 +894,17 @@ def work_orders_start_component_service(
     :rtype: ResponseMessages | None
     """
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/start_components_service"
-
-    try:
-        response = requests.patch(
-            url,
-            headers={
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Accept": "application/json",
-            },
-            json={"component_ids": component_ids},
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error starting service: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error starting service: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error starting service: {e}")
-        raise Exception(f"Error starting service: {e}")
+    headers = {
+        "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
+        "Accept": "application/json",
+    }
+    payload = {"component_ids": component_ids}
+    response = http_patch(
+        url=url,
+        headers=headers,
+        payload=payload,
+        title="Work Order Start Component Service",
+    )
 
     if "messages" in response.json():
         return ResponseMessages(**response.json()["messages"])
@@ -1016,29 +927,17 @@ def work_orders_end_component_service(
     :rtype: ResponseMessages | None
     """
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/end_components_service"
-
-    try:
-        response = requests.patch(
-            url,
-            headers={
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Accept": "application/json",
-            },
-            json={"component_ids": component_ids},
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error ending service: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error ending service: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error ending service: {e}")
-        raise Exception(f"Error ending service: {e}")
+    headers = {
+        "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
+        "Accept": "application/json",
+    }
+    payload = {"component_ids": component_ids}
+    response = http_patch(
+        url=url,
+        headers=headers,
+        payload=payload,
+        title="Work Order End Component Service",
+    )
 
     if "messages" in response.json():
         return ResponseMessages(**response.json()["messages"])
@@ -1124,30 +1023,8 @@ def work_order_remove_checklist(
     :rtype: ResponseMessages | None
     """
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/remove_checklist"
-
-    try:
-        response = requests.delete(
-            url,
-            headers={
-                "Accept": "application/json",
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-            },
-            json={"work_order": {"checklist_id": checklist_id}},
-            timeout=60,
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error removing checklist: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error removing checklist: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error removing checklist: {e}")
-        raise Exception(f"Error removing checklist: {e}")
+    payload={"work_order": {"checklist_id": checklist_id}}
+    response = http_delete(url=url, payload=payload, title="Work Order Remove Checklist")
 
     if "messages" in response.json():
         return ResponseMessages(**response.json()["messages"])
@@ -1166,26 +1043,7 @@ def work_order_delete(work_order_id: int) -> WorkOrder | None:
     :rtype: WorkOrder | None
     """
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}"
-
-    try:
-        response = requests.delete(
-            url,
-            headers={
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Accept": "application/json",
-            },
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(f"Error deleting: {e.response.status_code} - {e.response.content}")
-        raise Exception(
-            f"Error deleting: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error deleting: {e}")
-        raise Exception(f"Error deleting: {e}")
+    response = http_delete(url=url, title="Work Order Delete")
 
     if response.status_code == 200 and "work_order" in response.json():
         return WorkOrder(**response.json()["work_order"])
@@ -1205,27 +1063,17 @@ def work_orders_delete(work_order_ids: list[int]) -> ResponseMessages | None:
     :rtype: ResponseMessages | None
     """
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/mass_delete"
-
-    try:
-        response = requests.patch(
-            url,
-            headers={
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Accept": "application/json",
-            },
-            json={"work_order": {"ids": work_order_ids}},
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(f"Error deleting: {e.response.status_code} - {e.response.content}")
-        raise Exception(
-            f"Error deleting: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error deleting: {e}")
-        raise Exception(f"Error deleting: {e}")
+    headers = {
+        "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
+        "Accept": "application/json",
+    }
+    payload = {"work_order": {"ids": work_order_ids}}
+    response = http_patch(
+        url=url,
+        headers=headers,
+        payload=payload,
+        title="Work Orders Delete",
+    )
 
     if response.status_code == 200 and "messages" in response.json():
         return ResponseMessages(**response.json()["messages"])
