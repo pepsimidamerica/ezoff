@@ -116,6 +116,8 @@ def work_order_create(
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders"
     payload = {"work_order": params}
     response = http_post(url=url, payload=payload, title="Work Order Create")
+    payload = {"work_order": params}
+    response = http_post(url=url, payload=payload, title="Work Order Create")
 
     if response.status_code == 200 and "work_order" in response.json():
         return WorkOrder(**response.json()["work_order"])
@@ -167,6 +169,8 @@ def service_create(asset_id: int, service: dict) -> dict:
     }
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/assets/{asset_id}/services.api"
+    payload = {"create_service_ticket_only": "true"}
+    response = http_post(url=url, payload=payload, title="Service Record Create")
     payload = {"create_service_ticket_only": "true"}
     response = http_post(url=url, payload=payload, title="Service Record Create")
 
