@@ -7,9 +7,8 @@ import os
 import time
 from typing import Literal
 
-import requests
 from ezoff._auth import Decorators
-from ezoff._helpers import _basic_retry, _fetch_page
+from ezoff._helpers import _basic_retry, http_post, http_get, http_patch
 from ezoff.data_model import Location
 
 logger = logging.getLogger(__name__)
@@ -87,26 +86,8 @@ def location_create(
     url = (
         f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/locations"
     )
-
-    try:
-        response = requests.post(
-            url,
-            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            json={"location": params},
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error creating location: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error creating location: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error creating location: {e}")
-        raise Exception(f"Error creating location: {e}")
+    payload = {"location": params}
+    response = http_post(url=url, payload=payload, title="Location Create")
 
     if response.status_code == 200 and "location" in response.json():
         return Location(**response.json()["location"])
@@ -127,26 +108,7 @@ def location_return(location_id: int) -> Location | None:
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/locations/{location_id}"
-
-    try:
-        response = requests.get(
-            url,
-            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            timeout=60,
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error getting location: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error getting location: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error getting location: {e}")
-        raise Exception(f"Error getting location: {e}")
+    response = http_post(url=url, title="Location Return")
 
     if response.status_code == 200 and "location" in response.json():
         return Location(**response.json()["location"])
@@ -188,28 +150,8 @@ def locations_return(
     )
 
     all_locations = []
-
     while True:
-        try:
-            response = _fetch_page(
-                url,
-                headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-                json=filter_data,
-            )
-            response.raise_for_status()
-        except requests.exceptions.HTTPError as e:
-            logger.error(
-                f"Error getting locations: {e.response.status_code} - {e.response.content}"
-            )
-            raise Exception(
-                f"Error getting locations: {e.response.status_code} - {e.response.content}"
-            )
-        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-            raise
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error getting locations: {e}")
-            raise Exception(f"Error getting locations: {e}")
-
+        response = http_get(url=url, payload=filter_data, title="Locations Return")
         data = response.json()
 
         if "locations" not in data:
@@ -257,26 +199,7 @@ def location_activate(
     else:
         data = None
 
-    try:
-        response = requests.patch(
-            url,
-            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            timeout=60,
-            json=data,
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error activating location: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error activating location: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error activating location: {e}")
-        raise Exception(f"Error activating location: {e}")
+    response = http_patch(url=url, payload=data, title="Location Activate")
 
     if response.status_code == 200 and "location" in response.json():
         return Location(**response.json()["location"])
@@ -296,26 +219,7 @@ def location_deactivate(location_id: int) -> Location | None:
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/locations/{location_id}/deactivate"
-
-    try:
-        response = requests.patch(
-            url,
-            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            timeout=60,
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error deactivating location: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error deactivating location: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error deactivating location: {e}")
-        raise Exception(f"Error deactivating location: {e}")
+    response = http_patch(url=url, title="Location Deactivate")
 
     if response.status_code == 200 and "location" in response.json():
         return Location(**response.json()["location"])
@@ -342,27 +246,8 @@ def location_update(location_id: int, update_data: dict) -> Location | None:
             raise ValueError(f"'{field}' is not a valid field for a location.")
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/locations/{location_id}"
-
-    try:
-        response = requests.patch(
-            url,
-            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            json={"location": update_data},
-            timeout=60,
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error updating location: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error updating location: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error updating location: {e}")
-        raise Exception(f"Error updating location: {e}")
+    payload = {"location": update_data}
+    response = http_patch(url=url, payload=payload, title="Location Deactivate")
 
     if response.status_code == 200 and "location" in response.json():
         return Location(**response.json()["location"])

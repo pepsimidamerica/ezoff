@@ -8,7 +8,7 @@ import time
 
 import requests
 from ezoff._auth import Decorators
-from ezoff._helpers import _basic_retry, _fetch_page
+from ezoff._helpers import _basic_retry, _fetch_page, http_post, http_get, http_patch, http_delete
 from ezoff.data_model import CustomRole, Member, MemberCreate, Team, UserListing
 from ezoff.exceptions import NoDataReturned
 
@@ -97,27 +97,8 @@ def member_create(
     params = {k: v for k, v in locals().items() if v is not None}
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/members"
-
-    try:
-        response = requests.post(
-            url,
-            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            json={"member": params},
-            timeout=60,
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error creating member: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error creating member: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error creating member: {e}")
-        raise Exception(f"Error creating member: {e}")
+    payload = {"member": params}
+    response = http_post(url=url, payload=payload, title="Member Create")
 
     if response.status_code == 200 and "member" in response.json():
         return Member(**response.json()["member"])
@@ -135,29 +116,10 @@ def members_create(members: list[MemberCreate]) -> list[Member] | None:
     :rtype: list[Member]
     """
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/members/bulk_create"
-
-    try:
-        response = requests.post(
-            url,
-            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            json={
+    payload = {
                 "members": [member.model_dump(exclude_none=True) for member in members]
-            },
-            timeout=60,
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error creating members: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error creating members: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error creating member: {e}")
-        raise Exception(f"Error creating member: {e}")
+            }
+    response = http_post(url=url, payload=payload, title="Members Create")
 
     if response.status_code == 200 and "members" in response.json():
         return [Member(**x) for x in response.json()["members"]]
@@ -177,33 +139,15 @@ def member_return(member_id: int) -> Member | None:
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/members/{member_id}"
-
-    try:
-        response = requests.get(
-            url,
-            headers={
-                "Accept": "application/json",
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Cache-Control": "no-cache",
-                "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
-                "Accept-Encoding": "gzip, deflate, br",
-                "Connection": "keep-alive",
-            },
-            timeout=60,
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error getting member: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error getting member: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error getting member: {e}")
-        raise Exception(f"Error getting member: {e}")
+    headers={
+        "Accept": "application/json",
+        "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
+        "Cache-Control": "no-cache",
+        "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Connection": "keep-alive",
+    }
+    response = http_post(url=url, headers=headers, title="Member Return")
 
     if response.status_code == 200 and "member" in response.json():
         return Member(**response.json()["member"])
@@ -246,31 +190,8 @@ def members_return(filter: dict | None = None) -> list[Member]:
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/members"
 
     all_members = []
-
     while True:
-        try:
-            response = _fetch_page(
-                url,
-                headers={
-                    "Accept": "application/json",
-                    "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                },
-                json=filter,
-            )
-            response.raise_for_status()
-        except requests.exceptions.HTTPError as e:
-            logger.error(
-                f"Error getting members: {e.response.status_code} - {e.response.content}"
-            )
-            raise Exception(
-                f"Error creating members: {e.response.status_code} - {e.response.content}"
-            )
-        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-            raise
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error getting member: {e}")
-            raise Exception(f"Error getting member: {e}")
-
+        response = http_get(url=url, payload=filter, title="Members Return")
         data = response.json()
 
         if "members" not in data:
@@ -309,27 +230,9 @@ def member_update(member_id: int, update_data: dict) -> Member | None:
             raise ValueError(f"'{field}' is not a valid field for a member.")
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/members/{member_id}"
-
-    try:
-        response = requests.patch(
-            url,
-            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            json={"member": update_data},
-            timeout=60,
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error updating members: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error updating members: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error updating member: {e}")
-        raise Exception(f"Error updating member: {e}")
+    headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
+    payload={"member": update_data},
+    response = http_patch(url=url, headers=headers, payload=payload, title="Member Update")
 
     if response.status_code == 200 and "member" in response.json():
         return Member(**response.json()["member"])
@@ -425,22 +328,8 @@ def custom_roles_return() -> list[CustomRole]:
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/custom_roles"
 
     all_custom_roles = []
-
     while True:
-        try:
-            response = _fetch_page(
-                url,
-                headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            )
-        except requests.exceptions.HTTPError as e:
-            logger.error(
-                f"Error, could not get custom roles: {e.response.status_code} - {e.response.content}"
-            )
-            raise
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error getting custom roles: {e}")
-            raise
-
+        response = http_get(url=url, title="Custom Roles Return")
         data = response.json()
 
         if "custom_roles" not in data:
@@ -479,27 +368,8 @@ def custom_role_update(custom_role_id: int, update_data) -> CustomRole | None:
             raise ValueError(f"'{field}' is not a valid field for a custom role.")
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/custom_roles/{custom_role_id}"
-
-    try:
-        response = requests.patch(
-            url,
-            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            json={"custom_role": update_data},
-            timeout=60,
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error updating custom role: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error updating custom role: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error updating custom role: {e}")
-        raise Exception(f"Error updating custom role: {e}")
+    payload={"custom_role": update_data}
+    response = http_patch(url=url, payload=payload, title="Custom Role Update")
 
     if response.status_code == 200 and "custom_role" in response.json():
         return CustomRole(**response.json()["custom_role"])
@@ -519,22 +389,8 @@ def teams_return() -> list[Team]:
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/teams"
 
     all_teams = []
-
     while True:
-        try:
-            response = _fetch_page(
-                url,
-                headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            )
-        except requests.exceptions.HTTPError as e:
-            logger.error(
-                f"Error, getting teams: {e.response.status_code} - {e.response.content}"
-            )
-            raise
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error getting teams: {e}")
-            raise
-
+        response = http_get(url=url, title="Teams Return")
         data = response.json()
 
         if "teams" not in data:
@@ -571,22 +427,8 @@ def user_listings_return() -> list[UserListing]:
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/user_listings"
 
     all_user_listings = []
-
-    while True:
-        try:
-            response = _fetch_page(
-                url,
-                headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            )
-        except requests.exceptions.HTTPError as e:
-            logger.error(
-                f"Error, getting user listings: {e.response.status_code} - {e.response.content}"
-            )
-            raise
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error getting user listings: {e}")
-            raise
-
+    while True:        
+        response = http_get(url=url, title="User Listings Return")
         data = response.json()
 
         if "user_listings" not in data:

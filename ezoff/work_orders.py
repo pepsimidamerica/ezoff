@@ -12,7 +12,7 @@ from datetime import datetime
 from typing import Literal
 
 from ezoff._auth import Decorators
-from ezoff._helpers import _basic_retry, _fetch_page, http_post, http_get, http_patch, http_delete
+from ezoff._helpers import _basic_retry, http_post, http_get, http_patch, http_delete
 from ezoff.data_model import (
     Component,
     LinkedInventory,
