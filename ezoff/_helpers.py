@@ -198,7 +198,7 @@ def http_post(
         }
 
     try:
-        response = requests.put(
+        response = requests.post(
             url,
             headers=headers,
             json=payload,
@@ -220,6 +220,47 @@ def http_post(
 
     except requests.exceptions.RequestException as e:
         msg = f"Request error while posting {title}: {e}"
+        logger.error(msg)
+        logger.error(f"Payload: {payload}")
+        raise
+
+    return response
+
+
+@_basic_retry
+def http_put(
+    url: str, payload: dict, title: str, timeout: int = 60, headers: dict = None
+) -> requests.Response:
+
+    if headers is None:
+        headers = {
+            "Accept": "application/json",
+            "Authorization": f"Bearer {os.environ['EZO_TOKEN']}",
+        }
+
+    try:
+        response = requests.put(
+            url,
+            headers=headers,
+            json=payload,
+            timeout=timeout,
+        )
+        response.raise_for_status()
+
+    except requests.exceptions.HTTPError as e:
+        msg = f"HTTP error while putting {title}: {e.response.status_code} - {e.response.content}"
+        logger.error(msg)
+        logger.error(f"Payload: {payload}")
+        raise
+
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+        msg = f"Connection error while putting {title}: {e}"
+        logger.error(msg)
+        logger.error(f"Payload: {payload}")
+        raise
+
+    except requests.exceptions.RequestException as e:
+        msg = f"Request error while putting {title}: {e}"
         logger.error(msg)
         logger.error(f"Payload: {payload}")
         raise

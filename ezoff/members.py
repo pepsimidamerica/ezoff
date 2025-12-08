@@ -8,7 +8,7 @@ import time
 
 import requests
 from ezoff._auth import Decorators
-from ezoff._helpers import _basic_retry, _fetch_page, http_post, http_get, http_patch, http_delete
+from ezoff._helpers import _basic_retry, http_post, http_put, http_get, http_patch, http_delete
 from ezoff.data_model import CustomRole, Member, MemberCreate, Team, UserListing
 from ezoff.exceptions import NoDataReturned
 
@@ -251,26 +251,7 @@ def member_activate(member_id: int) -> Member | None:
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/members/{member_id}/activate"
-
-    try:
-        response = requests.put(
-            url,
-            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            timeout=60,
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error activating member: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error activating member: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error activating member: {e}")
-        raise Exception(f"Error activating member: {e}")
+    response = http_put(url=url, title="Member Activate")
 
     if response.status_code == 200 and "member" in response.json():
         return Member(**response.json()["member"])
@@ -289,26 +270,7 @@ def member_deactivate(member_id: int) -> Member | None:
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/members/{member_id}/deactivate"
-
-    try:
-        response = requests.put(
-            url,
-            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            timeout=60,
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error deactivating member: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error deactivating member: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error deactivating member: {e}")
-        raise Exception(f"Error deactivating member: {e}")
+    response = http_put(url=url, title="Member Deactivate")
 
     if response.status_code == 200 and "member" in response.json():
         return Member(**response.json()["member"])
