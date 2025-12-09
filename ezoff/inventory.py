@@ -9,7 +9,14 @@ from datetime import datetime
 
 import requests
 from ezoff._auth import Decorators
-from ezoff._helpers import _basic_retry, _fetch_page
+from ezoff._helpers import (
+    _basic_retry,
+    http_post,
+    http_put,
+    http_get,
+    http_patch,
+    http_delete,
+)
 from ezoff.data_model import (
     CustomFieldHistoryItem,
     Inventory,
@@ -93,29 +100,9 @@ def inventory_create(
     url = (
         f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/inventory"
     )
-
-    try:
-        response = requests.post(
-            url,
-            headers={
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Accept": "application/json",
-            },
-            json={"inventory": params},
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error creating inventory: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error creating inventory: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error creating inventory: {e}")
-        raise Exception(f"Error creating inventory: {e}")
+    response = http_post(
+        url=url, payload={"inventory": params}, title="Inventory Create"
+    )
 
     if response.status_code == 200 and "inventory" in response.json():
         return Inventory(**response.json()["inventory"])
@@ -136,28 +123,7 @@ def inventory_return(inventory_id: int) -> Inventory | None:
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/inventory/{inventory_id}"
-
-    try:
-        response = requests.get(
-            url,
-            headers={
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Accept": "application/json",
-            },
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error getting inventory: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error getting inventory: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error getting inventory: {e}")
-        raise Exception(f"Error getting inventory: {e}")
+    response = http_get(url=url, title="Inventory Return")
 
     if "inventory" in response.json():
         return Inventory(**response.json()["inventory"])
@@ -191,21 +157,7 @@ def inventories_return(filter: dict | None = None) -> list[Inventory]:
     all_inventories = []
 
     while True:
-        try:
-            response = _fetch_page(
-                url,
-                headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-                json=filter,
-            )
-        except requests.exceptions.HTTPError as e:
-            logger.error(
-                f"Error, could not get inventories: {e.response.status_code} - {e.response.content}"
-            )
-            raise
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error, could not get inventories: {e}")
-            raise
-
+        response = http_get(url=url, payload=filter, title="Inventories Return")
         data = response.json()
 
         if "inventory" not in data:
@@ -248,21 +200,9 @@ def inventories_search(search_term: str) -> list[Inventory]:
     all_inventories = []
 
     while True:
-        try:
-            response = _fetch_page(
-                url,
-                headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-                params={"search": search_term},
-            )
-        except requests.exceptions.HTTPError as e:
-            logger.error(
-                f"Error, could not get inventories: {e.response.status_code} - {e.response.content}"
-            )
-            raise
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error, could not get inventories: {e}")
-            raise
-
+        response = http_get(
+            url=url, payload={"search": search_term}, title="Inventories Search"
+        )
         data = response.json()
 
         if "inventories" not in data:
@@ -327,29 +267,9 @@ def inventory_add_stock(
     params.pop("inventory_id", None)
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/inventory/{inventory_id}/add_stock"
-
-    try:
-        response = requests.post(
-            url,
-            headers={
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Accept": "application/json",
-            },
-            json={"inventory": params},
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error adding stock: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error adding stock: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error adding stock: {e}")
-        raise Exception(f"Error adding stock: {e}")
+    response = http_post(
+        url=url, payload={"inventory": params}, title="Inventory Add Stock"
+    )
 
     if response.status_code == 200 and "inventory" in response.json():
         return Inventory(**response.json()["inventory"])
@@ -404,29 +324,9 @@ def inventory_remove_stock(
     params.pop("inventory_id", None)
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/inventory/{inventory_id}/remove_stock"
-
-    try:
-        response = requests.post(
-            url,
-            headers={
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Accept": "application/json",
-            },
-            json={"inventory": params},
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error removing stock: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error removing stock: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error removing stock: {e}")
-        raise Exception(f"Error removing stock: {e}")
+    response = http_post(
+        url=url, payload={"inventory": params}, title="Inventory Remove Stock"
+    )
 
     if response.status_code == 200 and "inventory" in response.json():
         return Inventory(**response.json()["inventory"])
@@ -448,29 +348,11 @@ def inventory_update_location(inventory_id: int, location_id: int) -> Inventory 
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/inventory/{inventory_id}/update_location"
-
-    try:
-        response = requests.patch(
-            url,
-            headers={
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Accept": "application/json",
-            },
-            json={"inventory": {"location_id": location_id}},
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error updating location: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error updating location: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error updating location: {e}")
-        raise Exception(f"Error updating location: {e}")
+    response = http_patch(
+        url=url,
+        payload={"inventory": {"location_id": location_id}},
+        title="Inventory Update Location",
+    )
 
     if response.status_code == 200 and "inventory" in response.json():
         return Inventory(**response.json()["inventory"])
@@ -513,29 +395,9 @@ def inventory_transfer_stock(
     params.pop("inventory_id", None)
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/inventory/{inventory_id}/transfer_stock"
-
-    try:
-        response = requests.post(
-            url,
-            headers={
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Accept": "application/json",
-            },
-            json={"inventory": params},
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error transferring stock: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error transferring stock: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error transferring stock: {e}")
-        raise Exception(f"Error transferring stock: {e}")
+    response = http_post(
+        url=url, payload={"inventory": params}, title="Inventory Transfer Stock"
+    )
 
     if response.status_code == 200 and "inventory" in response.json():
         return Inventory(**response.json()["inventory"])
@@ -572,27 +434,9 @@ def inventory_retire(
     params.pop("inventory_id", None)
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/inventory/{inventory_id}/retire"
-
-    try:
-        response = requests.put(
-            url,
-            headers={
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Accept": "application/json",
-            },
-            json={"inventory": params},
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(f"Error retiring: {e.response.status_code} - {e.response.content}")
-        raise Exception(
-            f"Error retiring: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error retiring: {e}")
-        raise Exception(f"Error retiring: {e}")
+    response = http_put(
+        url=url, payload={"inventory": params}, title="Inventory Retire"
+    )
 
     if response.status_code == 200 and "inventory" in response.json():
         return Inventory(**response.json()["inventory"])
@@ -612,28 +456,7 @@ def inventory_activate(inventory_id: int):
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/inventory/{inventory_id}/activate"
-
-    try:
-        response = requests.put(
-            url,
-            headers={
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Accept": "application/json",
-            },
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error activating: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error activating: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error activating: {e}")
-        raise Exception(f"Error activating: {e}")
+    response = http_put(url=url, title="Inventory Activate")
 
     if response.status_code == 200 and "inventory" in response.json():
         return Inventory(**response.json()["inventory"])
@@ -653,26 +476,7 @@ def inventory_delete(inventory_id: int):
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/inventory/{inventory_id}"
-
-    try:
-        response = requests.delete(
-            url,
-            headers={
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Accept": "application/json",
-            },
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(f"Error deleting: {e.response.status_code} - {e.response.content}")
-        raise Exception(
-            f"Error deleting: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error deleting: {e}")
-        raise Exception(f"Error deleting: {e}")
+    response = http_delete(url=url, title="Inventory Delete")
 
     if response.status_code == 200 and "inventory" in response.json():
         return Inventory(**response.json()["inventory"])
@@ -695,29 +499,11 @@ def inventory_quantity_by_location_return(
     :rtype: int | None
     """
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/inventory/{inventory_id}/get_quantity_by_location"
-
-    try:
-        response = requests.get(
-            url,
-            headers={
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Accept": "application/json",
-            },
-            params={"location_id": location_id},
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error getting quantity: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error getting quantity: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error getting quantity: {e}")
-        raise Exception(f"Error quantity: {e}")
+    response = http_get(
+        url=url,
+        payload={"location_id": location_id},
+        title="Inventory Qty by Location Return",
+    )
 
     if response.status_code != 200 or "quantity" not in response.json():
         return None
@@ -755,20 +541,7 @@ def inventory_custom_field_history_return(
     all_custom_history = []
 
     while True:
-        try:
-            response = _fetch_page(
-                url,
-                headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            )
-        except requests.exceptions.HTTPError as e:
-            logger.error(
-                f"Error, could not get custom attribute history: {e.response.status_code} - {e.response.content}"
-            )
-            raise
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error, could not get custom attribute history: {e}")
-            raise
-
+        response = http_get(url=url, title="Inventory Custom Field History Return")
         data = response.json()
 
         if "custom_field" not in data:
@@ -819,20 +592,10 @@ def inventory_history_return(inventory_id: int) -> list[StockHistoryItem]:
     all_stock_history = []
 
     while True:
-        try:
-            response = _fetch_page(
-                url,
-                headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            )
-        except requests.exceptions.HTTPError as e:
-            logger.error(
-                f"Error, could not get stock history: {e.response.status_code} - {e.response.content}"
-            )
-            raise
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error, could not get stock history: {e}")
-            raise
-
+        response = http_get(
+            url=url,
+            title="Inventory History Return",
+        )
         data = response.json()
 
         if "stock_history" not in data:
@@ -872,20 +635,10 @@ def inventory_reservations_return(inventory_id: int) -> list[Reservation]:
     all_reservations = []
 
     while True:
-        try:
-            response = _fetch_page(
-                url,
-                headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            )
-        except requests.exceptions.HTTPError as e:
-            logger.error(
-                f"Error, could not get reservations: {e.response.status_code} - {e.response.content}"
-            )
-            raise
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error, could not get reservations: {e}")
-            raise
-
+        response = http_get(
+            url=url,
+            title="Inventory Reservations Return",
+        )
         data = response.json()
 
         if "reservations" not in data:
@@ -924,29 +677,11 @@ def inventory_link_to_project(
     :rtype: ResponseMessages | None
     """
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/inventory/link_to_project"
-
-    try:
-        response = requests.post(
-            url,
-            headers={
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Accept": "application/json",
-            },
-            params={"project_id": project_id, "ids": inventory_ids},
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error linking to project: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error linking to project: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error linking to project: {e}")
-        raise Exception(f"Error linking to project: {e}")
+    response = http_post(
+        url=url,
+        payload={"project_id": project_id, "ids": inventory_ids},
+        title="Inventory Link to Project",
+    )
 
     if response.status_code == 200 and "messages" in response.json():
         return ResponseMessages(**response.json()["messages"])
@@ -967,29 +702,11 @@ def inventory_unlink_from_project(project_id: int, inventory_ids: list[int]):
     :rtype: ResponseMessages | None
     """
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/inventory/unlink_from_project"
-
-    try:
-        response = requests.post(
-            url,
-            headers={
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Accept": "application/json",
-            },
-            params={"project_id": project_id, "ids": inventory_ids},
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error unlinking from project: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error unlinking from project: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error unlinking from project: {e}")
-        raise Exception(f"Error unlinking from project: {e}")
+    response = http_post(
+        url=url,
+        payload={"project_id": project_id, "ids": inventory_ids},
+        title="Inventory UnLink from Project",
+    )
 
     if response.status_code == 200 and "messages" in response.json(0):
         return ResponseMessages(**response.json()["messages"])

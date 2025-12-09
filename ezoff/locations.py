@@ -8,7 +8,7 @@ import time
 from typing import Literal
 
 from ezoff._auth import Decorators
-from ezoff._helpers import _basic_retry, http_post, http_get, http_patch
+from ezoff._helpers import http_post, http_put, http_get, http_patch, http_delete
 from ezoff.data_model import Location
 
 logger = logging.getLogger(__name__)
@@ -95,7 +95,6 @@ def location_create(
         return None
 
 
-@_basic_retry
 @Decorators.check_env_vars
 def location_return(location_id: int) -> Location | None:
     """
@@ -129,14 +128,16 @@ def locations_return(
     Optional filter parameter is for compatibility with ezo_cache class.
 
     :param state: Filter locations by state ('active', 'inactive')
-    :type state: str, optional    
+    :type state: str, optional
     :param filter: Raw filter json for EZO API.
     :type filter: dict, optional
     :return: A list of all locations
     :rtype: list of Location
     """
     if state is not None and filter is not None:
-        raise ValueError('State and filter are mutually exclusive options for ezoff.locations_return()')
+        raise ValueError(
+            "State and filter are mutually exclusive options for ezoff.locations_return()"
+        )
 
     if state is not None:
         filter_data = {"filters": {"state": state}}
@@ -227,7 +228,6 @@ def location_deactivate(location_id: int) -> Location | None:
         return None
 
 
-@_basic_retry
 @Decorators.check_env_vars
 def location_update(location_id: int, update_data: dict) -> Location | None:
     """

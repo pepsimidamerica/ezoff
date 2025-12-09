@@ -5,7 +5,7 @@ from datetime import datetime
 
 import requests
 from ezoff._auth import Decorators
-from ezoff._helpers import _basic_retry, _fetch_page
+from ezoff._helpers import http_post, http_put, http_get, http_patch, http_delete
 from ezoff.data_model import Package, ResponseMessages
 
 logger = logging.getLogger(__name__)
@@ -35,29 +35,7 @@ def package_create(
     params = {k: v for k, v in locals().items() if v is not None}
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/packages"
-
-    try:
-        response = requests.post(
-            url,
-            headers={
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Accept": "application/json",
-            },
-            json={"package": params},
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error creating package: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error creating package: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error creating package: {e}")
-        raise Exception(f"Error creating package: {e}")
+    response = http_post(url=url, payload={"package": params}, title="Package Create")
 
     if response.status_code == 200 and "package" in response.json():
         return Package(**response.json()["package"])
@@ -65,7 +43,6 @@ def package_create(
         return None
 
 
-@_basic_retry
 @Decorators.check_env_vars
 def package_return(package_id: int) -> Package | None:
     """
@@ -76,28 +53,7 @@ def package_return(package_id: int) -> Package | None:
     :rtype: Package | None
     """
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/packages/{package_id}"
-
-    try:
-        response = requests.get(
-            url,
-            headers={
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Accept": "application/json",
-            },
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error getting package: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error getting package: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error getting package: {e}")
-        raise Exception(f"Error getting package: {e}")
+    response = http_get(url=url, title="Package Return")
 
     if response.status_code == 200 and "package" in response.json():
         return Package(**response.json()["package"])
@@ -118,20 +74,7 @@ def packages_return() -> list[Package]:
     all_packages = []
 
     while True:
-        try:
-            response = _fetch_page(
-                url,
-                headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            )
-        except requests.exceptions.HTTPError as e:
-            logger.error(
-                f"Error, could not get packages: {e.response.status_code} - {e.response.content}"
-            )
-            raise
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error, could not get packages: {e}")
-            raise
-
+        response = http_get(url=url, title="Packages Return")
         data = response.json()
 
         if "packages" not in data:
@@ -174,33 +117,17 @@ def package_checkin(
     :rtype: ResponseMessages | None
     """
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/packages/{package_id}/checkin"
-
-    try:
-        response = requests.put(
-            url,
-            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            json={
-                "package": {
-                    "comments": comments,
-                    "location_id": location_id,
-                    "checkin_date": checkin_date,
-                }
-            },
-            timeout=60,
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error checking in asset: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error checking in asset: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error checking in asset: {e}")
-        raise Exception(f"Error checking in asset: {e}")
+    response = http_put(
+        url=url,
+        payload={
+            "package": {
+                "comments": comments,
+                "location_id": location_id,
+                "checkin_date": checkin_date,
+            }
+        },
+        title="Package Checkin",
+    )
 
     if response.status_code == 200 and "messages" in response.json():
         return ResponseMessages(**response.json()["messages"])

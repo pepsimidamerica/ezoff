@@ -9,7 +9,7 @@ from typing import Literal
 
 import requests
 from ezoff._auth import Decorators
-from ezoff._helpers import _basic_retry, _fetch_page
+from ezoff._helpers import http_post, http_put, http_get, http_patch, http_delete
 from ezoff.data_model import DepreciationRate, Group, ResponseMessages
 
 logger = logging.getLogger(__name__)
@@ -21,10 +21,9 @@ def group_create(
     description: str | None = None,
     asset_depreciation_mode: Literal["Useful Life", "Percentage"] | None = None,
     triage_completion_period: int | None = None,
-    triage_completion_period_basis: Literal[
-        "minutes", "hours", "days", "weeks", "months", "indefinite"
-    ]
-    | None = None,
+    triage_completion_period_basis: (
+        Literal["minutes", "hours", "days", "weeks", "months", "indefinite"] | None
+    ) = None,
     allow_staff_to_set_checkout_duration: bool | None = None,
     staff_checkout_duration_months: int | None = None,
     staff_checkout_duration_weeks: int | None = None,
@@ -64,29 +63,8 @@ def group_create(
     params = {k: v for k, v in locals().items() if v is not None}
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/groups"
-
-    try:
-        response = requests.post(
-            url,
-            headers={
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Accept": "application/json",
-            },
-            json={"group": params},
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error creating group: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error creating group: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error creating group: {e}")
-        raise Exception(f"Error creating group: {e}")
+    payload = {"group": params}
+    response = http_post(url=url, payload=payload, title="Group Create")
 
     if response.status_code == 200 and "group" in response.json(0):
         return Group(**response.json()["group"])
@@ -94,7 +72,6 @@ def group_create(
         return None
 
 
-@_basic_retry
 @Decorators.check_env_vars
 def group_return(group_id: int) -> Group | None:
     """
@@ -106,28 +83,7 @@ def group_return(group_id: int) -> Group | None:
     :rtype: Group or None
     """
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/groups/{group_id}"
-
-    try:
-        response = requests.get(
-            url,
-            headers={
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Accept": "application/json",
-            },
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error getting group: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error getting group: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error getting group: {e}")
-        raise Exception(f"Error getting group: {e}")
+    response = http_get(url=url, title="Group Return")
 
     if response.status_code == 200 and "group" in response.json():
         return Group(**response.json()["group"])
@@ -149,20 +105,7 @@ def groups_return() -> list[Group]:
     all_groups = []
 
     while True:
-        try:
-            response = _fetch_page(
-                url,
-                headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            )
-        except requests.exceptions.HTTPError as e:
-            logger.error(
-                f"Error, could not get groups: {e.response.status_code} - {e.response.content}"
-            )
-            raise
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error, could not get groups: {e}")
-            raise
-
+        response = http_get(url=url, title="Groups Return")
         data = response.json()
 
         if "groups" not in data:
@@ -204,29 +147,8 @@ def group_update(group_id: int, update_data: dict) -> Group | None:
             raise ValueError(f"'{field}' is not a valid field for a group.")
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/groups/{group_id}"
-
-    try:
-        response = requests.patch(
-            url,
-            headers={
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Accept": "application/json",
-            },
-            json={"group": update_data},
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error updating group: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error updating group: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error updating group: {e}")
-        raise Exception(f"Error updating group: {e}")
+    payload = {"group": update_data}
+    response = http_patch(url=url, payload=payload, title="Group Update")
 
     if response.status_code == 200 and "group" in response.json():
         return Group(**response.json()["group"])
@@ -246,28 +168,7 @@ def group_delete(group_id: int) -> ResponseMessages | None:
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/groups/{group_id}"
-
-    try:
-        response = requests.delete(
-            url,
-            headers={
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Accept": "application/json",
-            },
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error creating group: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error creating group: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error creating group: {e}")
-        raise Exception(f"Error creating group: {e}")
+    response = http_delete(url=url, title="Group Delete")
 
     if response.status_code == 200 and "messages" in response.json():
         return ResponseMessages(**response.json()["messages"])
@@ -282,10 +183,9 @@ def subgroup_create(
     description: str | None = None,
     asset_depreciation_mode: Literal["Useful Life", "Percentage"] | None = None,
     triage_completion_period: int | None = None,
-    triage_completion_period_basis: Literal[
-        "minutes", "hours", "days", "weeks", "months", "indefinite"
-    ]
-    | None = None,
+    triage_completion_period_basis: (
+        Literal["minutes", "hours", "days", "weeks", "months", "indefinite"] | None
+    ) = None,
     allow_staff_to_set_checkout_duration: bool | None = None,
     staff_checkout_duration_months: int | None = None,
     staff_checkout_duration_weeks: int | None = None,
@@ -327,29 +227,7 @@ def subgroup_create(
     params = {k: v for k, v in locals().items() if v is not None}
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/groups/{parent_id}/sub_groups"
-
-    try:
-        response = requests.post(
-            url,
-            headers={
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Accept": "application/json",
-            },
-            json=params,
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error creating subgroup: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error creating subgroup: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error creating subgroup: {e}")
-        raise Exception(f"Error creating subgroup: {e}")
+    response = http_post(url=url, payload=params, title="SubGroup Create")
 
     if response.status_code == 200 and "sub_group" in response.json():
         return Group(**response.json()["sub_group"])
@@ -357,7 +235,6 @@ def subgroup_create(
         return None
 
 
-@_basic_retry
 @Decorators.check_env_vars
 def subgroup_return(group_id: int, subgroup_id: int) -> Group | None:
     """
@@ -372,28 +249,7 @@ def subgroup_return(group_id: int, subgroup_id: int) -> Group | None:
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/groups/{group_id}/sub_groups/{subgroup_id}"
-
-    try:
-        response = requests.get(
-            url,
-            headers={
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Accept": "application/json",
-            },
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error getting subgroup: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error getting subgroup: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error getting subgroup: {e}")
-        raise Exception(f"Error getting subgroup: {e}")
+    response = http_get(url=url, title="SubGroup Return")
 
     if response.status_code == 200 and "sub_group" in response.json():
         return Group(**response.json()["sub_group"])
@@ -417,20 +273,7 @@ def subgroups_return(group_id: int) -> list[Group]:
     all_subgroups = []
 
     while True:
-        try:
-            response = _fetch_page(
-                url,
-                headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            )
-        except requests.exceptions.HTTPError as e:
-            logger.error(
-                f"Error, could not get subgroups: {e.response.status_code} - {e.response.content}"
-            )
-            raise
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error, could not get subgroups: {e}")
-            raise
-
+        response = http_get(url=url, title="SubGroups Return")
         data = response.json()
 
         if "groups" not in data:
@@ -473,29 +316,7 @@ def subgroup_update(group_id: int, subgroup_id: int, update_data: dict) -> Group
             raise ValueError(f"'{field}' is not a valid field for a group.")
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/groups/{group_id}/sub_groups/{subgroup_id}"
-
-    try:
-        response = requests.patch(
-            url,
-            headers={
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Accept": "application/json",
-            },
-            json=update_data,
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error updating subgroup: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error updating subgroup: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error updating subgroup: {e}")
-        raise Exception(f"Error updating subgroup: {e}")
+    response = http_patch(url=url, payload=update_data, title="SubGroup Update")
 
     if response.status_code == 200 and "sub_group" in response.json():
         return Group(**response.json()["sub_group"])
@@ -517,28 +338,7 @@ def subgroup_delete(group_id: int, subgroup_id: int) -> ResponseMessages | None:
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/groups/{group_id}/sub_groups/{subgroup_id}"
-
-    try:
-        response = requests.delete(
-            url,
-            headers={
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Accept": "application/json",
-            },
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error deleting subgroup: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error deleting subgroup: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error deleting subgroup: {e}")
-        raise Exception(f"Error deleting subgroup: {e}")
+    response = http_delete(url=url, title="SubGroup Delete")
 
     if response.status_code == 200 and "messages" in response.json():
         return ResponseMessages(**response.json()["messages"])

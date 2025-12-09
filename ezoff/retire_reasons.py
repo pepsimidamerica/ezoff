@@ -3,7 +3,7 @@ import os
 import time
 
 import requests
-from ezoff._helpers import _fetch_page
+from ezoff._helpers import http_get
 from ezoff.data_model import RetireReason
 
 logger = logging.getLogger(__name__)
@@ -22,20 +22,7 @@ def retire_reasons_return() -> list[RetireReason]:
     all_retire_reasons = []
 
     while True:
-        try:
-            response = _fetch_page(
-                url,
-                headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            )
-        except requests.exceptions.HTTPError as e:
-            logger.error(
-                f"Error, could not get retire reasons: {e.response.status_code} - {e.response.content}"
-            )
-            raise
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error, could not get retire reasons: {e}")
-            raise
-
+        response = http_get(url=url, title="Retire Reasons Return")
         data = response.json()
 
         if "retire_reasons" not in data:

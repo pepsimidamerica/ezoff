@@ -4,7 +4,7 @@ import time
 
 import requests
 from ezoff._auth import Decorators
-from ezoff._helpers import _basic_retry, _fetch_page
+from ezoff._helpers import http_post, http_put, http_get, http_patch, http_delete
 from ezoff.data_model import PurchaseOrder
 
 logger = logging.getLogger(__name__)
@@ -25,29 +25,9 @@ def purchase_order_create(title: str, vendor_id: int) -> PurchaseOrder | None:
     params = {k: v for k, v in locals().items() if v is not None}
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/purchase_orders"
-
-    try:
-        response = requests.post(
-            url,
-            headers={
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Accept": "application/json",
-            },
-            json={"purchase_order": params},
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error creating purchase order: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error creating purchase order: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error creating purchase order: {e}")
-        raise Exception(f"Error creating purchase order: {e}")
+    response = http_post(
+        url=url, payload={"purchase_order": params}, title="Purchase Order Create"
+    )
 
     if response.status_code == 200 and "purchase_order" in response.json():
         return PurchaseOrder(**response.json()["purchase_order"])
@@ -67,28 +47,7 @@ def purchase_order_return(purchase_order_id: int) -> PurchaseOrder | None:
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/purchase_orders/{purchase_order_id}"
-
-    try:
-        response = requests.get(
-            url,
-            headers={
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Accept": "application/json",
-            },
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error getting purchase order: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error getting purchase order: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error getting purchase order: {e}")
-        raise Exception(f"Error getting purchase order: {e}")
+    response = http_get(url=url, title="Purchase Order Return")
 
     if response.status_code == 200 and "purchase_order" in response.json():
         return PurchaseOrder(**response.json()["purchase_order"])
@@ -96,7 +55,6 @@ def purchase_order_return(purchase_order_id: int) -> PurchaseOrder | None:
         return None
 
 
-@_basic_retry
 @Decorators.check_env_vars
 def purchase_orders_return() -> list[PurchaseOrder]:
     """
@@ -110,20 +68,7 @@ def purchase_orders_return() -> list[PurchaseOrder]:
     all_purchase_orders = []
 
     while True:
-        try:
-            response = _fetch_page(
-                url,
-                headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            )
-        except requests.exceptions.HTTPError as e:
-            logger.error(
-                f"Error, could not get purchase orders: {e.response.status_code} - {e.response.content}"
-            )
-            raise
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error, could not get purchase orders: {e}")
-            raise
-
+        response = http_get(url=url, title="Purchase Orders Return")
         data = response.json()
 
         if "purchase_orders" not in data:

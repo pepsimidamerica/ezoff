@@ -9,7 +9,13 @@ from datetime import date, datetime
 
 import requests
 from ezoff._auth import Decorators
-from ezoff._helpers import _basic_retry, _fetch_page, http_post, http_put, http_get, http_patch, http_delete
+from ezoff._helpers import (
+    http_post,
+    http_put,
+    http_get,
+    http_patch,
+    http_delete,
+)
 from ezoff.data_model import Asset, AssetHistoryItem, ResponseMessages, TokenInput
 from ezoff.exceptions import (
     AssetNotFound,
@@ -75,8 +81,7 @@ def asset_create(
     params = {k: v for k, v in locals().items() if v is not None}
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/assets"
-    payload = {"asset": params}
-    response = http_post(url=url, payload=payload, title="Asset Create")
+    response = http_post(url=url, payload={"asset": params}, title="Asset Create")
 
     if response.status_code == 200 and "asset" in response.json():
         return Asset(**response.json()["asset"])
@@ -89,7 +94,6 @@ def asset_create(
 # TODO Reservation create
 
 
-@_basic_retry
 @Decorators.check_env_vars
 def asset_return(asset_id: int) -> Asset | None:
     """
@@ -129,7 +133,7 @@ def assets_return(filter: dict | None = None) -> list[Asset]:
         filter = None
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/assets"
-    headers={
+    headers = {
         "Accept": "application/json",
         "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
         "Cache-Control": "no-cache",
@@ -141,7 +145,9 @@ def assets_return(filter: dict | None = None) -> list[Asset]:
     all_assets = []
 
     while True:
-        response = http_get(url=url, payload=filter, headers=headers, title="Assets Return")
+        response = http_get(
+            url=url, payload=filter, headers=headers, title="Assets Return"
+        )
         data = response.json()
 
         if "assets" not in data:
@@ -177,11 +183,12 @@ def assets_search(search_term: str) -> list[Asset]:
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/assets/search"
-    params={"search": search_term}
     all_assets = []
 
     while True:
-        response = http_get(url=url, params=params, title="Assets Search")
+        response = http_get(
+            url=url, params={"search": search_term}, title="Assets Search"
+        )
         data = response.json()
 
         if "assets" not in data:
@@ -205,7 +212,6 @@ def assets_search(search_term: str) -> list[Asset]:
     return [Asset(**x) for x in all_assets]
 
 
-@_basic_retry
 @Decorators.check_env_vars
 def asset_public_link_return(asset_id: int) -> str | None:
     """
@@ -234,7 +240,6 @@ def asset_public_link_return(asset_id: int) -> str | None:
 # TODO Reservations return
 
 
-@_basic_retry
 @Decorators.check_env_vars
 def assets_token_input_return(q: str) -> list[TokenInput]:
     """
@@ -255,8 +260,9 @@ def assets_token_input_return(q: str) -> list[TokenInput]:
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/assets/items_for_token_input.json"
-    params={"include_id": "true", "q": q}
-    response = http_get(url=url, params=params, title="Asset Token Input Return")
+    response = http_get(
+        url=url, params={"include_id": "true", "q": q}, title="Asset Token Input Return"
+    )
     data = response.json()
 
     return [TokenInput(**x) for x in data]
@@ -327,7 +333,6 @@ def asset_update(asset_id: int, update_data: dict) -> Asset | None:
 # TODO Bulk update
 
 
-@_basic_retry
 @Decorators.check_env_vars
 def asset_checkin(
     asset_id: int,
@@ -355,15 +360,18 @@ def asset_checkin(
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/assets/{asset_id}/checkin"
-    payload={
-        "asset": {
-            "comments": comments,
-            "location_id": location_id,
-            "checkin_date": checkin_date,
-            "custom_fields": custom_fields,
-        }
-    }
-    response = http_put(url=url, payload=payload, title="Asset Checkin")
+    response = http_put(
+        url=url,
+        payload={
+            "asset": {
+                "comments": comments,
+                "location_id": location_id,
+                "checkin_date": checkin_date,
+                "custom_fields": custom_fields,
+            }
+        },
+        title="Asset Checkin",
+    )
 
     if "messages" in response.json():
         return ResponseMessages(**response.json()["messages"])
@@ -371,7 +379,6 @@ def asset_checkin(
         return None
 
 
-@_basic_retry
 @Decorators.check_env_vars
 def asset_checkout(
     asset_id: int,
@@ -422,7 +429,7 @@ def asset_checkout(
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/assets/{asset_id}/checkout"
-    payload={
+    payload = {
         "asset": {
             "user_id": user_id,
             "comments": comments,
@@ -443,7 +450,6 @@ def asset_checkout(
         return None
 
 
-@_basic_retry
 @Decorators.check_env_vars
 def asset_retire(
     asset_id: int,
@@ -474,7 +480,7 @@ def asset_retire(
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/assets/{asset_id}/retire"
-    payload={
+    payload = {
         "asset": {
             "retired_on": retired_on,
             "retire_reason_id": retire_reason_id,
@@ -491,7 +497,6 @@ def asset_retire(
         return None
 
 
-@_basic_retry
 @Decorators.check_env_vars
 def asset_activate(asset_id: int, location_id: int | None = None) -> Asset | None:
     """
@@ -516,7 +521,6 @@ def asset_activate(asset_id: int, location_id: int | None = None) -> Asset | Non
         return None
 
 
-@_basic_retry
 @Decorators.check_env_vars
 def asset_verification_request(asset_id: int, note: str) -> dict:
     """
@@ -535,7 +539,7 @@ def asset_verification_request(asset_id: int, note: str) -> dict:
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/assets/{asset_id}/audits.json"
     # Not entirely sure on correct request body. Endpoint not yet documented in EZO v2
     # API, so just copying what I'm seeing in the browser's network tools when doing a verification request
-    payload={
+    payload = {
         "asset_id": asset_id,
         "custom_substate_id": "",
         "audit": {
@@ -548,7 +552,6 @@ def asset_verification_request(asset_id: int, note: str) -> dict:
     return response.json()
 
 
-@_basic_retry
 @Decorators.check_env_vars
 def asset_delete(asset_id: int) -> ResponseMessages | None:
     """

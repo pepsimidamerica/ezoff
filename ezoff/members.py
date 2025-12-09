@@ -8,7 +8,7 @@ import time
 
 import requests
 from ezoff._auth import Decorators
-from ezoff._helpers import _basic_retry, http_post, http_put, http_get, http_patch, http_delete
+from ezoff._helpers import http_post, http_put, http_get, http_patch
 from ezoff.data_model import CustomRole, Member, MemberCreate, Team, UserListing
 from ezoff.exceptions import NoDataReturned
 
@@ -127,7 +127,6 @@ def members_create(members: list[MemberCreate]) -> list[Member] | None:
         return None
 
 
-@_basic_retry
 @Decorators.check_env_vars
 def member_return(member_id: int) -> Member | None:
     """
@@ -155,7 +154,6 @@ def member_return(member_id: int) -> Member | None:
         return None
 
 
-@_basic_retry
 @Decorators.check_env_vars
 def members_return(filter: dict | None = None) -> list[Member]:
     """

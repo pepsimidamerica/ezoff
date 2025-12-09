@@ -9,7 +9,7 @@ from typing import Dict
 
 import requests
 from ezoff._auth import Decorators
-from ezoff._helpers import _fetch_page
+from ezoff._helpers import http_get
 from ezoff.data_model import Checklist, ChecklistLineItem
 from ezoff.exceptions import NoDataReturned
 
@@ -32,33 +32,14 @@ def checklists_return() -> Dict[int, Checklist]:
     all_checklists = {}
 
     while True:
-        try:
-            response = _fetch_page(
-                url,
-                headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            )
-            response.raise_for_status()
-
-        except requests.exceptions.HTTPError as e:
-            logger.error(
-                f"Error getting checklists: {e.response.status_code} - {e.response.content}"
-            )
-            raise Exception(
-                f"Error getting checklists: {e.response.status_code} - {e.response.content}"
-            )
-        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-            raise
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error getting checklists: {e}")
-            raise Exception(f"Error getting checklists: {e}")
-
+        response = http_get(url=url, title="Checklists Return")
         data = response.json()
 
         if "checklists" not in data:
             raise NoDataReturned(f"No checklists found: {response.content}")
 
-        for checklist in data['checklists']:
-            all_checklists[checklist['id']] = Checklist(**checklist)
+        for checklist in data["checklists"]:
+            all_checklists[checklist["id"]] = Checklist(**checklist)
 
         if (
             "metadata" not in data
