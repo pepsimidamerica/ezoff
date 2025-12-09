@@ -2,9 +2,8 @@ import logging
 import os
 import time
 
-import requests
 from ezoff._auth import Decorators
-from ezoff._helpers import http_post, http_put, http_get, http_patch, http_delete
+from ezoff._helpers import http_post, http_get
 from ezoff.data_model import PurchaseOrder
 
 logger = logging.getLogger(__name__)

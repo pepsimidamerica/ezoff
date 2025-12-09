@@ -7,9 +7,8 @@ import os
 import time
 from typing import Optional
 
-import requests
 from ezoff._auth import Decorators
-from ezoff._helpers import http_post, http_put, http_get, http_patch
+from ezoff._helpers import http_get, http_patch
 
 logger = logging.getLogger(__name__)
 

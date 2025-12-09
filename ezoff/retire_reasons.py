@@ -2,7 +2,6 @@ import logging
 import os
 import time
 
-import requests
 from ezoff._helpers import http_get
 from ezoff.data_model import RetireReason
 

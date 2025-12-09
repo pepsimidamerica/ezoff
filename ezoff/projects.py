@@ -8,9 +8,8 @@ import time
 from datetime import date
 from typing import Literal
 
-import requests
 from ezoff._auth import Decorators
-from ezoff._helpers import http_post, http_put, http_get, http_patch, http_delete
+from ezoff._helpers import http_post, http_get, http_patch
 from ezoff.data_model import Project
 
 logger = logging.getLogger(__name__)

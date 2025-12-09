@@ -6,7 +6,6 @@ import logging
 import os
 import time
 
-import requests
 from ezoff._auth import Decorators
 from ezoff._helpers import http_post, http_put, http_get, http_patch
 from ezoff.data_model import CustomRole, Member, MemberCreate, Team, UserListing

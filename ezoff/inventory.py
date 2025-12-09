@@ -7,10 +7,8 @@ import os
 import time
 from datetime import datetime
 
-import requests
 from ezoff._auth import Decorators
 from ezoff._helpers import (
-    _basic_retry,
     http_post,
     http_put,
     http_get,
@@ -110,7 +108,6 @@ def inventory_create(
         return None
 
 
-@_basic_retry
 @Decorators.check_env_vars
 def inventory_return(inventory_id: int) -> Inventory | None:
     """

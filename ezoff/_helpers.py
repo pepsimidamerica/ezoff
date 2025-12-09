@@ -42,19 +42,25 @@ _basic_retry = retry(
 )
 
 
-@_basic_retry
-def _fetch_page(url, headers, params=None, data=None, json=None):
-    """
-    Wrapper around requests.get that retries on RequestException
+def _log_request(msg: str, headers: dict = {}, params: dict = {}, payload: dict = {}):
+    """Prints request details to the error log.
+    Called after an error occurrs during an HTTP transaction.
 
-    Exists as an alternative to the basic_retry decorator. For paginated functions,
-    you don't want to retry the entire function, just the specific page call.
+    Args:
+        msg (str): Message describing the API call that failed.
+        headers (dict, optional): HTTP headers of failed request. Defaults to {}.
+        params (dict, optional): HTTP parameters of failed request. Defaults to {}.
+        payload (dict, optional): HTTP payload of failed request. Defaults to {}.
     """
-    response = requests.get(
-        url, headers=headers, params=params, data=data, json=json, timeout=60
-    )
-    response.raise_for_status()
-    return response
+
+    # Redact bearer token before logging headers.
+    if "Authorization" in headers:
+        headers["Authorization"] = "REDACTED"
+
+    logger.error(msg)
+    logger.error(f"Headers: {headers}")
+    logger.error(f"Payload: {payload}")
+    logger.error(f"Params: {params}")
 
 
 @_basic_retry
@@ -85,17 +91,17 @@ def http_delete(
 
     except requests.exceptions.HTTPError as e:
         msg = f"HTTP error while deleting {title}: {e.response.status_code} - {e.response.content}"
-        logger.error(msg)
+        _log_request(msg=msg, headers=headers, params=params, payload=payload)
         raise
 
     except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
         msg = f"Connection error while deleting {title}: {e}"
-        logger.error(msg)
+        _log_request(msg=msg, headers=headers, params=params, payload=payload)
         raise
 
     except requests.exceptions.RequestException as e:
         msg = f"Request error while deleting {title}: {e}"
-        logger.error(msg)
+        _log_request(msg=msg, headers=headers, params=params, payload=payload)
         raise
 
     return response
@@ -129,17 +135,17 @@ def http_get(
 
     except requests.exceptions.HTTPError as e:
         msg = f"HTTP error while getting {title}: {e.response.status_code} - {e.response.content}"
-        logger.error(msg)
+        _log_request(msg=msg, headers=headers, params=params, payload=payload)
         raise
 
     except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
         msg = f"Connection error while getting {title}: {e}"
-        logger.error(msg)
+        _log_request(msg=msg, headers=headers, params=params, payload=payload)
         raise
 
     except requests.exceptions.RequestException as e:
         msg = f"Request error while getting {title}: {e}"
-        logger.error(msg)
+        _log_request(msg=msg, headers=headers, params=params, payload=payload)
         raise
 
     return response
@@ -167,20 +173,17 @@ def http_patch(
 
     except requests.exceptions.HTTPError as e:
         msg = f"HTTP error while patching {title}: {e.response.status_code} - {e.response.content}"
-        logger.error(msg)
-        logger.error(f"Payload: {payload}")
+        _log_request(msg=msg, headers=headers, payload=payload)
         raise
 
     except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
         msg = f"Connection error while patching {title}: {e}"
-        logger.error(msg)
-        logger.error(f"Payload: {payload}")
+        _log_request(msg=msg, headers=headers, payload=payload)
         raise
 
     except requests.exceptions.RequestException as e:
         msg = f"Request error while patching {title}: {e}"
-        logger.error(msg)
-        logger.error(f"Payload: {payload}")
+        _log_request(msg=msg, headers=headers, payload=payload)
         raise
 
     return response
@@ -208,20 +211,17 @@ def http_post(
 
     except requests.exceptions.HTTPError as e:
         msg = f"HTTP error while posting {title}: {e.response.status_code} - {e.response.content}"
-        logger.error(msg)
-        logger.error(f"Payload: {payload}")
+        _log_request(msg=msg, headers=headers, payload=payload)
         raise
 
     except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
         msg = f"Connection error while posting {title}: {e}"
-        logger.error(msg)
-        logger.error(f"Payload: {payload}")
+        _log_request(msg=msg, headers=headers, payload=payload)
         raise
 
     except requests.exceptions.RequestException as e:
         msg = f"Request error while posting {title}: {e}"
-        logger.error(msg)
-        logger.error(f"Payload: {payload}")
+        _log_request(msg=msg, headers=headers, payload=payload)
         raise
 
     return response
@@ -249,20 +249,17 @@ def http_put(
 
     except requests.exceptions.HTTPError as e:
         msg = f"HTTP error while putting {title}: {e.response.status_code} - {e.response.content}"
-        logger.error(msg)
-        logger.error(f"Payload: {payload}")
+        _log_request(msg=msg, headers=headers, payload=payload)
         raise
 
     except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
         msg = f"Connection error while putting {title}: {e}"
-        logger.error(msg)
-        logger.error(f"Payload: {payload}")
+        _log_request(msg=msg, headers=headers, payload=payload)
         raise
 
     except requests.exceptions.RequestException as e:
         msg = f"Request error while putting {title}: {e}"
-        logger.error(msg)
-        logger.error(f"Payload: {payload}")
+        _log_request(msg=msg, headers=headers, payload=payload)
         raise
 
     return response

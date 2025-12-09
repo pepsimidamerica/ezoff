@@ -8,7 +8,7 @@ import time
 from typing import Literal
 
 from ezoff._auth import Decorators
-from ezoff._helpers import http_post, http_put, http_get, http_patch, http_delete
+from ezoff._helpers import http_post, http_get, http_patch
 from ezoff.data_model import Location
 
 logger = logging.getLogger(__name__)

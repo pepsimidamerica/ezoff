@@ -7,10 +7,9 @@ import os
 import time
 from typing import Dict
 
-import requests
 from ezoff._auth import Decorators
 from ezoff._helpers import http_get
-from ezoff.data_model import Checklist, ChecklistLineItem
+from ezoff.data_model import Checklist
 from ezoff.exceptions import NoDataReturned
 
 logger = logging.getLogger(__name__)

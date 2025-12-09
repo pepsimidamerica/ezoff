@@ -7,7 +7,6 @@ import os
 import time
 from datetime import date, datetime
 
-import requests
 from ezoff._auth import Decorators
 from ezoff._helpers import (
     http_post,
@@ -18,7 +17,6 @@ from ezoff._helpers import (
 )
 from ezoff.data_model import Asset, AssetHistoryItem, ResponseMessages, TokenInput
 from ezoff.exceptions import (
-    AssetNotFound,
     NoDataReturned,
 )
 
