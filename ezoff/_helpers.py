@@ -42,25 +42,76 @@ _basic_retry = retry(
 )
 
 
-def _log_request(msg: str, headers: dict = {}, params: dict = {}, payload: dict = {}):
-    """Prints request details to the error log.
-    Called after an error occurrs during an HTTP transaction.
+def _http_call(
+    call_method, url: str, title: str, headers: dict = {}, params: dict = {}, payload: dict = {}, timeout: int=60
+) -> requests.Response:
+    """Generic HTTP call wrapper. Used for making various types of HTTP requests to API endpoints.
 
     Args:
-        msg (str): Message describing the API call that failed.
-        headers (dict, optional): HTTP headers of failed request. Defaults to {}.
-        params (dict, optional): HTTP parameters of failed request. Defaults to {}.
-        payload (dict, optional): HTTP payload of failed request. Defaults to {}.
-    """
+        call_method (_type_): HTTP Request method to use for call.
+        url (str): Endpoint URL
+        title (str): Descriptive title of call. Used in error messages.
+        headers (dict, optional): HTTP header values of request.
+        params (dict, optional): HTTP parameter values of request.
+        payload (dict, optional): HTTP body payload of request.
+        timeout (int, optional): HTTP timeout value.
 
-    # Redact bearer token before logging headers.
-    if "Authorization" in headers:
-        headers["Authorization"] = "REDACTED"
+    Returns:
+        requests.Response: HTTP response object returned by request.
+    """    
+    
+    def _log_request(
+    ) -> None:
+        """Prints request details to the error log.
+        Called after an error occurrs during an HTTP transaction.
 
-    logger.error(msg)
-    logger.error(f"Headers: {headers}")
-    logger.error(f"Payload: {payload}")
-    logger.error(f"Params: {params}")
+        Args:
+            msg (str): Message describing the API call that failed.
+            headers (dict, optional): HTTP headers of failed request. Defaults to {}.
+            params (dict, optional): HTTP parameters of failed request. Defaults to {}.
+            payload (dict, optional): HTTP payload of failed request. Defaults to {}.
+        """
+
+        # Redact bearer token before logging headers.
+        if "Authorization" in headers:
+            headers["Authorization"] = "REDACTED"
+
+        logger.error(msg)
+        logger.error(f"URL: {url}")
+        logger.error(f"Headers: {headers}")
+
+        if len(payload) > 0:
+            logger.error(f"Payload: {payload}")
+
+        if len(params) > 0:
+            logger.error(f"Params: {params}")
+
+    try:
+        response = call_method(
+            url,
+            headers=headers,
+            params=params,
+            json=payload,
+            timeout=timeout,
+        )
+        response.raise_for_status()
+
+    except requests.exceptions.HTTPError as e:
+        msg = f"HTTP error calling {title} API endpoint: {e.response.status_code} - {e.response.content}"
+        _log_request()
+        raise
+
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+        msg = f"Connection error calling {title} API endpoint: {e}"
+        _log_request()
+        raise
+
+    except requests.exceptions.RequestException as e:
+        msg = f"Request error calling {title} API endpoint: {e}"
+        _log_request()
+        raise
+
+    return response
 
 
 @_basic_retry
@@ -79,32 +130,15 @@ def http_delete(
             "Authorization": f"Bearer {os.environ['EZO_TOKEN']}",
         }
 
-    try:
-        response = requests.delete(
-            url,
-            headers=headers,
-            params=params,
-            json=payload,
-            timeout=timeout,
-        )
-        response.raise_for_status()
-
-    except requests.exceptions.HTTPError as e:
-        msg = f"HTTP error while deleting {title}: {e.response.status_code} - {e.response.content}"
-        _log_request(msg=msg, headers=headers, params=params, payload=payload)
-        raise
-
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        msg = f"Connection error while deleting {title}: {e}"
-        _log_request(msg=msg, headers=headers, params=params, payload=payload)
-        raise
-
-    except requests.exceptions.RequestException as e:
-        msg = f"Request error while deleting {title}: {e}"
-        _log_request(msg=msg, headers=headers, params=params, payload=payload)
-        raise
-
-    return response
+    return _http_call(
+        call_method=requests.delete,
+        url=url,
+        headers=headers,
+        params=params,
+        payload=payload,
+        title=title,
+        timeout=timeout,
+    )
 
 
 @_basic_retry
@@ -123,32 +157,15 @@ def http_get(
             "Authorization": f"Bearer {os.environ['EZO_TOKEN']}",
         }
 
-    try:
-        response = requests.get(
-            url,
-            headers=headers,
-            params=params,
-            json=payload,
-            timeout=timeout,
-        )
-        response.raise_for_status()
-
-    except requests.exceptions.HTTPError as e:
-        msg = f"HTTP error while getting {title}: {e.response.status_code} - {e.response.content}"
-        _log_request(msg=msg, headers=headers, params=params, payload=payload)
-        raise
-
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        msg = f"Connection error while getting {title}: {e}"
-        _log_request(msg=msg, headers=headers, params=params, payload=payload)
-        raise
-
-    except requests.exceptions.RequestException as e:
-        msg = f"Request error while getting {title}: {e}"
-        _log_request(msg=msg, headers=headers, params=params, payload=payload)
-        raise
-
-    return response
+    return _http_call(
+        call_method=requests.get,
+        url=url,
+        headers=headers,
+        params=params,
+        payload=payload,
+        title=title,
+        timeout=timeout,
+    )
 
 
 @_basic_retry
@@ -162,31 +179,15 @@ def http_patch(
             "Authorization": f"Bearer {os.environ['EZO_TOKEN']}",
         }
 
-    try:
-        response = requests.patch(
-            url,
-            headers=headers,
-            json=payload,
-            timeout=timeout,
-        )
-        response.raise_for_status()
-
-    except requests.exceptions.HTTPError as e:
-        msg = f"HTTP error while patching {title}: {e.response.status_code} - {e.response.content}"
-        _log_request(msg=msg, headers=headers, payload=payload)
-        raise
-
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        msg = f"Connection error while patching {title}: {e}"
-        _log_request(msg=msg, headers=headers, payload=payload)
-        raise
-
-    except requests.exceptions.RequestException as e:
-        msg = f"Request error while patching {title}: {e}"
-        _log_request(msg=msg, headers=headers, payload=payload)
-        raise
-
-    return response
+    return _http_call(
+        call_method=requests.patch,
+        url=url,
+        headers=headers,
+        # params=params,
+        payload=payload,
+        title=title,
+        timeout=timeout,
+    )
 
 
 @_basic_retry
@@ -200,31 +201,15 @@ def http_post(
             "Authorization": f"Bearer {os.environ['EZO_TOKEN']}",
         }
 
-    try:
-        response = requests.post(
-            url,
-            headers=headers,
-            json=payload,
-            timeout=timeout,
-        )
-        response.raise_for_status()
-
-    except requests.exceptions.HTTPError as e:
-        msg = f"HTTP error while posting {title}: {e.response.status_code} - {e.response.content}"
-        _log_request(msg=msg, headers=headers, payload=payload)
-        raise
-
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        msg = f"Connection error while posting {title}: {e}"
-        _log_request(msg=msg, headers=headers, payload=payload)
-        raise
-
-    except requests.exceptions.RequestException as e:
-        msg = f"Request error while posting {title}: {e}"
-        _log_request(msg=msg, headers=headers, payload=payload)
-        raise
-
-    return response
+    return _http_call(
+        call_method=requests.post,
+        url=url,
+        headers=headers,
+        # params=params,
+        payload=payload,
+        title=title,
+        timeout=timeout,
+    )
 
 
 @_basic_retry
@@ -238,28 +223,12 @@ def http_put(
             "Authorization": f"Bearer {os.environ['EZO_TOKEN']}",
         }
 
-    try:
-        response = requests.put(
-            url,
-            headers=headers,
-            json=payload,
-            timeout=timeout,
-        )
-        response.raise_for_status()
-
-    except requests.exceptions.HTTPError as e:
-        msg = f"HTTP error while putting {title}: {e.response.status_code} - {e.response.content}"
-        _log_request(msg=msg, headers=headers, payload=payload)
-        raise
-
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        msg = f"Connection error while putting {title}: {e}"
-        _log_request(msg=msg, headers=headers, payload=payload)
-        raise
-
-    except requests.exceptions.RequestException as e:
-        msg = f"Request error while putting {title}: {e}"
-        _log_request(msg=msg, headers=headers, payload=payload)
-        raise
-
-    return response
+    return _http_call(
+        call_method=requests.put,
+        url=url,
+        headers=headers,
+        # params=params,
+        payload=payload,
+        title=title,
+        timeout=timeout,
+    )
