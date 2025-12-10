@@ -58,7 +58,7 @@ def check_work_order_return():
 
 def check_work_orders_return():
     filter = {
-        # "reviewer_id": 1336290, # Dispatch
+        "reviewer_id": 1336290, # Dispatch
         "state": ["in_progress", "not_started"],
     }
 

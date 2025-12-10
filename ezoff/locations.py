@@ -107,7 +107,7 @@ def location_return(location_id: int) -> Location | None:
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/locations/{location_id}"
-    response = http_post(url=url, title="Location Return")
+    response = http_get(url=url, title="Location Return")
 
     if response.status_code == 200 and "location" in response.json():
         return Location(**response.json()["location"])
