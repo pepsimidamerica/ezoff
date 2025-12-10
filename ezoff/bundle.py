@@ -2,9 +2,8 @@ import logging
 import os
 import time
 
-import requests
 from ezoff._auth import Decorators
-from ezoff._helpers import _basic_retry, _fetch_page
+from ezoff._helpers import http_post, http_get
 from ezoff.data_model import Bundle
 
 logger = logging.getLogger(__name__)
@@ -43,29 +42,7 @@ def bundle_create(
     params = {k: v for k, v in locals().items() if v is not None}
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/bundles"
-
-    try:
-        response = requests.post(
-            url,
-            headers={
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Accept": "application/json",
-            },
-            json={"bundle": params},
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error creating bundle: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error creating bundle: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error creating bundle: {e}")
-        raise Exception(f"Error creating bundle: {e}")
+    response = http_post(url=url, payload={"bundle": params}, title="Bundle Create")
 
     if response.status_code == 200 and "bundle" in response.json():
         return Bundle(**response.json()["bundle"])
@@ -73,7 +50,6 @@ def bundle_create(
         return None
 
 
-@_basic_retry
 @Decorators.check_env_vars
 def bundle_return(bundle_id: int) -> Bundle | None:
     """
@@ -85,28 +61,7 @@ def bundle_return(bundle_id: int) -> Bundle | None:
     :rtype: Bundle | None
     """
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/bundles/{bundle_id}"
-
-    try:
-        response = requests.get(
-            url,
-            headers={
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Accept": "application/json",
-            },
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error getting bundle: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error getting bundle: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error getting bundle: {e}")
-        raise Exception(f"Error getting bundle: {e}")
+    response = http_get(url=url)
 
     if response.status_code == 200 and "bundle" in response.json():
         return Bundle(**response.json()["bundle"])
@@ -137,21 +92,7 @@ def bundles_return(filter: dict | None = None) -> list[Bundle]:
     all_bundles = []
 
     while True:
-        try:
-            response = _fetch_page(
-                url,
-                headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-                json=filter,
-            )
-        except requests.exceptions.HTTPError as e:
-            logger.error(
-                f"Error, could not get bundles: {e.response.status_code} - {e.response.content}"
-            )
-            raise
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error, could not get bundles: {e}")
-            raise
-
+        response = http_get(url=url, payload=filter, title="Bundles Return")
         data = response.json()
 
         if "bundles" not in data:

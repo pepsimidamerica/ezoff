@@ -2,9 +2,8 @@ import logging
 import os
 import time
 
-import requests
 from ezoff._auth import Decorators
-from ezoff._helpers import _basic_retry, _fetch_page
+from ezoff._helpers import http_post, http_get, http_patch
 from ezoff.data_model import Vendor
 
 logger = logging.getLogger(__name__)
@@ -53,29 +52,7 @@ def vendor_create(
     params = {k: v for k, v in locals().items() if v is not None}
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/vendors"
-
-    try:
-        response = requests.post(
-            url,
-            headers={
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Accept": "application/json",
-            },
-            json={"vendor": params},
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error creating vendor: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error creating vendor: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error creating vendor: {e}")
-        raise Exception(f"Error creating vendor: {e}")
+    response = http_post(url=url, payload={"vendor": params}, title="Vendor Create")
 
     if response.status_code == 200 and "vendor" in response.json():
         return Vendor(**response.json()["vendor"])
@@ -83,7 +60,6 @@ def vendor_create(
         return None
 
 
-@_basic_retry
 @Decorators.check_env_vars
 def vendor_return(vendor_id: int) -> Vendor | None:
     """
@@ -95,28 +71,7 @@ def vendor_return(vendor_id: int) -> Vendor | None:
     :rtype: Vendor | None
     """
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/vendors/{vendor_id}"
-
-    try:
-        response = requests.get(
-            url,
-            headers={
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Accept": "application/json",
-            },
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error getting vendor: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error getting vendor: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error getting vendor: {e}")
-        raise Exception(f"Error getting vendor: {e}")
+    response = http_get(url=url, title="Vendor Return")
 
     if response.status_code == 200 and "vendor" in response.json():
         return Vendor(**response.json()["vendor"])
@@ -137,20 +92,7 @@ def vendors_return() -> list[Vendor]:
     all_vendors = []
 
     while True:
-        try:
-            response = _fetch_page(
-                url,
-                headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            )
-        except requests.exceptions.HTTPError as e:
-            logger.error(
-                f"Error, could not get vendors: {e.response.status_code} - {e.response.content}"
-            )
-            raise
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error, could not get vendors: {e}")
-            raise
-
+        response = http_get(url=url, title="Vendors Return")
         data = response.json()
 
         if "vendors" not in data:
@@ -191,29 +133,9 @@ def vendor_update(vendor_id: int, update_data: dict) -> Vendor | None:
             raise ValueError(f"'{field}' is not a valid field for a vendor.")
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/vendors/{vendor_id}"
-
-    try:
-        response = requests.patch(
-            url,
-            headers={
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Accept": "application/json",
-            },
-            json={"vendor": update_data},
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error updating vendor: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error updating vendor: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error updating vendor: {e}")
-        raise Exception(f"Error updating vendor: {e}")
+    response = http_patch(
+        url=url, payload={"vendor": update_data}, title="Vendor Update"
+    )
 
     if response.status_code == 200 and "vendor" in response.json():
         return Vendor(**response.json()["vendor"])

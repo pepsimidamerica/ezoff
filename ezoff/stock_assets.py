@@ -2,9 +2,8 @@ import logging
 import os
 import time
 
-import requests
 from ezoff._auth import Decorators
-from ezoff._helpers import _basic_retry, _fetch_page
+from ezoff._helpers import http_post, http_put, http_get, http_patch, http_delete
 from ezoff.data_model import ResponseMessages, StockAsset
 
 logger = logging.getLogger(__name__)
@@ -80,29 +79,9 @@ def stock_asset_create(
     params = {k: v for k, v in locals().items() if v is not None}
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/stock_assets"
-
-    try:
-        response = requests.post(
-            url,
-            headers={
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Accept": "application/json",
-            },
-            json={"asset_stock": params},
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error creating stock asset: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error creating stock asset: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error creating stock asset: {e}")
-        raise Exception(f"Error creating stock asset: {e}")
+    response = http_post(
+        url=url, payload={"asset_stock": params}, title="Stock Asset Create"
+    )
 
     if response.status_code == 200 and "asset_stock" in response.json(0):
         return StockAsset(**response.json()["asset_stock"])
@@ -110,7 +89,6 @@ def stock_asset_create(
         return None
 
 
-@_basic_retry
 @Decorators.check_env_vars
 def stock_asset_return(stock_asset_id: int) -> StockAsset | None:
     """
@@ -123,28 +101,7 @@ def stock_asset_return(stock_asset_id: int) -> StockAsset | None:
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/stock_assets/{stock_asset_id}"
-
-    try:
-        response = requests.get(
-            url,
-            headers={
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Accept": "application/json",
-            },
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error getting stock asset: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error getting stock asset: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error getting stock asset: {e}")
-        raise Exception(f"Error getting stock asset: {e}")
+    response = http_get(url=url, title="Stock Asset Return")
 
     if response.status_code == 200 and "asset_stock":
         return StockAsset(**response.json()["asset_stock"])
@@ -176,21 +133,7 @@ def stock_assets_return(filter: dict | None = None) -> list[StockAsset]:
     all_stock_assets = []
 
     while True:
-        try:
-            response = _fetch_page(
-                url,
-                headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-                json=filter,
-            )
-        except requests.exceptions.HTTPError as e:
-            logger.error(
-                f"Error, could not get stock assets: {e.response.status_code} - {e.response.content}"
-            )
-            raise
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error, could not get stock assets: {e}")
-            raise
-
+        response = http_get(url=url, payload=filter, title="Stock Assets Return")
         data = response.json()
 
         if "asset_stock" not in data:
@@ -233,21 +176,9 @@ def stock_assets_search(search_term: str) -> list[StockAsset]:
     all_stock_assets = []
 
     while True:
-        try:
-            response = _fetch_page(
-                url,
-                headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-                params={"search": search_term},
-            )
-        except requests.exceptions.HTTPError as e:
-            logger.error(
-                f"Error, could not get stock assets: {e.response.status_code} - {e.response.content}"
-            )
-            raise
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error, could not get stock assets: {e}")
-            raise
-
+        response = http_get(
+            url=url, payload={"search": search_term}, title="Stock Assets Search"
+        )
         data = response.json()
 
         if "asset_stock" not in data:
@@ -302,28 +233,7 @@ def stock_asset_delete(stock_asset_id: int) -> ResponseMessages | None:
     :rtype: ResponseMessages | None
     """
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/stock_assets/{stock_asset_id}"
-
-    try:
-        response = requests.delete(
-            url,
-            headers={
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Accept": "application/json",
-            },
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error deleting stock asset: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error deleting stock asset: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error deleting stock asset: {e}")
-        raise Exception(f"Error deleting stock asset: {e}")
+    response = http_delete(url=url, title="Stock Asset Delete")
 
     if response.status_code == 200 and "messages" in response.json():
         return ResponseMessages(**response.json()["messages"])

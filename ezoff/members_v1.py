@@ -7,9 +7,8 @@ import os
 import time
 from typing import Optional
 
-import requests
 from ezoff._auth import Decorators
-from ezoff._helpers import _fetch_page
+from ezoff._helpers import http_get, http_patch
 
 logger = logging.getLogger(__name__)
 
@@ -51,23 +50,9 @@ def members_return_v1(filter: Optional[dict]) -> list[dict]:
         if filter is not None:
             params.update(filter)
 
-        try:
-            response = _fetch_page(
-                url,
-                headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-                params=params,
-            )
-            response.raise_for_status()
-        except requests.exceptions.HTTPError as e:
-            logger.error(
-                f"Error, could not get members: {e.response.status_code} - {e.response.content}"
-            )
-            raise
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error, could not get members: {e}")
-            raise
-
+        response = http_get(url=url, params=params, title="Members Return v1")
         data = response.json()
+
         if "members" not in data:
             logger.error(f"Error, could not get members: {data}")
             raise Exception(f"Error, could not get members: {response.content}")
@@ -151,28 +136,7 @@ def member_update_v1(member_id: int, member: dict) -> dict:
     }
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/members/{member_id}.api"
-
-    try:
-        response = requests.patch(
-            url,
-            headers={
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-            },
-            data=member,
-            timeout=60,
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error updating member: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error updating member: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error updating member: {e}")
-        raise Exception(f"Error updating member: {e}")
+    # member was being passed to data param of requests.patch. might need to address.
+    response = http_patch(url=url, json=member, title="Member Update v1")
 
     return response.json()

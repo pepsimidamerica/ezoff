@@ -7,12 +7,16 @@ import os
 import time
 from datetime import date, datetime
 
-import requests
 from ezoff._auth import Decorators
-from ezoff._helpers import _basic_retry, _fetch_page
+from ezoff._helpers import (
+    http_post,
+    http_put,
+    http_get,
+    http_patch,
+    http_delete,
+)
 from ezoff.data_model import Asset, AssetHistoryItem, ResponseMessages, TokenInput
 from ezoff.exceptions import (
-    AssetNotFound,
     NoDataReturned,
 )
 
@@ -75,29 +79,7 @@ def asset_create(
     params = {k: v for k, v in locals().items() if v is not None}
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/assets"
-
-    try:
-        response = requests.post(
-            url,
-            headers={
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Accept": "application/json",
-            },
-            json={"asset": params},
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error creating asset: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error creating asset: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error creating asset: {e}")
-        raise Exception(f"Error creating asset: {e}")
+    response = http_post(url=url, payload={"asset": params}, title="Asset Create")
 
     if response.status_code == 200 and "asset" in response.json():
         return Asset(**response.json()["asset"])
@@ -110,7 +92,6 @@ def asset_create(
 # TODO Reservation create
 
 
-@_basic_retry
 @Decorators.check_env_vars
 def asset_return(asset_id: int) -> Asset | None:
     """
@@ -122,28 +103,7 @@ def asset_return(asset_id: int) -> Asset | None:
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/assets/{asset_id}"
-
-    try:
-        response = requests.get(
-            url,
-            headers={
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Accept": "application/json",
-            },
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error getting asset: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error getting asset: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error getting asset: {e}")
-        raise Exception(f"Error getting asset: {e}")
+    response = http_get(url=url, title="Asset Return")
 
     if response.status_code == 200 and "asset" in response.json():
         return Asset(**response.json()["asset"])
@@ -171,35 +131,21 @@ def assets_return(filter: dict | None = None) -> list[Asset]:
         filter = None
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/assets"
-
+    headers = {
+        "Accept": "application/json",
+        "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
+        "Cache-Control": "no-cache",
+        "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Connection": "keep-alive",
+        "Content-Type": "application/json",
+    }
     all_assets = []
 
     while True:
-        try:
-            response = _fetch_page(
-                url,
-                headers={
-                    "Accept": "application/json",
-                    "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                    "Cache-Control": "no-cache",
-                    "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
-                    "Accept-Encoding": "gzip, deflate, br",
-                    "Connection": "keep-alive",
-                    "Content-Type": "application/json",
-                },
-                json=filter,
-            )
-            response.raise_for_status()
-
-        except requests.exceptions.HTTPError as e:
-            raise AssetNotFound(
-                f"Error, could not get fixed assets: {e.response.status_code} - {e.response.content}"
-            )
-        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-            raise
-        except requests.exceptions.RequestException as e:
-            raise AssetNotFound(f"Error, could not get fixed assets: {e}")
-
+        response = http_get(
+            url=url, payload=filter, headers=headers, title="Assets Return"
+        )
         data = response.json()
 
         if "assets" not in data:
@@ -235,25 +181,12 @@ def assets_search(search_term: str) -> list[Asset]:
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/assets/search"
-
     all_assets = []
 
     while True:
-        try:
-            response = _fetch_page(
-                url,
-                headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-                params={"search": search_term},
-            )
-        except requests.exceptions.HTTPError as e:
-            logger.error(
-                f"Error, could not get assets: {e.response.status_code} - {e.response.content}"
-            )
-            raise
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error, could not get assets: {e}")
-            raise
-
+        response = http_get(
+            url=url, params={"search": search_term}, title="Assets Search"
+        )
         data = response.json()
 
         if "assets" not in data:
@@ -277,7 +210,6 @@ def assets_search(search_term: str) -> list[Asset]:
     return [Asset(**x) for x in all_assets]
 
 
-@_basic_retry
 @Decorators.check_env_vars
 def asset_public_link_return(asset_id: int) -> str | None:
     """
@@ -293,28 +225,7 @@ def asset_public_link_return(asset_id: int) -> str | None:
     :rtype: str | None
     """
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/assets/{asset_id}/get_public_links"
-
-    try:
-        response = requests.get(
-            url,
-            headers={
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Accept": "application/json",
-            },
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error getting asset: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error getting asset: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error getting asset: {e}")
-        raise Exception(f"Error getting asset: {e}")
+    response = http_get(url=url, title="Asset Public Link Return")
 
     if "link" in response.json():
         return response.json()["link"]
@@ -327,7 +238,6 @@ def asset_public_link_return(asset_id: int) -> str | None:
 # TODO Reservations return
 
 
-@_basic_retry
 @Decorators.check_env_vars
 def assets_token_input_return(q: str) -> list[TokenInput]:
     """
@@ -348,24 +258,9 @@ def assets_token_input_return(q: str) -> list[TokenInput]:
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/assets/items_for_token_input.json"
-
-    try:
-        response = requests.get(
-            url,
-            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            params={"include_id": "true", "q": q},
-            timeout=60,
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error, could not get item token: {e.response.status_code} - {e.response.content}"
-        )
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error getting item token: {e}")
-        raise
-
+    response = http_get(
+        url=url, params={"include_id": "true", "q": q}, title="Asset Token Input Return"
+    )
     data = response.json()
 
     return [TokenInput(**x) for x in data]
@@ -387,20 +282,7 @@ def asset_history_return(asset_id: int) -> list[AssetHistoryItem]:
     all_history = []
 
     while True:
-        try:
-            response = _fetch_page(
-                url,
-                headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            )
-        except requests.exceptions.HTTPError as e:
-            logger.error(
-                f"Error, could not get history: {e.response.status_code} - {e.response.content}"
-            )
-            raise
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error, could not get history: {e}")
-            raise
-
+        response = http_get(url=url, title="Asset History Return")
         data = response.json()
 
         if "history" not in data:
@@ -438,30 +320,7 @@ def asset_update(asset_id: int, update_data: dict) -> Asset | None:
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/assets/{asset_id}"
-
-    try:
-        response = requests.patch(
-            url,
-            headers={
-                "Accept": "application/json",
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-            },
-            json=update_data,
-            timeout=60,
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error updating asset: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error updating asset: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error updating asset: {e}")
-        raise Exception(f"Error updating asset: {e}")
+    response = http_patch(url=url, payload=update_data, title="Asset Update")
 
     if response.status_code == 200 and "asset" in response.json():
         return Asset(**response.json()["asset"])
@@ -472,7 +331,6 @@ def asset_update(asset_id: int, update_data: dict) -> Asset | None:
 # TODO Bulk update
 
 
-@_basic_retry
 @Decorators.check_env_vars
 def asset_checkin(
     asset_id: int,
@@ -500,34 +358,18 @@ def asset_checkin(
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/assets/{asset_id}/checkin"
-
-    try:
-        response = requests.put(
-            url,
-            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            json={
-                "asset": {
-                    "comments": comments,
-                    "location_id": location_id,
-                    "checkin_date": checkin_date,
-                    "custom_fields": custom_fields,
-                }
-            },
-            timeout=60,
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error checking in asset: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error checking in asset: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error checking in asset: {e}")
-        raise Exception(f"Error checking in asset: {e}")
+    response = http_put(
+        url=url,
+        payload={
+            "asset": {
+                "comments": comments,
+                "location_id": location_id,
+                "checkin_date": checkin_date,
+                "custom_fields": custom_fields,
+            }
+        },
+        title="Asset Checkin",
+    )
 
     if "messages" in response.json():
         return ResponseMessages(**response.json()["messages"])
@@ -535,7 +377,6 @@ def asset_checkin(
         return None
 
 
-@_basic_retry
 @Decorators.check_env_vars
 def asset_checkout(
     asset_id: int,
@@ -586,39 +427,20 @@ def asset_checkout(
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/assets/{asset_id}/checkout"
-
-    try:
-        response = requests.put(
-            url,
-            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            json={
-                "asset": {
-                    "user_id": user_id,
-                    "comments": comments,
-                    "location_id": location_id,
-                    "request_verification": request_verification,
-                    "checkout_forever": checkout_forever,
-                    "till": till,
-                    "ignore_conflicting_reservations": ignore_conflicting_reservations,
-                    "fulfill_user_conflicting_reservations": fulfill_user_conflicting_reservations,
-                    "custom_fields": custom_fields,
-                }
-            },
-            timeout=60,
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error checking out asset: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error checking out asset: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error checking out asset: {e}")
-        raise Exception(f"Error checking out asset: {e}")
+    payload = {
+        "asset": {
+            "user_id": user_id,
+            "comments": comments,
+            "location_id": location_id,
+            "request_verification": request_verification,
+            "checkout_forever": checkout_forever,
+            "till": till,
+            "ignore_conflicting_reservations": ignore_conflicting_reservations,
+            "fulfill_user_conflicting_reservations": fulfill_user_conflicting_reservations,
+            "custom_fields": custom_fields,
+        }
+    }
+    response = http_put(url=url, payload=payload, title="Asset Checkout")
 
     if "messages" in response.json():
         return ResponseMessages(**response.json()["messages"])
@@ -626,7 +448,6 @@ def asset_checkout(
         return None
 
 
-@_basic_retry
 @Decorators.check_env_vars
 def asset_retire(
     asset_id: int,
@@ -657,35 +478,16 @@ def asset_retire(
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/assets/{asset_id}/retire"
-
-    try:
-        response = requests.put(
-            url,
-            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            json={
-                "asset": {
-                    "retired_on": retired_on,
-                    "retire_reason_id": retire_reason_id,
-                    "salvage_value": salvage_value,
-                    "retire_comments": retire_comments,
-                    "location_id": location_id,
-                }
-            },
-            timeout=60,
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error retiring asset: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error retiring asset: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error retiring asset: {e}")
-        raise Exception(f"Error retiring asset: {e}")
+    payload = {
+        "asset": {
+            "retired_on": retired_on,
+            "retire_reason_id": retire_reason_id,
+            "salvage_value": salvage_value,
+            "retire_comments": retire_comments,
+            "location_id": location_id,
+        }
+    }
+    response = http_put(url=url, payload=payload, title="Asset Retire")
 
     if "asset" in response.json():
         return Asset(**response.json()["asset"])
@@ -693,7 +495,6 @@ def asset_retire(
         return None
 
 
-@_basic_retry
 @Decorators.check_env_vars
 def asset_activate(asset_id: int, location_id: int | None = None) -> Asset | None:
     """
@@ -709,27 +510,8 @@ def asset_activate(asset_id: int, location_id: int | None = None) -> Asset | Non
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/assets/{asset_id}/activate"
-
-    try:
-        response = requests.put(
-            url,
-            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            json={"asset": {"location_id": location_id}},
-            timeout=60,
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error activating asset: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error activating asset: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error activating asset: {e}")
-        raise Exception(f"Error activating asset: {e}")
+    payload = {"asset": {"location_id": location_id}}
+    response = http_put(url=url, payload=payload, title="Asset Activate")
 
     if "asset" in response.json():
         return Asset(**response.json()["asset"])
@@ -737,7 +519,6 @@ def asset_activate(asset_id: int, location_id: int | None = None) -> Asset | Non
         return None
 
 
-@_basic_retry
 @Decorators.check_env_vars
 def asset_verification_request(asset_id: int, note: str) -> dict:
     """
@@ -754,41 +535,21 @@ def asset_verification_request(asset_id: int, note: str) -> dict:
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/assets/{asset_id}/audits.json"
-
-    try:
-        response = requests.post(
-            url,
-            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            timeout=60,
-            # Not entirely sure on correct request body. Endpoint not yet documented in EZO v2
-            # API, so just copying what I'm seeing in the browser's network tools when doing a verification request
-            json={
-                "asset_id": asset_id,
-                "custom_substate_id": "",
-                "audit": {
-                    "custom_required": "1",
-                    "custom_note": note,
-                },
-            },
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error sending audit request: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error sending audit request: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error sending audit request: {e}")
-        raise Exception(f"Error sending audit request: {e}")
+    # Not entirely sure on correct request body. Endpoint not yet documented in EZO v2
+    # API, so just copying what I'm seeing in the browser's network tools when doing a verification request
+    payload = {
+        "asset_id": asset_id,
+        "custom_substate_id": "",
+        "audit": {
+            "custom_required": "1",
+            "custom_note": note,
+        },
+    }
+    response = http_post(url=url, payload=payload, title="Asset Verification Request")
 
     return response.json()
 
 
-@_basic_retry
 @Decorators.check_env_vars
 def asset_delete(asset_id: int) -> ResponseMessages | None:
     """
@@ -801,26 +562,7 @@ def asset_delete(asset_id: int) -> ResponseMessages | None:
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/assets/{asset_id}"
-
-    try:
-        response = requests.delete(
-            url,
-            headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            timeout=60,
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error deleting asset: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error deleting asset: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error deleting asset: {e}")
-        raise Exception(f"Error deleting asset: {e}")
+    response = http_delete(url=url, title="Asset Delete")
 
     if "messages" in response.json():
         return ResponseMessages(**response.json()["messages"])

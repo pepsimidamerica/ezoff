@@ -8,9 +8,8 @@ import time
 from datetime import date
 from typing import Literal
 
-import requests
 from ezoff._auth import Decorators
-from ezoff._helpers import _basic_retry, _fetch_page
+from ezoff._helpers import http_post, http_get, http_patch
 from ezoff.data_model import Project
 
 logger = logging.getLogger(__name__)
@@ -23,16 +22,18 @@ def project_create(
     identifier: str | None = None,
     expected_start_date: date | None = None,
     expected_end_date: date | None = None,
-    linked_modules: Literal[
-        "items",
-        "checkouts",
-        "reservations",
-        "purchase_orders",
-        "work_orders",
-        "carts",
-        "locations",
-    ]
-    | None = None,
+    linked_modules: (
+        Literal[
+            "items",
+            "checkouts",
+            "reservations",
+            "purchase_orders",
+            "work_orders",
+            "carts",
+            "locations",
+        ]
+        | None
+    ) = None,
     assigned_user_ids: list[int] | None = None,
 ) -> Project | None:
     """
@@ -59,29 +60,7 @@ def project_create(
     params = {k: v for k, v in locals().items() if v is not None}
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/projects"
-
-    try:
-        response = requests.post(
-            url,
-            headers={
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Accept": "application/json",
-            },
-            json={"project": params},
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error creating project: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error creating project: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error creating project: {e}")
-        raise Exception(f"Error creating project: {e}")
+    response = http_post(url=url, payload={"project": params}, title="Project Create")
 
     if response.status_code == 200 and "project" in response.json():
         return Project(**response.json()["project"])
@@ -89,7 +68,6 @@ def project_create(
         return None
 
 
-@_basic_retry
 @Decorators.check_env_vars
 def project_return(project_id: int) -> Project | None:
     """
@@ -101,28 +79,7 @@ def project_return(project_id: int) -> Project | None:
     :rtype: Project | None
     """
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/projects/{project_id}"
-
-    try:
-        response = requests.get(
-            url,
-            headers={
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Accept": "application/json",
-            },
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error getting project: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error getting project: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error getting project: {e}")
-        raise Exception(f"Error getting project: {e}")
+    response = http_get(url=url, title="Project Return")
 
     if response.status_code == 200 and "project" in response.json():
         return Project(**response.json()["project"])
@@ -144,20 +101,7 @@ def projects_return() -> list[Project]:
     all_projects = []
 
     while True:
-        try:
-            response = _fetch_page(
-                url,
-                headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-            )
-        except requests.exceptions.HTTPError as e:
-            logger.error(
-                f"Error, could not get projects: {e.response.status_code} - {e.response.content}"
-            )
-            raise
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Error, could not get projects: {e}")
-            raise
-
+        response = http_get(url=url, title="Projects Return")
         data = response.json()
 
         if "projects" not in data:
@@ -202,28 +146,7 @@ def project_mark_complete(project_id: int) -> Project | None:
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/projects/{project_id}/mark_complete"
-
-    try:
-        response = requests.patch(
-            url,
-            headers={
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Accept": "application/json",
-            },
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error marking project complete: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error marking project complete: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error marking project complete: {e}")
-        raise Exception(f"Error marking project complete: {e}")
+    response = http_patch(url=url, title="Project Mark Complete")
 
     if response.status_code == 200 and "project" in response.json():
         return Project(**response.json()["project"])
@@ -243,28 +166,7 @@ def project_mark_in_progress(project_id: int) -> Project | None:
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/projects/{project_id}/mark_in_progress"
-
-    try:
-        response = requests.patch(
-            url,
-            headers={
-                "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-                "Accept": "application/json",
-            },
-        )
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error(
-            f"Error marking project in progress: {e.response.status_code} - {e.response.content}"
-        )
-        raise Exception(
-            f"Error marking project in progress: {e.response.status_code} - {e.response.content}"
-        )
-    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
-        raise
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Error marking project in progress: {e}")
-        raise Exception(f"Error marking project in progress: {e}")
+    response = http_patch(url=url, title="Project Mark In-Progress")
 
     if response.status_code == 200 and "project" in response.json():
         return Project(**response.json()["project"])
