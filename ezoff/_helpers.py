@@ -42,10 +42,11 @@ _basic_retry = retry(
 )
 
 
-def _http_call(
+@_basic_retry
+def _http_request(
     call_method, url: str, title: str, headers: dict = {}, params: dict = {}, payload: dict = {}, timeout: int=60
 ) -> requests.Response:
-    """Generic HTTP call wrapper. Used for making various types of HTTP requests to API endpoints.
+    """Generic HTTP request wrapper. Used for making various types of HTTP requests to API endpoints.
 
     Args:
         call_method (_type_): HTTP Request method to use for call.
@@ -63,28 +64,25 @@ def _http_call(
     def _log_request(
     ) -> None:
         """Prints request details to the error log.
-        Called after an error occurrs during an HTTP transaction.
-
-        Args:
-            msg (str): Message describing the API call that failed.
-            headers (dict, optional): HTTP headers of failed request. Defaults to {}.
-            params (dict, optional): HTTP parameters of failed request. Defaults to {}.
-            payload (dict, optional): HTTP payload of failed request. Defaults to {}.
+        Called if an error occurrs as a result of the HTTP request.
         """
 
         # Redact bearer token before logging headers.
         if "Authorization" in headers:
             headers["Authorization"] = "REDACTED"
 
+        logger.error('*' * 50)
         logger.error(msg)
         logger.error(f"URL: {url}")
         logger.error(f"Headers: {headers}")
 
-        if len(payload) > 0:
+        if payload is not None:
             logger.error(f"Payload: {payload}")
 
-        if len(params) > 0:
+        if params is not None:
             logger.error(f"Params: {params}")
+
+        logger.error('*' * 50)
 
     try:
         response = call_method(
@@ -114,7 +112,6 @@ def _http_call(
     return response
 
 
-@_basic_retry
 def http_delete(
     url: str,
     title: str,
@@ -130,7 +127,7 @@ def http_delete(
             "Authorization": f"Bearer {os.environ['EZO_TOKEN']}",
         }
 
-    return _http_call(
+    return _http_request(
         call_method=requests.delete,
         url=url,
         headers=headers,
@@ -141,7 +138,6 @@ def http_delete(
     )
 
 
-@_basic_retry
 def http_get(
     url: str,
     title: str,
@@ -157,7 +153,7 @@ def http_get(
             "Authorization": f"Bearer {os.environ['EZO_TOKEN']}",
         }
 
-    return _http_call(
+    return _http_request(
         call_method=requests.get,
         url=url,
         headers=headers,
@@ -168,7 +164,6 @@ def http_get(
     )
 
 
-@_basic_retry
 def http_patch(
     url: str, title: str, timeout: int = 60, headers: dict = None, payload: dict = None
 ) -> requests.Response:
@@ -179,18 +174,16 @@ def http_patch(
             "Authorization": f"Bearer {os.environ['EZO_TOKEN']}",
         }
 
-    return _http_call(
+    return _http_request(
         call_method=requests.patch,
         url=url,
         headers=headers,
-        # params=params,
         payload=payload,
         title=title,
         timeout=timeout,
     )
 
 
-@_basic_retry
 def http_post(
     url: str, payload: dict, title: str, timeout: int = 60, headers: dict = None
 ) -> requests.Response:
@@ -201,18 +194,16 @@ def http_post(
             "Authorization": f"Bearer {os.environ['EZO_TOKEN']}",
         }
 
-    return _http_call(
+    return _http_request(
         call_method=requests.post,
         url=url,
         headers=headers,
-        # params=params,
         payload=payload,
         title=title,
         timeout=timeout,
     )
 
 
-@_basic_retry
 def http_put(
     url: str, payload: dict, title: str, timeout: int = 60, headers: dict = None
 ) -> requests.Response:
@@ -223,11 +214,10 @@ def http_put(
             "Authorization": f"Bearer {os.environ['EZO_TOKEN']}",
         }
 
-    return _http_call(
+    return _http_request(
         call_method=requests.put,
         url=url,
         headers=headers,
-        # params=params,
         payload=payload,
         title=title,
         timeout=timeout,
