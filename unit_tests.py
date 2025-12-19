@@ -72,8 +72,11 @@ def check_work_order_force_complete():
 
 
 def check_work_order_update():
-    work_order_id = 35220
-    update_data = {"custom_fields": [{"id": 739, "value": "11 Marion"}]}
+    # work_order_id = 35220
+    # update_data = {"custom_fields": [{"id": 739, "value": "11 Marion"}]}
+    
+    work_order_id = 36736
+    update_data = {'location_id': 160, 'custom_fields': [{'id': 739, 'value': '11 Marion'}]}
 
     work_order_update(work_order_id=work_order_id, update_data=update_data)
 
@@ -88,19 +91,19 @@ def check_work_order_routing_update():
         reviewer_id=244379,
     )
 
-check_work_order_return()
-check_work_orders_return()
-check_checklist_return()
+# check_work_order_return()
+# check_work_orders_return()
+# check_checklist_return()
 
-check_members_return()
-check_members_return_v1()
+# check_members_return()
+# check_members_return_v1()
 
-check_assets_return()
+# check_assets_return()
 
-check_locations_return()
-check_location_return()
+# check_locations_return()
+# check_location_return()
 
 # check_work_order_force_complete()
-# check_work_order_update()
+check_work_order_update()
 
 # check_work_order_routing_update()

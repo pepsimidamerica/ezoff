@@ -12,7 +12,7 @@ from datetime import datetime
 from typing import Literal
 
 from ezoff._auth import Decorators
-from ezoff._helpers import http_post, http_get, http_patch, http_delete
+from ezoff._helpers import http_post, http_get, http_patch, http_delete, http_put
 from ezoff.data_model import (
     Component,
     LinkedInventory,
@@ -461,7 +461,7 @@ def work_order_update(work_order_id: int, update_data: dict) -> WorkOrder | None
             raise ValueError(f"'{field}' is not a valid field for a group.")
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}"
-    response = http_post(
+    response = http_put(
         url=url, payload={"work_order": update_data}, title="Work Order Update"
     )
 

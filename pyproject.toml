@@ -1,6 +1,6 @@
 [project]
 name = "ezoff"
-version = "1.24.7"
+version = "1.24.8"
 description = "Python package for interacting with EZOffice API"
 readme = "README.md"
 authors = [{ name = "Jordan Maynor", email = "jmaynor@pepsimidamerica.com" }]
