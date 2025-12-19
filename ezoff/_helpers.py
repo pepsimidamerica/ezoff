@@ -73,6 +73,7 @@ def _http_request(
 
         logger.error('*' * 50)
         logger.error(msg)
+        logger.error(f'HTTP Method: {call_method.__name__}')
         logger.error(f"URL: {url}")
         logger.error(f"Headers: {headers}")
 
