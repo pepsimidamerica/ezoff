@@ -7,7 +7,7 @@ import os
 import time
 
 from ezoff._auth import Decorators
-from ezoff._helpers import http_post, http_put, http_get, http_patch
+from ezoff._helpers import http_get, http_patch, http_post, http_put
 from ezoff.data_model import CustomRole, Member, MemberCreate, Team, UserListing
 from ezoff.exceptions import NoDataReturned
 
@@ -25,6 +25,7 @@ def member_create(
     department: str | None = None,
     team_ids: list[int] | None = None,
     user_listing_id: int | None = None,
+    work_location: int | None = None,
     login_enabled: bool | None = None,
     subscribed_to_emails: bool | None = None,
     skip_confirmation_email: bool | None = None,
@@ -115,9 +116,7 @@ def members_create(members: list[MemberCreate]) -> list[Member] | None:
     :rtype: list[Member]
     """
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/members/bulk_create"
-    payload = {
-                "members": [member.model_dump(exclude_none=True) for member in members]
-            }
+    payload = {"members": [member.model_dump(exclude_none=True) for member in members]}
     response = http_post(url=url, payload=payload, title="Members Create")
 
     if response.status_code == 200 and "members" in response.json():
@@ -137,7 +136,7 @@ def member_return(member_id: int) -> Member | None:
     """
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/members/{member_id}"
-    headers={
+    headers = {
         "Accept": "application/json",
         "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
         "Cache-Control": "no-cache",
@@ -176,7 +175,7 @@ def members_return(filter: dict | None = None) -> list[Member]:
                     "inactive",
                     "inactive_members_with_items",
                     "inactive_members_with_pending_associations",
-                    "location_id"
+                    "location_id",
                 ]
             ):
                 raise ValueError(f"'{field}' is not a valid field for a member.")
@@ -227,9 +226,11 @@ def member_update(member_id: int, update_data: dict) -> Member | None:
             raise ValueError(f"'{field}' is not a valid field for a member.")
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/members/{member_id}"
-    headers={"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},
-    payload={"member": update_data},
-    response = http_patch(url=url, headers=headers, payload=payload, title="Member Update")
+    headers = ({"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},)
+    payload = ({"member": update_data},)
+    response = http_patch(
+        url=url, headers=headers, payload=payload, title="Member Update"
+    )
 
     if response.status_code == 200 and "member" in response.json():
         return Member(**response.json()["member"])
@@ -327,7 +328,7 @@ def custom_role_update(custom_role_id: int, update_data) -> CustomRole | None:
             raise ValueError(f"'{field}' is not a valid field for a custom role.")
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/custom_roles/{custom_role_id}"
-    payload={"custom_role": update_data}
+    payload = {"custom_role": update_data}
     response = http_patch(url=url, payload=payload, title="Custom Role Update")
 
     if response.status_code == 200 and "custom_role" in response.json():
@@ -386,7 +387,7 @@ def user_listings_return() -> list[UserListing]:
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/user_listings"
 
     all_user_listings = []
-    while True:        
+    while True:
         response = http_get(url=url, title="User Listings Return")
         data = response.json()
 

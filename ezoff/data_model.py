@@ -3,7 +3,7 @@ Module contains any pydantic models used throughout the package.
 """
 
 from datetime import date, datetime
-from typing import Any, List, Literal, Optional
+from typing import Any, Literal, Optional
 
 from ezoff.enums import AssetClass, CustomFieldID, LocationClass, ResourceType
 from pydantic import BaseModel, Field
@@ -15,6 +15,11 @@ class ResponseMessages(BaseModel):
 
 
 class Asset(BaseModel):
+    """
+    Model representing a fixed asset. Some individual item that could be identified with
+    a serial number or some unique identifier.
+    """
+
     active_sub_checkout: Optional[Any] = Field(default=None)
     arbitration: int
     audit_pending: bool
@@ -34,7 +39,8 @@ class Asset(BaseModel):
     id: int
     identifier: str
     item_audit_id: Optional[int] = Field(default=None)
-    last_assigned_to_id: Optional[int] = Field(default=None)
+    assigned_to_id: int | None = Field(default=None)
+    last_assigned_to_id: int | None = Field(default=None)
     last_checked_in_at: Optional[datetime] = Field(default=None)
     last_checked_out_at: Optional[datetime] = Field(default=None)
     last_history_id: Optional[int] = Field(default=None)
@@ -284,6 +290,10 @@ class Location(BaseModel):
 
 
 class Member(BaseModel):
+    """
+    Model representing a member (user).
+    """
+
     account_name: Optional[str] = Field(default=None)
     address_name: Optional[str] = Field(default=None)
     alert_type: Optional[str] = Field(default=None)
@@ -300,7 +310,7 @@ class Member(BaseModel):
     created_by_id: Optional[int] = Field(default=None)
     creation_source: Optional[str] = Field(default=None)
     credit_memo_amount: Optional[float] = Field(default=None)
-    custom_fields: Optional[List[dict]] = Field(default=[])
+    custom_fields: Optional[list[dict]] = Field(default=[])
     deactivated_at: Optional[datetime] = Field(default=None)
     default_address_id: Optional[int] = Field(default=None)
     default_triage_setting_id: Optional[int] = Field(default=None)
@@ -376,6 +386,7 @@ class Member(BaseModel):
     unsubscribed_by_id: Optional[int] = Field(default=None)
     updated_at: Optional[datetime] = Field(default=None)
     user_listing_id: Optional[int] = Field(default=None)
+    work_location: int | None = Field(default=None)
     zendesk_account_id: Optional[int] = Field(default=None)
 
 
@@ -406,6 +417,7 @@ class MemberCreate(BaseModel):
     fax: str | None = None
     phone_number: str | None = None
     image_url: str | None = None
+    work_location: int | None = None
     custom_fields: list[dict] | None = None
 
 
@@ -450,7 +462,7 @@ class WorkOrder(BaseModel):
     created_at: Optional[datetime] = Field(default=None)
     created_by_id: Optional[int] = Field(default=None)
     creation_source: Optional[str] = Field(default=None)
-    custom_fields: Optional[List[dict]]
+    custom_fields: Optional[list[dict]]
     description: Optional[str] = Field(default=None)
     display_next_service_immediately: bool
     due_date: Optional[datetime] = Field(default=None)
@@ -474,7 +486,7 @@ class WorkOrder(BaseModel):
     requested_by_id: Optional[int] = Field(default=None)
     require_approval_from_reviewer: bool
     reviewer_id: Optional[int] = Field(default=None)
-    secondary_assignee_ids: Optional[List[int]] = Field(default=[])
+    secondary_assignee_ids: Optional[list[int]] = Field(default=[])
     service_for_sub_groups_only: bool
     service_type_id: Optional[int] = Field(default=None)
     shipping_address_id: Optional[int] = Field(default=None)
