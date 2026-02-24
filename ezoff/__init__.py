@@ -12,6 +12,7 @@ from .assets import (
     asset_checkout,
     asset_create,
     asset_delete,
+    asset_documents_return,
     asset_history_return,
     asset_public_link_return,
     asset_retire,
@@ -44,6 +45,7 @@ from .data_model import (
     Project,
     PurchaseOrder,
     Reservation,
+    ResourceDocument,
     ResponseMessages,
     RetireReason,
     StockAsset,
@@ -57,9 +59,9 @@ from .data_model import (
 )
 from .enums import AssetClass, CustomFieldID, LocationClass, RentLoan, ResourceType
 from .exceptions import (
+    AssetDuplicateIdentificationNumber,
     AssetException,
     AssetNotFound,
-    AssetDuplicateIdentificationNumber,
     ChecklistLinkError,
     ChecklistNotFound,
     LocationNotFound,
@@ -183,6 +185,7 @@ __all__ = [
     "asset_checkout",
     "asset_create",
     "asset_delete",
+    "asset_documents_return",
     "asset_history_return",
     "asset_public_link_return",
     "asset_retire",
@@ -328,6 +331,7 @@ __all__ = [
     "Bundle",
     "PurchaseOrder",
     "Package",
+    "ResourceDocument",
     "RetireReason",
     "Vendor",
     "StockAsset",

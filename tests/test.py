@@ -7,8 +7,7 @@ load_dotenv()
 
 sys.path.insert(0, "")
 
-from ezoff import asset_return
+from ezoff import asset_documents_return
 
-# res = members_return({"inactive_members_with_items": True, "role_id": 4052})
-res = asset_return(38529)
+res = asset_documents_return(14753)
 pass

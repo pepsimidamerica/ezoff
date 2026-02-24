@@ -9,13 +9,19 @@ from datetime import date, datetime
 
 from ezoff._auth import Decorators
 from ezoff._helpers import (
-    http_post,
-    http_put,
+    http_delete,
     http_get,
     http_patch,
-    http_delete,
+    http_post,
+    http_put,
 )
-from ezoff.data_model import Asset, AssetHistoryItem, ResponseMessages, TokenInput
+from ezoff.data_model import (
+    Asset,
+    AssetHistoryItem,
+    ResourceDocument,
+    ResponseMessages,
+    TokenInput,
+)
 from ezoff.exceptions import (
     NoDataReturned,
 )
@@ -109,6 +115,28 @@ def asset_return(asset_id: int) -> Asset | None:
         return Asset(**response.json()["asset"])
     else:
         return None
+
+
+@Decorators.check_env_vars
+def asset_documents_return(asset_id: int) -> list[ResourceDocument]:
+    """
+    Returns a list of documents attached to an asset. This is one of the JSON
+    endpoints found via the browser's console.
+    """
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/assets/{asset_id}/documents/resource_documents.json"
+
+    response = http_get(
+        url=url,
+        # Unsure if params important, included to match request from browser
+        # even though data seemed to be returned regardless.
+        params={"load_all": True, "resource_class": "FixedAsset"},
+        title="Asset Documents Return",
+    )
+
+    if response.status_code == 200 and "data" in response.json():
+        return [ResourceDocument(**doc) for doc in response.json()["data"]]
+
+    return []
 
 
 @Decorators.check_env_vars

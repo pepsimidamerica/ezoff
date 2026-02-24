@@ -896,3 +896,22 @@ class LinkedInventory(BaseModel):
     resource_type: str | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
+
+
+class ResourceDocument(BaseModel):
+    """
+    EZOffice allows attaching files onto various resources. Such as on assets, locations, etc.
+    Resource document seems fairly open-ended in terms of what type of file it can be. Referred
+    to in the API as document as a generality.
+    """
+
+    can_show: bool
+    id: int
+    description: str | None = None
+    content_type: str | None = Field(alias="attachment-content-type", default=None)
+    file_name: str | None = Field(alias="attachment-file-name", default=None)
+    thumbnail_path: str | None = Field(alias="attachment-thumbnail-path", default=None)
+    path: str | None = Field(alias="attachment-path", default=None)
+    url: str | None = Field(alias="attachment-url", default=None)
+    updated_at: datetime | None = Field(alias="attachment-updated-at", default=None)
+    created_at: datetime | None = Field(alias="created-at", default=None)
