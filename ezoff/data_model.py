@@ -10,6 +10,10 @@ from pydantic import BaseModel, Field
 
 
 class ResponseMessages(BaseModel):
+    """
+    Some API responses come in the form of a list of either successes or errors.
+    """
+
     success: list[str] | None = None
     errors: list[str] | None = None
 
@@ -150,52 +154,88 @@ class Asset(BaseModel):
 
 
 class Inventory(BaseModel):
+    """
+    An inventory or "volatile asset" in EZO represents some item that are
+    consumed upon checkout, i.e. will not be returned. So, we only track
+    the stock level and quantity of these types of assets.
+    """
+
     arbitration: int | None = None
     asset_detail_attributes: dict | None = None
     audit_pending: bool
     available_quantity: int | None = None
+    average_cost_per_unit: str | None = None
     bulk_import_id: int | None = None
+    checkin_due_on: datetime | None = None
+    checkout_on: datetime | None = None
     comments_count: int
     cost_price: float
     created_at: datetime
     custom_fields: list[dict] | None = None
+    custom_substate_id: int | None = None
     default_excess_location_threshold: int
     default_low_location_threshold: int | None = None
     depreciation_calculation_required: bool
     description: str | None = None
     display_image: str | None = None
     documents_count: int
-    group_id: int
+    group_id: int | None = None
     id: int
     identifier: str
     initial_stock_quantity: int
     inventory_threshold: int
+    item_audit_id: int | None = None
+    last_assigned_to_id: int | None = None
+    last_checked_in_at: datetime | None = None
+    last_checked_out_at: datetime | None = None
+    last_history_id: int | None = None
+    latest_contract_id: int | None = None
     line_items_attributes: list | None = None
+    location_based_threshold: int | None = None
     location_id: int | None = None
     location_thresholds_attributes: list | None = None
+    # Manufacturer coming through on API but is null for everything. Not seeing
+    # it in the web UI, so not sure if used. Leaving in case it becomes populated in future.
+    manufacturer: Any | None = None
     name: str
     net_quantity: int | None = None
     package_id: int | None = None
     pending_verification: bool
+    primary_user: int | None = None
     product_model_number: str | None = None
     purchase_order_id: int | None = None
     purchased_on: datetime | None = None
     retire_comments: str | None = None
     retire_reason_id: int | None = None
+    retired_by_id: int | None = None
     retired_on: datetime | None = None
+    sale_price: str | None = None
     salvage_value: float
     state: str | None = None
+    sub_checked_out_to_id: int | None = None
     sub_group_id: int | None = None
+    sunshine_id: int | None = None
+    synced_with_jira_at: datetime | None = None
     updated_at: datetime
     vendor_id: int | None = None
 
 
 class ChecklistLineItem(BaseModel):
+    """
+    A line item in a checklist.
+    """
+
     title: str
     type: str
 
 
 class Checklist(BaseModel):
+    """
+    Checklists are assignable to work orders. They contain line items
+    that can represent tasks to be completed as part of the work order or
+    information to be collected.
+    """
+
     id: int
     name: str
     created_by_id: int
@@ -211,6 +251,12 @@ class Component(BaseModel):
 
 
 class Location(BaseModel):
+    """
+    A location in EZO represents some physical place that assets can
+    be stored in or checked out to. Locations are hierarchical, so you can
+    have parent locations with child sub-locations beneath them.
+    """
+
     # Class attribute to control custom fields clearing behavior
     _clear_custom_fields: bool = True
 
@@ -422,6 +468,11 @@ class MemberCreate(BaseModel):
 
 
 class CustomRole(BaseModel):
+    """
+    A custom role represents some non-default set of permissions that
+    can be assigned to members.
+    """
+
     id: int
     name: str
     description: str
@@ -445,6 +496,11 @@ class UserListing(BaseModel):
 
 
 class WorkOrder(BaseModel):
+    """
+    A work order represents some assignment to be given. Can be attached
+    to a particular item or a location. Repairing something, cleaning, maintenance, etc.
+    """
+
     class AssociatedAsset(BaseModel):
         name: str
         id: int
@@ -532,6 +588,12 @@ class WorkOrder(BaseModel):
 
 
 class WorkLog(BaseModel):
+    """
+    Work orders can have one or more logs of work attached to them.
+    Each representing some block of time spent working on the work order along
+    with any details.
+    """
+
     user_id: int
     time_spent: str | None = None
     work_detail: str | None = None
@@ -541,6 +603,11 @@ class WorkLog(BaseModel):
 
 
 class DepreciationRate(BaseModel):
+    """
+    A depreciation rate is how quickly assets depreciate in value over time.
+    Some more quickly than others.
+    """
+
     id: int
     depreciation_method_id: int
     depreciation_method_name: str
@@ -579,6 +646,11 @@ class Group(BaseModel):
 
 
 class Team(BaseModel):
+    """
+    A team is a way of categorizing members. Previously, a member could be on
+    a single team. Now, a member can be assigned to multiple.
+    """
+
     id: int
     name: str
     description: str
@@ -589,6 +661,11 @@ class Team(BaseModel):
 
 
 class Project(BaseModel):
+    """
+    A project is a higher-level categorization. Can be attached to various events and assets.
+    Typically would be used for reporting on expenses or what have you on temporary projects.
+    """
+
     id: int
     name: str
     description: str | None = None
@@ -830,6 +907,12 @@ class Vendor(BaseModel):
 
 
 class StockAsset(BaseModel):
+    """
+    A stock asset represents some non-unique asset (i.e. not serialized).
+    Similar to an Inventory,however you can both check asset stock in or out.
+    Whereas an Inventory will only ever be checked out.
+    """
+
     name: str
     description: str | None = None
     cost_price: str | None = None

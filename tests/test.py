@@ -7,7 +7,7 @@ load_dotenv()
 
 sys.path.insert(0, "")
 
-from ezoff import asset_documents_return
+from ezoff import inventories_return
 
-res = asset_documents_return(14753)
+res = inventories_return()
 pass
