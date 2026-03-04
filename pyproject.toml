@@ -1,6 +1,6 @@
 [project]
 name = "ezoff"
-version = "1.24.10"
+version = "1.24.11"
 description = "Python package for interacting with EZOffice API"
 readme = "README.md"
 authors = [{ name = "Jordan Maynor", email = "jmaynor@pepsimidamerica.com" }]
@@ -21,7 +21,7 @@ license = { file = "LICENSE" }
 Homepage = "https://github.com/pepsimidamerica/ezoff"
 
 [build-system]
-requires = ["uv_build>=0.7.7,<0.10"]
+requires = ["uv_build>=0.7.7,<0.11"]
 build-backend = "uv_build"
 
 [tool.uv.build-backend]
