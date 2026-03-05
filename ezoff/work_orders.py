@@ -231,11 +231,11 @@ def work_orders_return(filter: dict | None = None) -> list[WorkOrder]:
         response = http_get(url=url, payload=filter, title="Work Orders Return")
         data = response.json()
 
-        if "tasks" not in data:
+        if "work_orders" not in data:
             logger.error(f"Error, could not get work orders: {response.content}")
             raise Exception(f"Error, could not get work orders: {response.content}")
 
-        all_work_orders.extend(data["tasks"])
+        all_work_orders.extend(data["work_orders"])
 
         if (
             "metadata" not in data
@@ -316,11 +316,11 @@ def work_order_linked_work_orders_return(work_order_id: int) -> list[WorkOrder]:
         )
         data = response.json()
 
-        if "tasks" not in data:
+        if "work_orders" not in data:
             logger.error(f"Error, could not get work orders: {response.content}")
             raise Exception(f"Error, could not get work orders: {response.content}")
 
-        all_work_orders.extend(data["tasks"])
+        all_work_orders.extend(data["work_orders"])
 
         if (
             "metadata" not in data
