@@ -11,11 +11,11 @@ from pydantic import BaseModel, Field
 
 class ResponseMessages(BaseModel):
     """
-    Some API responses come in the form of a list of either successes or errors.
+    Some API responses come in the form of a list or string of either successes or errors.
     """
 
-    success: list[str] | None = None
-    errors: list[str] | None = None
+    success: list[str] | str | None = None
+    errors: list[str] | str | None = None
 
 
 class Asset(BaseModel):
