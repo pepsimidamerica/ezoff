@@ -1,15 +1,39 @@
+"""
+Covers stock asset-related endpoints.
+
+TODO: Quantity By Location
+TODO: Line Item Locations
+TODO: Current Checkouts
+TODO: Custom Field History
+TODO: Location Based Threshold
+TODO: History
+TODO: Reservations
+TODO: Add stock
+TODO: Transfer stock
+TODO: checkout
+TODO: checkin
+TODO: update location
+TODO: retire
+TODO: activate
+TODO: create reservation
+TODO: Link to project
+TODO: Unlink from project
+"""
+
 import logging
 import os
-import time
 
-from ezoff._auth import Decorators
-from ezoff._helpers import http_post, http_put, http_get, http_patch, http_delete
+from ezoff._helpers import (
+    _get_ezo_headers,
+    _get_paginated,
+    _http_request,
+    _parse_response,
+)
 from ezoff.data_model import ResponseMessages, StockAsset
 
 logger = logging.getLogger(__name__)
 
 
-@Decorators.check_env_vars
 def stock_asset_create(
     name: str,
     group_id: int,
@@ -75,21 +99,23 @@ def stock_asset_create(
     :return: The created stock asset or None if creation failed.
     :rtype: StockAsset | None
     """
-
     params = {k: v for k, v in locals().items() if v is not None}
 
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/stock_assets"
-    response = http_post(
-        url=url, payload={"asset_stock": params}, title="Stock Asset Create"
+    response = _http_request(
+        method="POST",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/stock_assets",
+        json={"asset_stock": params},
+        context="Stock Asset Create",
     )
 
-    if response.status_code == 200 and "asset_stock" in response.json(0):
-        return StockAsset(**response.json()["asset_stock"])
-    else:
-        return None
+    return _parse_response(
+        response=response,
+        key="asset_stock",
+        model=StockAsset,
+        success_status_codes=[200],
+    )
 
 
-@Decorators.check_env_vars
 def stock_asset_return(stock_asset_id: int) -> StockAsset | None:
     """
     Returns a particular stock asset.
@@ -99,17 +125,20 @@ def stock_asset_return(stock_asset_id: int) -> StockAsset | None:
     :return: The requested stock asset or None if not found.
     :rtype: StockAsset | None
     """
+    response = _http_request(
+        method="GET",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/stock_assets/{stock_asset_id}",
+        context="Stock Asset Return",
+    )
 
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/stock_assets/{stock_asset_id}"
-    response = http_get(url=url, title="Stock Asset Return")
+    return _parse_response(
+        response=response,
+        key="asset_stock",
+        model=StockAsset,
+        success_status_codes=[200],
+    )
 
-    if response.status_code == 200 and "asset_stock":
-        return StockAsset(**response.json()["asset_stock"])
-    else:
-        return None
 
-
-@Decorators.check_env_vars
 def stock_assets_return(filter: dict | None = None) -> list[StockAsset]:
     """
     Returns all stock assets. Optionally, filter using one or more fields.
@@ -119,45 +148,27 @@ def stock_assets_return(filter: dict | None = None) -> list[StockAsset]:
     :return: List of StockAsset objects.
     :rtype: list[StockAsset]
     """
-
+    query_params = {}
     if filter:
-        for field in filter:
-            if field not in StockAsset.model_fields:
-                raise ValueError(f"'{field}' is not a valid field for an inventory.")
-        filter = {"filters": filter}
-    else:
-        filter = None
+        invalid = filter.keys() - StockAsset.model_fields.keys()
+        if invalid:
+            raise ValueError(f"Invalid filter fields: {', '.join(invalid)}")
+        query_params = {f"filters[{k}]": v for k, v in filter.items()}
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/stock_assets"
+    if query_params:
+        url += "?" + "&".join([f"{k}={v}" for k, v in query_params.items()])
 
-    all_stock_assets = []
-
-    while True:
-        response = http_get(url=url, payload=filter, title="Stock Assets Return")
-        data = response.json()
-
-        if "asset_stock" not in data:
-            logger.error(f"Error, could not get stock assets: {response.content}")
-            raise Exception(f"Error, could not get stock assets: {response.content}")
-
-        all_stock_assets.extend(data["asset_stock"])
-
-        if (
-            "metadata" not in data
-            or "next_page" not in data["metadata"]
-            or data["metadata"]["next_page"] is None
-        ):
-            break
-
-        # Get the next page's url from the current page of data.
-        url = data["metadata"]["next_page"]
-
-        time.sleep(1)
+    all_stock_assets = _get_paginated(
+        url=url,
+        headers=_get_ezo_headers(),
+        results_key="asset_stock",
+        context="Stock Assets Return",
+    )
 
     return [StockAsset(**x) for x in all_stock_assets]
 
 
-@Decorators.check_env_vars
 def stock_assets_search(search_term: str) -> list[StockAsset]:
     """
     Search for stock assets using some search term. Equivalent to using the search
@@ -170,59 +181,16 @@ def stock_assets_search(search_term: str) -> list[StockAsset]:
     :return: List of StockAsset objects matching the search term.
     :rtype: list[StockAsset]
     """
-
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/stock_assets/search"
-
-    all_stock_assets = []
-
-    while True:
-        response = http_get(
-            url=url, payload={"search": search_term}, title="Stock Assets Search"
-        )
-        data = response.json()
-
-        if "asset_stock" not in data:
-            logger.error(f"Error, could not get stock assets: {response.content}")
-            raise Exception(f"Error, could not get stock assets: {response.content}")
-
-        all_stock_assets.extend(data["asset_stock"])
-
-        if (
-            "metadata" not in data
-            or "next_page" not in data["metadata"]
-            or data["metadata"]["next_page"] is None
-        ):
-            break
-
-        # Get the next page's url from the current page of data.
-        url = data["metadata"]["next_page"]
-
-        time.sleep(1)
+    all_stock_assets = _get_paginated(
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/stock_assets/search?search={search_term}",
+        headers=_get_ezo_headers(),
+        results_key="asset_stock",
+        context="Stock Assets Search",
+    )
 
     return [StockAsset(**x) for x in all_stock_assets]
 
 
-# TODO Quantity By Location
-# TODO Line Item Locations
-# TODO Current Checkouts
-# TODO Custom Field History
-# TODO Location Based Threshold
-# TODO History
-# TODO Reservations
-
-# TODO Add stock
-# TODO Transfer stock
-# TODO checkout
-# TODO checkin
-# TODO update location
-# TODO retire
-# TODO activate
-# TODO create reservation
-# TODO Link to project
-# TODO Unlink from project
-
-
-@Decorators.check_env_vars
 def stock_asset_delete(stock_asset_id: int) -> ResponseMessages | None:
     """
     Deletes a particular stock asset.
@@ -232,10 +200,15 @@ def stock_asset_delete(stock_asset_id: int) -> ResponseMessages | None:
     :return: ResponseMessages object if there are any messages, else None.
     :rtype: ResponseMessages | None
     """
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/stock_assets/{stock_asset_id}"
-    response = http_delete(url=url, title="Stock Asset Delete")
+    response = _http_request(
+        method="DELETE",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/stock_assets/{stock_asset_id}",
+        context="Stock Asset Delete",
+    )
 
-    if response.status_code == 200 and "messages" in response.json():
-        return ResponseMessages(**response.json()["messages"])
-    else:
-        return None
+    return _parse_response(
+        response=response,
+        key="messages",
+        model=ResponseMessages,
+        success_status_codes=[200],
+    )

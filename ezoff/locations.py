@@ -1,5 +1,5 @@
 """
-This module contains functions for interacting with locations in EZOfficeInventory
+This module contains functions for interacting with locations in EZOfficeInventory.
 """
 
 import logging
@@ -7,14 +7,15 @@ import os
 import time
 from typing import Literal
 
-from ezoff._auth import Decorators
-from ezoff._helpers import http_post, http_get, http_patch
+from ezoff._helpers import (
+    _http_request,
+    _parse_response,
+)
 from ezoff.data_model import Location
 
 logger = logging.getLogger(__name__)
 
 
-@Decorators.check_env_vars
 def location_create(
     name: str,
     city: str | None = None,
@@ -80,22 +81,23 @@ def location_create(
     :return: The created location, or None if creation failed
     :rtype: Location | None
     """
-
     params = {k: v for k, v in locals().items() if v is not None}
 
-    url = (
-        f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/locations"
+    response = _http_request(
+        method="POST",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/locations",
+        json={"location": params},
+        context="Location Create",
     )
-    payload = {"location": params}
-    response = http_post(url=url, payload=payload, title="Location Create")
 
-    if response.status_code == 200 and "location" in response.json():
-        return Location(**response.json()["location"])
-    else:
-        return None
+    return _parse_response(
+        response=response,
+        key="location",
+        model=Location,
+        success_status_codes=[200],
+    )
 
 
-@Decorators.check_env_vars
 def location_return(location_id: int) -> Location | None:
     """
     Returns a particular location.
@@ -105,20 +107,23 @@ def location_return(location_id: int) -> Location | None:
     :return: The location with the specified ID, or None if not found
     :rtype: Location | None
     """
+    response = _http_request(
+        method="GET",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/locations/{location_id}",
+        context="Location Return",
+    )
 
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/locations/{location_id}"
-    response = http_get(url=url, title="Location Return")
+    return _parse_response(
+        response=response,
+        key="location",
+        model=Location,
+        success_status_codes=[200],
+    )
 
-    if response.status_code == 200 and "location" in response.json():
-        return Location(**response.json()["location"])
-    else:
-        return None
 
-
-@Decorators.check_env_vars
 def locations_return(
     state: Literal["active", "inactive"] | None = None,
-    filter: dict = None,
+    filter: dict | None = None,
 ) -> list[Location]:
     """
     Returns all locations. Optionally filter by state (active, inactive).
@@ -152,7 +157,12 @@ def locations_return(
 
     all_locations = []
     while True:
-        response = http_get(url=url, payload=filter_data, title="Locations Return")
+        response = _http_request(
+            method="GET",
+            url=url,
+            json=filter_data,
+            context="Locations Return",
+        )
         data = response.json()
 
         if "locations" not in data:
@@ -178,7 +188,6 @@ def locations_return(
     return [Location(**x) for x in all_locations]
 
 
-@Decorators.check_env_vars
 def location_activate(
     location_id: int, activate_children: bool | None = None
 ) -> Location | None:
@@ -192,23 +201,26 @@ def location_activate(
     :return: The activated location, or None if activation failed
     :rtype: Location | None
     """
-
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/locations/{location_id}/activate"
-
     if activate_children:
         data = {"location": {"activate_all_children_locations": True}}
     else:
         data = None
 
-    response = http_patch(url=url, payload=data, title="Location Activate")
+    response = _http_request(
+        method="PATCH",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/locations/{location_id}/activate",
+        json=data,
+        context="Location Activate",
+    )
 
-    if response.status_code == 200 and "location" in response.json():
-        return Location(**response.json()["location"])
-    else:
-        return None
+    return _parse_response(
+        response=response,
+        key="location",
+        model=Location,
+        success_status_codes=[200],
+    )
 
 
-@Decorators.check_env_vars
 def location_deactivate(location_id: int) -> Location | None:
     """
     Deactivates a particular location.
@@ -218,17 +230,20 @@ def location_deactivate(location_id: int) -> Location | None:
     :return: The deactivated location, or None if deactivation failed
     :rtype: Location | None
     """
+    response = _http_request(
+        method="PATCH",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/locations/{location_id}/deactivate",
+        context="Location Deactivate",
+    )
 
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/locations/{location_id}/deactivate"
-    response = http_patch(url=url, title="Location Deactivate")
+    return _parse_response(
+        response=response,
+        key="location",
+        model=Location,
+        success_status_codes=[200],
+    )
 
-    if response.status_code == 200 and "location" in response.json():
-        return Location(**response.json()["location"])
-    else:
-        return None
 
-
-@Decorators.check_env_vars
 def location_update(location_id: int, update_data: dict) -> Location | None:
     """
     Updates a particular location.
@@ -240,16 +255,20 @@ def location_update(location_id: int, update_data: dict) -> Location | None:
     :return: The updated location, or None if the update failed
     :rtype: Location | None
     """
-
     for field in update_data:
         if field not in Location.model_fields:
             raise ValueError(f"'{field}' is not a valid field for a location.")
 
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/locations/{location_id}"
-    payload = {"location": update_data}
-    response = http_patch(url=url, payload=payload, title="Location Deactivate")
+    response = _http_request(
+        method="PATCH",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/locations/{location_id}",
+        json={"location": update_data},
+        context="Location Update",
+    )
 
-    if response.status_code == 200 and "location" in response.json():
-        return Location(**response.json()["location"])
-    else:
-        return None
+    return _parse_response(
+        response=response,
+        key="location",
+        model=Location,
+        success_status_codes=[200],
+    )

@@ -1,31 +1,29 @@
 """
-This module contains functions for interacting with members/roles/user setup in EZOfficeInventory
+This module contains functions for interacting with members/roles/user setup in EZOfficeInventory.
 """
 
 import logging
 import os
 import time
-from typing import Optional
 
-from ezoff._auth import Decorators
-from ezoff._helpers import http_get, http_patch
+from ezoff._helpers import _http_request
 
 logger = logging.getLogger(__name__)
 
 
-@Decorators.check_env_vars
-def members_return_v1(filter: Optional[dict]) -> list[dict]:
+def members_return_v1(filter: dict | None = None) -> list[dict]:
     """
-    Get members from EZOfficeInventory
+    Get members from EZOfficeInventory.
+
     Optionally filter by email, employee_identification_number, or status
+
     https://ezo.io/ezofficeinventory/developers/#api-retrieve-members
 
     :param filter: Dictionary of filter parameters
-    :type filter: Optional[dict]
+    :type filter: dict | None = None
     :return: List of members
     :rtype: list[dict]
     """
-
     if filter is not None:
         if "filter" not in filter or "filter_val" not in filter:
             raise ValueError("filter must have 'filter' and 'filter_val' keys")
@@ -39,7 +37,6 @@ def members_return_v1(filter: Optional[dict]) -> list[dict]:
                 "filter['filter'] must be one of 'email', 'employee_identification_number', 'status'"
             )
 
-    # url = os.environ["EZO_BASE_URL"] + "members.api"
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/members.api"
 
     page = 1
@@ -50,7 +47,9 @@ def members_return_v1(filter: Optional[dict]) -> list[dict]:
         if filter is not None:
             params.update(filter)
 
-        response = http_get(url=url, params=params, title="Members Return v1")
+        response = _http_request(
+            method="GET", url=url, params=params, context="Members Return v1"
+        )
         data = response.json()
 
         if "members" not in data:
@@ -74,7 +73,6 @@ def members_return_v1(filter: Optional[dict]) -> list[dict]:
     return all_members
 
 
-@Decorators.check_env_vars
 def member_update_v1(member_id: int, member: dict) -> dict:
     """
     Update a member with v1 API. Re-added this as the v2 member update endpoint
@@ -93,7 +91,6 @@ def member_update_v1(member_id: int, member: dict) -> dict:
     :return: The updated member data
     :rtype: dict
     """
-
     # Remove any keys that are not valid
     valid_keys = [
         "user[email]",
@@ -135,8 +132,11 @@ def member_update_v1(member_id: int, member: dict) -> dict:
         if k in valid_keys or k.startswith("user[custom_attributes]")
     }
 
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/members/{member_id}.api"
-    # member was being passed to data param of requests.patch. might need to address.
-    response = http_patch(url=url, json=member, title="Member Update v1")
+    response = _http_request(
+        method="PATCH",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/members/{member_id}.api",
+        json=member,
+        context="Member Update v1",
+    )
 
     return response.json()

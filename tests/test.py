@@ -1,3 +1,7 @@
+"""
+Random tests.
+"""
+
 import sys
 
 from dotenv import load_dotenv
@@ -7,7 +11,7 @@ load_dotenv()
 
 sys.path.insert(0, "")
 
-from ezoff import inventories_return
+from ezoff import locations_return
 
-res = inventories_return()
+res = locations_return(state="active")
 pass

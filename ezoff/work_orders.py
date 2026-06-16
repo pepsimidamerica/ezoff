@@ -7,12 +7,15 @@ info from these endpoints. Each endpoint just needs to be checked which it is.
 
 import logging
 import os
-import time
 from datetime import datetime
 from typing import Literal
 
-from ezoff._auth import Decorators
-from ezoff._helpers import http_post, http_get, http_patch, http_delete, http_put
+from ezoff._helpers import (
+    _get_ezo_headers,
+    _get_paginated,
+    _http_request,
+    _parse_response,
+)
 from ezoff.data_model import (
     Component,
     LinkedInventory,
@@ -24,7 +27,6 @@ from ezoff.data_model import (
 logger = logging.getLogger(__name__)
 
 
-@Decorators.check_env_vars
 def work_order_create(
     title: str,
     state: Literal["request"],
@@ -109,24 +111,27 @@ def work_order_create(
     :return: The created work order object if successful, else None.
     :rtype: WorkOrder | None
     """
-
     params = {k: v for k, v in locals().items() if v is not None}
 
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders"
-    response = http_post(
-        url=url, payload={"work_order": params}, title="Work Order Create"
+    response = _http_request(
+        method="POST",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders",
+        json={"work_order": params},
+        context="Work Order Create",
     )
 
-    if response.status_code == 200 and "work_order" in response.json():
-        return WorkOrder(**response.json()["work_order"])
-    else:
-        return None
+    return _parse_response(
+        response=response,
+        key="work_order",
+        model=WorkOrder,
+        success_status_codes=[200],
+    )
 
 
-@Decorators.check_env_vars
 def service_create(asset_id: int, service: dict) -> dict:
     """
-    Creates a service record against a given asset
+    Creates a service record against a given asset.
+
     https://ezo.io/ezofficeinventory/developers/#api-create-service
 
     Note: API v1 endpoint, not sure what equivalent in v2 is.
@@ -138,7 +143,6 @@ def service_create(asset_id: int, service: dict) -> dict:
     :return: The created service record/response from API
     :rtype: dict
     """
-
     # Required fields
     if "service[end_date]" not in service:
         raise ValueError("service must have 'service[end_date]' key")
@@ -166,17 +170,16 @@ def service_create(asset_id: int, service: dict) -> dict:
         if k in valid_keys or k.startswith("linked_inventory_items")
     }
 
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/assets/{asset_id}/services.api"
-    response = http_post(
-        url=url,
-        payload={"create_service_ticket_only": "true"},
-        title="Service Record Create",
+    response = _http_request(
+        method="POST",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/assets/{asset_id}/services.api",
+        json=service,
+        context="Service Record Create",
     )
 
     return response.json()
 
 
-@Decorators.check_env_vars
 def work_order_return(work_order_id: int) -> WorkOrder | None:
     """
     Get a single work order.
@@ -186,25 +189,28 @@ def work_order_return(work_order_id: int) -> WorkOrder | None:
     :return: The work order object if found, else None.
     :rtype: WorkOrder | None
     """
+    response = _http_request(
+        method="GET",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}",
+        headers=_get_ezo_headers(
+            {
+                "Cache-Control": "no-cache",
+                "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
+                "Accept-Encoding": "gzip, deflate, br",
+                "Connection": "keep-alive",
+            }
+        ),
+        context="Work Order",
+    )
 
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}"
-    headers = {
-        "Accept": "application/json",
-        "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-        "Cache-Control": "no-cache",
-        "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Connection": "keep-alive",
-    }
-    response = http_get(url=url, headers=headers, title="Work Order")
-
-    if response.status_code == 200 and "work_order" in response.json():
-        return WorkOrder(**response.json()["work_order"])
-    else:
-        return None
+    return _parse_response(
+        response=response,
+        key="work_order",
+        model=WorkOrder,
+        success_status_codes=[200],
+    )
 
 
-@Decorators.check_env_vars
 def work_orders_return(filter: dict | None = None) -> list[WorkOrder]:
     """
     Get all work orders. Optionally filter using one or more work order fields.
@@ -214,45 +220,29 @@ def work_orders_return(filter: dict | None = None) -> list[WorkOrder]:
     :return: A list of work order objects.
     :rtype: list[WorkOrder]
     """
-
+    query_params = {}
     if filter:
-        for field in filter:
-            if field not in WorkOrder.model_fields:
-                raise ValueError(f"'{field}' is not a valid field for a work order.")
-        filter = {"filters": filter}
-    else:
-        filter = None
+        invalid = filter.keys() - WorkOrder.model_fields.keys()
+        if invalid:
+            raise ValueError(
+                f"'{next(iter(invalid))}' is not a valid field for a work order."
+            )
+        query_params = {f"filters[{k}]": v for k, v in filter.items()}
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders"
+    if query_params:
+        url += "?" + "&".join([f"{k}={v}" for k, v in query_params.items()])
 
-    all_work_orders = []
-
-    while True:
-        response = http_get(url=url, payload=filter, title="Work Orders Return")
-        data = response.json()
-
-        if "work_orders" not in data:
-            logger.error(f"Error, could not get work orders: {response.content}")
-            raise Exception(f"Error, could not get work orders: {response.content}")
-
-        all_work_orders.extend(data["work_orders"])
-
-        if (
-            "metadata" not in data
-            or "next_page" not in data["metadata"]
-            or data["metadata"]["next_page"] is None
-        ):
-            break
-
-        # Get the next page's url from the current page of data.
-        url = data["metadata"]["next_page"]
-
-        time.sleep(1)
+    all_work_orders = _get_paginated(
+        url=url,
+        headers=_get_ezo_headers(),
+        results_key="work_orders",
+        context="Work Orders Return",
+    )
 
     return [WorkOrder(**x) for x in all_work_orders]
 
 
-@Decorators.check_env_vars
 def work_orders_search(search_term: str) -> list[WorkOrder]:
     """
     Search for work orders. Generally equivalent to usingthe search box in the UI.
@@ -265,38 +255,16 @@ def work_orders_search(search_term: str) -> list[WorkOrder]:
     :return: A list of work order objects that match the search term.
     :rtype: list[WorkOrder]
     """
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/search"
-
-    all_work_orders = []
-
-    while True:
-        response = http_get(
-            url=url, params={"search": search_term}, title="Work Orders Search"
-        )
-        data = response.json()
-
-        if "work_orders" not in data:
-            logger.error(f"Error, could not get work orders: {response.content}")
-            raise Exception(f"Error, could not get work orders: {response.content}")
-
-        all_work_orders.extend(data["work_orders"])
-
-        if (
-            "metadata" not in data
-            or "next_page" not in data["metadata"]
-            or data["metadata"]["next_page"] is None
-        ):
-            break
-
-        # Get the next page's url from the current page of data.
-        url = data["metadata"]["next_page"]
-
-        time.sleep(1)
+    all_work_orders = _get_paginated(
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/search?search={search_term}",
+        headers=_get_ezo_headers(),
+        results_key="work_orders",
+        context="Work Orders Search",
+    )
 
     return [WorkOrder(**x) for x in all_work_orders]
 
 
-@Decorators.check_env_vars
 def work_order_linked_work_orders_return(work_order_id: int) -> list[WorkOrder]:
     """
     Returns work orders that are linked to a particular work order.
@@ -306,38 +274,16 @@ def work_order_linked_work_orders_return(work_order_id: int) -> list[WorkOrder]:
     :return: A list of work order objects that are linked to the specified work order.
     :rtype: list[WorkOrder]
     """
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/linked_work_orders"
-
-    all_work_orders = []
-
-    while True:
-        response = http_get(
-            url=url, payload=filter, title="Work Order Linked Work Orders Return"
-        )
-        data = response.json()
-
-        if "work_orders" not in data:
-            logger.error(f"Error, could not get work orders: {response.content}")
-            raise Exception(f"Error, could not get work orders: {response.content}")
-
-        all_work_orders.extend(data["work_orders"])
-
-        if (
-            "metadata" not in data
-            or "next_page" not in data["metadata"]
-            or data["metadata"]["next_page"] is None
-        ):
-            break
-
-        # Get the next page's url from the current page of data.
-        url = data["metadata"]["next_page"]
-
-        time.sleep(1)
+    all_work_orders = _get_paginated(
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/linked_work_orders",
+        headers=_get_ezo_headers(),
+        results_key="work_orders",
+        context="Work Order Linked Work Orders Return",
+    )
 
     return [WorkOrder(**x) for x in all_work_orders]
 
 
-@Decorators.check_env_vars
 def work_order_linked_inventory_return(work_order_id: int) -> list[LinkedInventory]:
     """
     Returns list of inventory items linked to a particular work order.
@@ -347,54 +293,33 @@ def work_order_linked_inventory_return(work_order_id: int) -> list[LinkedInvento
     :return: A list of linked inventory items.
     :rtype: list[LinkedInventory]
     """
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/linked_inventory_items"
-
-    all_inven = []
-
-    while True:
-        response = http_get(
-            url=url, payload=filter, title="Work Order Linked Inventory Return"
-        )
-        data = response.json()
-
-        if "linked_inventory_items" not in data:
-            logger.error(f"Error, could not get linked inventory: {response.content}")
-            raise Exception(
-                f"Error, could not get linked inventory: {response.content}"
-            )
-
-        all_inven.extend(data["linked_inventory_items"])
-
-        if (
-            "metadata" not in data
-            or "next_page" not in data["metadata"]
-            or data["metadata"]["next_page"] is None
-        ):
-            break
-
-        # Get the next page's url from the current page of data.
-        url = data["metadata"]["next_page"]
-
-        time.sleep(1)
+    all_inven = _get_paginated(
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/linked_inventory_items",
+        headers=_get_ezo_headers(),
+        results_key="linked_inventory_items",
+        context="Work Order Linked Inventory Return",
+    )
 
     return [LinkedInventory(**x) for x in all_inven]
 
 
-@Decorators.check_env_vars
 def work_order_types_return() -> list[dict]:
     """
-    Get work order types
+    Get work order types.
     TODO v1 Not sure if there is a v2 equivalent.
     Function doesn't appear to be paginated even though most other similar
     functions are.
+
     https://ezo.io/ezofficeinventory/developers/#api-get-task-types
 
     :return: A list of work order types.
     :rtype: list[dict]
     """
-
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/assets/task_types.api"
-    response = http_get(url=url, title="Work Order Types Return")
+    response = _http_request(
+        method="GET",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/assets/task_types.api",
+        context="Work Order Types Return",
+    )
 
     if "work_order_types" not in response.json():
         logger.error(f"Error, could not get work order types: {response.content}")
@@ -403,7 +328,6 @@ def work_order_types_return() -> list[dict]:
     return response.json()["work_order_types"]
 
 
-@Decorators.check_env_vars
 def work_order_work_logs_return(work_order_id: int) -> list[WorkLog]:
     """
     Returns a list of work logs attached to a particular work order.
@@ -413,37 +337,16 @@ def work_order_work_logs_return(work_order_id: int) -> list[WorkLog]:
     :return: A list of work log objects.
     :rtype: list[WorkLog]
     """
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}"
-
-    all_logs = []
-    while True:
-        response = http_get(
-            url=url, payload=filter, title="Work Order Work Logs Return"
-        )
-        data = response.json()
-
-        if "work_logs" not in data:
-            logger.error(f"Error, could not get logs: {response.content}")
-            raise Exception(f"Error, could not get logs: {response.content}")
-
-        all_logs.extend(data["work_logs"])
-
-        if (
-            "metadata" not in data
-            or "next_page" not in data["metadata"]
-            or data["metadata"]["next_page"] is None
-        ):
-            break
-
-        # Get the next page's url from the current page of data.
-        url = data["metadata"]["next_page"]
-
-        time.sleep(1)
+    all_logs = _get_paginated(
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}",
+        headers=_get_ezo_headers(),
+        results_key="work_logs",
+        context="Work Order Work Logs Return",
+    )
 
     return [WorkLog(**x) for x in all_logs]
 
 
-@Decorators.check_env_vars
 def work_order_update(work_order_id: int, update_data: dict) -> WorkOrder | None:
     """
     Updates a work order.
@@ -455,23 +358,25 @@ def work_order_update(work_order_id: int, update_data: dict) -> WorkOrder | None
     :return: The updated work order object if successful, else None.
     :rtype: WorkOrder | None
     """
-
     for field in update_data:
         if field not in WorkOrder.model_fields:
             raise ValueError(f"'{field}' is not a valid field for a group.")
 
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}"
-    response = http_put(
-        url=url, payload={"work_order": update_data}, title="Work Order Update"
+    response = _http_request(
+        method="PUT",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}",
+        json={"work_order": update_data},
+        context="Work Order Update",
     )
 
-    if response.status_code == 200 and "work_order" in response.json():
-        return WorkOrder(**response.json()["work_order"])
-    else:
-        return None
+    return _parse_response(
+        response=response,
+        key="work_order",
+        model=WorkOrder,
+        success_status_codes=[200],
+    )
 
 
-@Decorators.check_env_vars
 def work_order_add_work_log(
     work_order_id: int,
     started_on_dttm: datetime,
@@ -504,29 +409,30 @@ def work_order_add_work_log(
     :return: The response from the API.
     :rtype: dict
     """
-
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/tasks/{work_order_id}/task_work_logs.json"
-    payload = {
-        "task_work_log": {
-            "resource_id": 2657,  # Is misc always going to be 2657?
-            "rate_type": "standard",
-            "cost_per_hour": cost_per_hour,
-            "time_spent": hours_spent,
-            "total_cost": cost_per_hour * hours_spent,  # Is this needed?
-            "resource_type": "MiscellaneousComponent",
-            "description": note,
-            "custom_attributes": custom_attributes,
+    response = _http_request(
+        method="POST",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/tasks/{work_order_id}/task_work_logs.json",
+        json={
+            "task_work_log": {
+                "resource_id": 2657,  # Is misc always going to be 2657?
+                "rate_type": "standard",
+                "cost_per_hour": cost_per_hour,
+                "time_spent": hours_spent,
+                "total_cost": cost_per_hour * hours_spent,  # Is this needed?
+                "resource_type": "MiscellaneousComponent",
+                "description": note,
+                "custom_attributes": custom_attributes,
+            },
+            "started_on_date": started_on_dttm.strftime("%m/%d/%Y"),
+            "started_on_time": started_on_dttm.strftime("%I:%M %p"),
+            "ended_on_date": ended_on_dttm.strftime("%m/%d/%Y"),
+            "ended_on_time": ended_on_dttm.strftime("%I:%M %p"),
         },
-        "started_on_date": started_on_dttm.strftime("%m/%d/%Y"),
-        "started_on_time": started_on_dttm.strftime("%I:%M %p"),
-        "ended_on_date": ended_on_dttm.strftime("%m/%d/%Y"),
-        "ended_on_time": ended_on_dttm.strftime("%I:%M %p"),
-    }
-    response = http_post(url=url, payload=payload, title="Work Order Add Work Log")
+        context="Work Order Add Work Log",
+    )
     return response.json()
 
 
-@Decorators.check_env_vars
 def work_order_add_linked_inv(
     work_order_id: int, inv_items: list[LinkedInventory]
 ) -> ResponseMessages | None:
@@ -540,21 +446,20 @@ def work_order_add_linked_inv(
     :return: Response messages from the API if any, else None.
     :rtype: ResponseMessages | None
     """
-
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/link_inventory"
-    # headers = {"Authorization": "Bearer " + os.environ["EZO_TOKEN"]}
-
-    response = http_post(
-        url=url,
-        # headers=headers,
-        payload={"work_order": {"linked_inventory_items": inv_items}},
-        title="Work Order Add Linked Inventory",
+    response = _http_request(
+        method="POST",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/link_inventory",
+        headers=_get_ezo_headers(),
+        json={"work_order": {"linked_inventory_items": inv_items}},
+        context="Work Order Add Linked Inventory",
     )
 
-    if response.status_code == 200 and "messages" in response.json():
-        return ResponseMessages(**response.json()["messages"])
-    else:
-        return None
+    return _parse_response(
+        response=response,
+        key="messages",
+        model=ResponseMessages,
+        success_status_codes=[200],
+    )
 
 
 def work_order_routing_update(
@@ -596,7 +501,7 @@ def work_order_routing_update(
 
     if supervisor_id is not None:
         filter["supervisor_id"] = supervisor_id
-        print(f"Updating work order supervisor to: {supervisor_id}")
+        logger.info(f"Updating work order supervisor to: {supervisor_id}")
 
     if reviewer_id is not None:
         filter["reviewer_id"] = reviewer_id
@@ -606,7 +511,6 @@ def work_order_routing_update(
     return result
 
 
-@Decorators.check_env_vars
 def work_order_add_component(
     work_order_id: int, components: list[Component]
 ) -> ResponseMessages | None:
@@ -620,21 +524,16 @@ def work_order_add_component(
     :return: Response messages from the API if any, else None.
     :rtype: ResponseMessages | None
     """
-
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/add_components"
-    response = http_post(
-        url=url,
-        payload={"work_order": {"components": components}},
-        title="Work Order Add Component",
+    response = _http_request(
+        method="POST",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/add_components",
+        json={"work_order": {"components": components}},
+        context="Work Order Add Component",
     )
 
-    if "messages" in response.json():
-        return ResponseMessages(**response.json()["messages"])
-    else:
-        return None
+    return _parse_response(response=response, key="messages", model=ResponseMessages)
 
 
-@Decorators.check_env_vars
 def work_order_mark_in_progress(
     work_order_id: int,
 ) -> ResponseMessages | None:
@@ -646,16 +545,15 @@ def work_order_mark_in_progress(
     :return: Response messages from the API if any, else None.
     :rtype: ResponseMessages | None
     """
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/mark_in_progress"
-    response = http_patch(url=url, title="Work Order Mark In-Progress")
+    response = _http_request(
+        method="PATCH",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/mark_in_progress",
+        context="Work Order Mark In-Progress",
+    )
 
-    if "messages" in response.json():
-        return ResponseMessages(**response.json()["messages"])
-    else:
-        return None
+    return _parse_response(response=response, key="messages", model=ResponseMessages)
 
 
-@Decorators.check_env_vars
 def work_order_mark_on_hold(
     work_order_id: int, comment: str | None = None
 ) -> ResponseMessages | None:
@@ -669,37 +567,35 @@ def work_order_mark_on_hold(
     :return: Response messages from the API if any, else None.
     :rtype: ResponseMessages | None
     """
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/mark_on_hold"
-    response = http_patch(
-        url=url,
-        payload={
+    response = _http_request(
+        method="PATCH",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/mark_on_hold",
+        json={
             "work_order": {
                 "comment": comment,
             }
         },
-        title="Work Order Mark On-Hold",
+        context="Work Order Mark On-Hold",
     )
 
-    if "messages" in response.json():
-        return ResponseMessages(**response.json()["messages"])
-    else:
-        return None
+    return _parse_response(response=response, key="messages", model=ResponseMessages)
 
 
-@Decorators.check_env_vars
-def work_order_force_complete(work_order_id: int):
-    """Forces a work order into a completed state.
+def work_order_force_complete(work_order_id: int) -> None:
+    """
+    Forces a work order into a completed state.
     Work order will have any checklists cleared, then be marked in-progress,
     then be marked completed.
 
-    Args:
-        work_order_id (int): Work order to force to a state of completed.
+    :param work_order_id (int): Work order to force to a state of completed.
     """
     wo = work_order_return(work_order_id=work_order_id)
+    if wo is None:
+        return
 
     for checklist in wo.associated_checklists:
         checklist_id = checklist["checklist_id"]
-        print(f"Removing checklist id: {checklist_id}")
+        logger.info(f"Removing checklist id: {checklist_id}")
         work_order_remove_checklist(
             work_order_id=work_order_id, checklist_id=checklist_id
         )
@@ -718,7 +614,6 @@ def work_order_force_complete(work_order_id: int):
     )
 
 
-@Decorators.check_env_vars
 def work_order_mark_complete(
     work_order_id: int, completed_on_dttm: datetime
 ) -> ResponseMessages | None:
@@ -732,35 +627,29 @@ def work_order_mark_complete(
     :return: Response messages from the API if any, else None.
     :rtype: ResponseMessages | None
     """
-
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/mark_complete"
-    headers = {
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-        "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-        "Cache-Control": "no-cache",
-        "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Connection": "keep-alive",
-    }
-    response = http_patch(
-        url=url,
-        headers=headers,
-        payload={
+    response = _http_request(
+        method="PATCH",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/mark_complete",
+        headers=_get_ezo_headers(
+            {
+                "Content-Type": "application/json",
+                "Cache-Control": "no-cache",
+                "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
+                "Accept-Encoding": "gzip, deflate, br",
+                "Connection": "keep-alive",
+            }
+        ),
+        json={
             "work_order": {
                 "completed_on_date": completed_on_dttm.strftime("%Y-%m-%dT%H:%M:%SZ")
             }
         },
-        title="Work Order Mark Complete",
+        context="Work Order Mark Complete",
     )
 
-    if "messages" in response.json():
-        return ResponseMessages(**response.json()["messages"])
-    else:
-        return None
+    return _parse_response(response=response, key="messages", model=ResponseMessages)
 
 
-@Decorators.check_env_vars
 def work_order_add_linked_wo(
     work_order_id: int, wo_ids_to_link: list[int]
 ) -> ResponseMessages | None:
@@ -774,25 +663,22 @@ def work_order_add_linked_wo(
     :return: Response messages from the API if any, else None.
     :rtype: ResponseMessages | None
     """
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/link_work_orders"
-    response = http_post(
-        url=url,
-        payload={"work_order": {"work_order_ids": wo_ids_to_link}},
-        title="Work Order Link Work Order",
+    response = _http_request(
+        method="POST",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/link_work_orders",
+        json={"work_order": {"work_order_ids": wo_ids_to_link}},
+        context="Work Order Link Work Order",
     )
 
-    if "messages" in response.json():
-        return ResponseMessages(**response.json()["messages"])
-    else:
-        return None
+    return _parse_response(response=response, key="messages", model=ResponseMessages)
 
 
-@Decorators.check_env_vars
 def work_order_remove_linked_wo(
     work_order_id: int, wo_ids_to_link: list[int]
 ) -> ResponseMessages | None:
     """
     Unlinks one or more work orders from a particular work order.
+
     :param work_order_id: The ID of the work order to unlink other work orders from.
     :type work_order_id: int
     :param wo_ids_to_link: A list of work order IDs to unlink from the specified work order.
@@ -800,30 +686,25 @@ def work_order_remove_linked_wo(
     :return: Response messages from the API if any, else None.
     :rtype: ResponseMessages | None
     """
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/unlink_work_orders"
-    headers = {
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-        "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-        "Cache-Control": "no-cache",
-        "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Connection": "keep-alive",
-    }
-    response = http_post(
-        url=url,
-        headers=headers,
-        payload={"work_order": {"work_order_ids": wo_ids_to_link}},
-        title="Work Order Un-Link Work Order",
+    response = _http_request(
+        method="POST",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/unlink_work_orders",
+        headers=_get_ezo_headers(
+            {
+                "Content-Type": "application/json",
+                "Cache-Control": "no-cache",
+                "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
+                "Accept-Encoding": "gzip, deflate, br",
+                "Connection": "keep-alive",
+            }
+        ),
+        json={"work_order": {"work_order_ids": wo_ids_to_link}},
+        context="Work Order Un-Link Work Order",
     )
 
-    if "messages" in response.json():
-        return ResponseMessages(**response.json()["messages"])
-    else:
-        return None
+    return _parse_response(response=response, key="messages", model=ResponseMessages)
 
 
-@Decorators.check_env_vars
 def work_order_add_linked_po(
     work_order_id: int, po_ids_to_link: list[int]
 ) -> ResponseMessages | None:
@@ -837,30 +718,25 @@ def work_order_add_linked_po(
     :return: Response messages from the API if any, else None.
     :rtype: ResponseMessages | None
     """
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/link_po"
-    headers = {
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-        "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-        "Cache-Control": "no-cache",
-        "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Connection": "keep-alive",
-    }
-    response = http_post(
-        url=url,
-        headers=headers,
-        payload={"work_order": {"purchase_order_ids": po_ids_to_link}},
-        title="Work Order Link PO",
+    response = _http_request(
+        method="POST",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/link_po",
+        headers=_get_ezo_headers(
+            {
+                "Content-Type": "application/json",
+                "Cache-Control": "no-cache",
+                "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
+                "Accept-Encoding": "gzip, deflate, br",
+                "Connection": "keep-alive",
+            }
+        ),
+        json={"work_order": {"purchase_order_ids": po_ids_to_link}},
+        context="Work Order Link PO",
     )
 
-    if "messages" in response.json():
-        return ResponseMessages(**response.json()["messages"])
-    else:
-        return None
+    return _parse_response(response=response, key="messages", model=ResponseMessages)
 
 
-@Decorators.check_env_vars
 def work_order_remove_linked_po(
     work_order_id: int, po_ids_to_link: list[int]
 ) -> ResponseMessages | None:
@@ -874,30 +750,25 @@ def work_order_remove_linked_po(
     :return: Response messages from the API if any, else None.
     :rtype: ResponseMessages | None
     """
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/unlink_po"
-    headers = {
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-        "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-        "Cache-Control": "no-cache",
-        "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Connection": "keep-alive",
-    }
-    response = http_post(
-        url=url,
-        headers=headers,
-        payload={"work_order": {"purchase_order_ids": po_ids_to_link}},
-        title="Work Order Un-Link PO",
+    response = _http_request(
+        method="POST",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/unlink_po",
+        headers=_get_ezo_headers(
+            {
+                "Content-Type": "application/json",
+                "Cache-Control": "no-cache",
+                "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
+                "Accept-Encoding": "gzip, deflate, br",
+                "Connection": "keep-alive",
+            }
+        ),
+        json={"work_order": {"purchase_order_ids": po_ids_to_link}},
+        context="Work Order Un-Link PO",
     )
 
-    if "messages" in response.json():
-        return ResponseMessages(**response.json()["messages"])
-    else:
-        return None
+    return _parse_response(response=response, key="messages", model=ResponseMessages)
 
 
-@Decorators.check_env_vars
 def work_orders_start_component_service(
     work_order_id: int, component_ids: list[int]
 ) -> ResponseMessages | None:
@@ -911,20 +782,16 @@ def work_orders_start_component_service(
     :return: Response messages from the API if any, else None.
     :rtype: ResponseMessages | None
     """
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/start_components_service"
-    response = http_patch(
-        url=url,
-        payload={"component_ids": component_ids},
-        title="Work Order Start Component Service",
+    response = _http_request(
+        method="PATCH",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/start_components_service",
+        json={"component_ids": component_ids},
+        context="Work Order Start Component Service",
     )
 
-    if "messages" in response.json():
-        return ResponseMessages(**response.json()["messages"])
-    else:
-        return None
+    return _parse_response(response=response, key="messages", model=ResponseMessages)
 
 
-@Decorators.check_env_vars
 def work_orders_end_component_service(
     work_order_id: int, component_ids: list[int]
 ) -> ResponseMessages | None:
@@ -938,17 +805,14 @@ def work_orders_end_component_service(
     :return: Response messages from the API if any, else None.
     :rtype: ResponseMessages | None
     """
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/end_components_service"
-    response = http_patch(
-        url=url,
-        payload={"component_ids": component_ids},
-        title="Work Order End Component Service",
+    response = _http_request(
+        method="PATCH",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/end_components_service",
+        json={"component_ids": component_ids},
+        context="Work Order End Component Service",
     )
 
-    if "messages" in response.json():
-        return ResponseMessages(**response.json()["messages"])
-    else:
-        return None
+    return _parse_response(response=response, key="messages", model=ResponseMessages)
 
 
 def work_order_add_checklist(
@@ -969,12 +833,11 @@ def work_order_add_checklist(
     :return: The response from the API endpoint.
     :rtype: dict
     """
-
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/tasks/{work_order_id}/add_checklists.json"
-    response = http_post(
-        url=url,
-        payload={"checklist_ids": str(checklist_id), "asset_id": str(asset_id)},
-        title="Work Order Add Checklist",
+    response = _http_request(
+        method="POST",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/tasks/{work_order_id}/add_checklists.json",
+        json={"checklist_ids": str(checklist_id), "asset_id": str(asset_id)},
+        context="Work Order Add Checklist",
     )
 
     return response.json()
@@ -1000,27 +863,22 @@ def work_order_update_checklist(
     :return: Response messages from the API if any, else None.
     :rtype: ResponseMessages | None
     """
-
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/update_work_order_checklist"
-    response = http_post(
-        url=url,
-        payload={
+    response = _http_request(
+        method="POST",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/update_work_order_checklist",
+        json={
             "work_order": {
                 "checklist_id": checklist_id,
                 "asset_id": asset_id,
                 "checklist_values": checklist_values,
             }
         },
-        title="Work Order Update Checklist",
+        context="Work Order Update Checklist",
     )
 
-    if "messages" in response.json():
-        return ResponseMessages(**response.json()["messages"])
-    else:
-        return None
+    return _parse_response(response=response, key="messages", model=ResponseMessages)
 
 
-@Decorators.check_env_vars
 def work_order_remove_checklist(
     work_order_id: int, checklist_id: int
 ) -> ResponseMessages | None:
@@ -1034,20 +892,16 @@ def work_order_remove_checklist(
     :return: Response messages from the API if any, else None.
     :rtype: ResponseMessages | None
     """
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/remove_checklist"
-    response = http_delete(
-        url=url,
-        payload={"work_order": {"checklist_id": checklist_id}},
-        title="Work Order Remove Checklist",
+    response = _http_request(
+        method="DELETE",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}/remove_checklist",
+        json={"work_order": {"checklist_id": checklist_id}},
+        context="Work Order Remove Checklist",
     )
 
-    if "messages" in response.json():
-        return ResponseMessages(**response.json()["messages"])
-    else:
-        return None
+    return _parse_response(response=response, key="messages", model=ResponseMessages)
 
 
-@Decorators.check_env_vars
 def work_order_delete(work_order_id: int) -> WorkOrder | None:
     """
     Deletes a particular work order.
@@ -1057,16 +911,17 @@ def work_order_delete(work_order_id: int) -> WorkOrder | None:
     :return: The deleted WorkOrder object if successful, else None.
     :rtype: WorkOrder | None
     """
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}"
-    response = http_delete(url=url, title="Work Order Delete")
+    response = _http_request(
+        method="DELETE",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/{work_order_id}",
+        context="Work Order Delete",
+    )
 
-    if response.status_code == 200 and "work_order" in response.json():
-        return WorkOrder(**response.json()["work_order"])
-    else:
-        return None
+    return _parse_response(
+        response=response, key="work_order", model=WorkOrder, success_status_codes=[200]
+    )
 
 
-@Decorators.check_env_vars
 def work_orders_delete(work_order_ids: list[int]) -> ResponseMessages | None:
     """
     Deletes multiple work orders.
@@ -1077,14 +932,16 @@ def work_orders_delete(work_order_ids: list[int]) -> ResponseMessages | None:
     :return: Response messages from the API if any, else None.
     :rtype: ResponseMessages | None
     """
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/mass_delete"
-    response = http_patch(
-        url=url,
-        payload={"work_order": {"ids": work_order_ids}},
-        title="Work Orders Delete",
+    response = _http_request(
+        method="PATCH",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders/mass_delete",
+        json={"work_order": {"ids": work_order_ids}},
+        context="Work Orders Delete",
     )
 
-    if response.status_code == 200 and "messages" in response.json():
-        return ResponseMessages(**response.json()["messages"])
-    else:
-        return None
+    return _parse_response(
+        response=response,
+        key="messages",
+        model=ResponseMessages,
+        success_status_codes=[200],
+    )

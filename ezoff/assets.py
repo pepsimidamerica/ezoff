@@ -1,19 +1,22 @@
 """
-Covers everything related to fixed assets in EZOffice
+Covers everything related to fixed assets in EZOffice.
+
+TODO: Bulk create
+TODO: Reservation create
+TODO: Bulk update
+TODO: Booked dates return
+TODO: Reservations return
 """
 
 import logging
 import os
-import time
 from datetime import date, datetime
 
-from ezoff._auth import Decorators
 from ezoff._helpers import (
-    http_delete,
-    http_get,
-    http_patch,
-    http_post,
-    http_put,
+    _get_ezo_headers,
+    _get_paginated,
+    _http_request,
+    _parse_response,
 )
 from ezoff.data_model import (
     Asset,
@@ -22,14 +25,10 @@ from ezoff.data_model import (
     ResponseMessages,
     TokenInput,
 )
-from ezoff.exceptions import (
-    NoDataReturned,
-)
 
 logger = logging.getLogger(__name__)
 
 
-@Decorators.check_env_vars
 def asset_create(
     name: str,
     group_id: int,
@@ -81,24 +80,18 @@ def asset_create(
     :return: The created asset object if successful, else None.
     :rtype: Asset | None
     """
-
     params = {k: v for k, v in locals().items() if v is not None}
 
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/assets"
-    response = http_post(url=url, payload={"asset": params}, title="Asset Create")
+    response = _http_request(
+        method="GET",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/assets",
+        json={"asset": params},
+        context="Asset Create",
+    )
 
-    if response.status_code == 200 and "asset" in response.json():
-        return Asset(**response.json()["asset"])
-    else:
-        return None
-
-
-# TODO Bulk create
-
-# TODO Reservation create
+    return _parse_response(response, "asset", Asset)
 
 
-@Decorators.check_env_vars
 def asset_return(asset_id: int) -> Asset | None:
     """
     Returns a particular asset.
@@ -107,30 +100,27 @@ def asset_return(asset_id: int) -> Asset | None:
     :type asset_id: int
     :return: The asset object if found, else None.
     """
+    response = _http_request(
+        method="GET",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/assets/{asset_id}",
+        context="Asset Return",
+    )
 
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/assets/{asset_id}"
-    response = http_get(url=url, title="Asset Return")
-
-    if response.status_code == 200 and "asset" in response.json():
-        return Asset(**response.json()["asset"])
-    else:
-        return None
+    return _parse_response(response, "asset", Asset)
 
 
-@Decorators.check_env_vars
 def asset_documents_return(asset_id: int) -> list[ResourceDocument]:
     """
     Returns a list of documents attached to an asset. This is one of the JSON
     endpoints found via the browser's console.
     """
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/assets/{asset_id}/documents/resource_documents.json"
-
-    response = http_get(
-        url=url,
+    response = _http_request(
+        method="GET",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/assets/{asset_id}/documents/resource_documents.json",
         # Unsure if params important, included to match request from browser
         # even though data seemed to be returned regardless.
         params={"load_all": True, "resource_class": "FixedAsset"},
-        title="Asset Documents Return",
+        context="Asset Documents Return",
     )
 
     if response.status_code == 200 and "data" in response.json():
@@ -139,7 +129,6 @@ def asset_documents_return(asset_id: int) -> list[ResourceDocument]:
     return []
 
 
-@Decorators.check_env_vars
 def assets_return(filter: dict | None = None) -> list[Asset]:
     """
     Get a list of all assets, or use the filter parameter to filter results.
@@ -149,52 +138,38 @@ def assets_return(filter: dict | None = None) -> list[Asset]:
     :return: List of assets
     :rtype: list[Asset]
     """
-
+    query_params = {}
     if filter:
-        for field in filter:
-            if field not in Asset.model_fields:
-                raise ValueError(f"'{field}' is not a valid field for an asset.")
-        filter = {"filters": filter}
-    else:
-        filter = None
+        invalid = filter.keys() - Asset.model_fields.keys()
+        if invalid:
+            raise ValueError(
+                f"'{next(iter(invalid))}' is not a valid field for an asset."
+            )
+        query_params = {f"filters[{k}]": v for k, v in filter.items()}
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/assets"
-    headers = {
-        "Accept": "application/json",
-        "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-        "Cache-Control": "no-cache",
-        "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Connection": "keep-alive",
-        "Content-Type": "application/json",
-    }
-    all_assets = []
+    if query_params:
+        url += "?" + "&".join([f"{k}={v}" for k, v in query_params.items()])
 
-    while True:
-        response = http_get(
-            url=url, payload=filter, headers=headers, title="Assets Return"
-        )
-        data = response.json()
-
-        if "assets" not in data:
-            raise NoDataReturned(f"No fixed assets found: {response.content}")
-
-        all_assets.extend(data["assets"])
-
-        if (
-            "metadata" not in data
-            or "next_page" not in data["metadata"]
-            or data["metadata"]["next_page"] is None
-        ):
-            break
-
-        # Get the next page's url from the current page of data.
-        url = data["metadata"]["next_page"]
+    headers = _get_ezo_headers(
+        {
+            "Cache-Control": "no-cache",
+            "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Connection": "keep-alive",
+            "Content-Type": "application/json",
+        }
+    )
+    all_assets = _get_paginated(
+        url=url,
+        headers=headers,
+        results_key="assets",
+        context="assets_return",
+    )
 
     return [Asset(**x) for x in all_assets]
 
 
-@Decorators.check_env_vars
 def assets_search(search_term: str) -> list[Asset]:
     """
     Search for assets.
@@ -207,38 +182,16 @@ def assets_search(search_term: str) -> list[Asset]:
     :return: List of Asset objects matching the search term.
     :rtype: list[Asset]
     """
-
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/assets/search"
-    all_assets = []
-
-    while True:
-        response = http_get(
-            url=url, params={"search": search_term}, title="Assets Search"
-        )
-        data = response.json()
-
-        if "assets" not in data:
-            logger.error(f"Error, could not get assets: {response.content}")
-            raise Exception(f"Error, could not get assets: {response.content}")
-
-        all_assets.extend(data["assets"])
-
-        if (
-            "metadata" not in data
-            or "next_page" not in data["metadata"]
-            or data["metadata"]["next_page"] is None
-        ):
-            break
-
-        # Get the next page's url from the current page of data.
-        url = data["metadata"]["next_page"]
-
-        time.sleep(1)
+    all_assets = _get_paginated(
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/assets/search?search={search_term}",
+        headers=_get_ezo_headers(),
+        results_key="assets",
+        context="Assets Search",
+    )
 
     return [Asset(**x) for x in all_assets]
 
 
-@Decorators.check_env_vars
 def asset_public_link_return(asset_id: int) -> str | None:
     """
     Returns the public link for a particular asset.
@@ -252,21 +205,18 @@ def asset_public_link_return(asset_id: int) -> str | None:
     :return: The public link if found, else None.
     :rtype: str | None
     """
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/assets/{asset_id}/get_public_links"
-    response = http_get(url=url, title="Asset Public Link Return")
+    response = _http_request(
+        method="GET",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/assets/{asset_id}/get_public_links",
+        context="Asset Public Link Return",
+    )
 
     if "link" in response.json():
         return response.json()["link"]
-    else:
-        return None
+
+    return None
 
 
-# TODO Booked dates return
-
-# TODO Reservations return
-
-
-@Decorators.check_env_vars
 def assets_token_input_return(q: str) -> list[TokenInput]:
     """
     This isn't an official endpoint in the EZO API. It's used to populate
@@ -284,17 +234,17 @@ def assets_token_input_return(q: str) -> list[TokenInput]:
     :return: List of TokenInput objects matching the search term.
     :rtype: list[TokenInput]
     """
-
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/assets/items_for_token_input.json"
-    response = http_get(
-        url=url, params={"include_id": "true", "q": q}, title="Asset Token Input Return"
+    response = _http_request(
+        method="GET",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/assets/items_for_token_input.json",
+        params={"include_id": "true", "q": q},
+        context="Asset Token Input Return",
     )
     data = response.json()
 
     return [TokenInput(**x) for x in data]
 
 
-@Decorators.check_env_vars
 def asset_history_return(asset_id: int) -> list[AssetHistoryItem]:
     """
     Returns checkout history for a particular asset.
@@ -304,37 +254,16 @@ def asset_history_return(asset_id: int) -> list[AssetHistoryItem]:
     :return: List of AssetHistoryItem objects representing the asset's history.
     :rtype: list[AssetHistoryItem]
     """
-
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/assets/{asset_id}/history"
-
-    all_history = []
-
-    while True:
-        response = http_get(url=url, title="Asset History Return")
-        data = response.json()
-
-        if "history" not in data:
-            logger.error(f"Error, could not get history: {response.content}")
-            raise Exception(f"Error, could not get history: {response.content}")
-
-        all_history.extend(data["history"])
-
-        if (
-            "metadata" not in data
-            or "next_page" not in data["metadata"]
-            or data["metadata"]["next_page"] is None
-        ):
-            break
-
-        # Get the next page's url from the current page of data.
-        url = data["metadata"]["next_page"]
-
-        time.sleep(1)
+    all_history = _get_paginated(
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/assets/{asset_id}/history",
+        headers=_get_ezo_headers(),
+        results_key="history",
+        context="Asset History Return",
+    )
 
     return [AssetHistoryItem(**x) for x in all_history]
 
 
-@Decorators.check_env_vars
 def asset_update(asset_id: int, update_data: dict) -> Asset | None:
     """
     Updates a fixed asset.
@@ -346,20 +275,20 @@ def asset_update(asset_id: int, update_data: dict) -> Asset | None:
     :return: The updated asset object if successful, else None.
     :rtype: Asset | None
     """
+    response = _http_request(
+        method="PATCH",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/assets/{asset_id}",
+        json={"asset": update_data},
+        context="Asset Update",
+    )
 
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/assets/{asset_id}"
-    response = http_patch(url=url, payload=update_data, title="Asset Update")
-
-    if response.status_code == 200 and "asset" in response.json():
-        return Asset(**response.json()["asset"])
-    else:
-        return None
+    return _parse_response(
+        response=response,
+        key="asset",
+        model=Asset,
+    )
 
 
-# TODO Bulk update
-
-
-@Decorators.check_env_vars
 def asset_checkin(
     asset_id: int,
     location_id: int,
@@ -384,11 +313,10 @@ def asset_checkin(
     :return: ResponseMessages object if there are any messages, else None.
     :rtype: ResponseMessages | None
     """
-
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/assets/{asset_id}/checkin"
-    response = http_put(
-        url=url,
-        payload={
+    response = _http_request(
+        method="PUT",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/assets/{asset_id}/checkin",
+        json={
             "asset": {
                 "comments": comments,
                 "location_id": location_id,
@@ -396,16 +324,16 @@ def asset_checkin(
                 "custom_fields": custom_fields,
             }
         },
-        title="Asset Checkin",
+        context="Asset Checkin",
     )
 
-    if "messages" in response.json():
-        return ResponseMessages(**response.json()["messages"])
-    else:
-        return None
+    return _parse_response(
+        response=response,
+        key="messages",
+        model=ResponseMessages,
+    )
 
 
-@Decorators.check_env_vars
 def asset_checkout(
     asset_id: int,
     user_id: int,
@@ -420,7 +348,7 @@ def asset_checkout(
     custom_fields: list[dict] | None = None,
 ) -> ResponseMessages | None:
     """
-    Check out an asset to a member
+    Check out an asset to a member.
 
     Note: If user is inactive, checkout will return a 200 status code but the
     asset will NOT actually be checked out. Response will contain a message.
@@ -453,30 +381,33 @@ def asset_checkout(
     :type custom_fields: list[dict], optional
     :return: ResponseMessages object if there are any messages, else None.
     """
+    response = _http_request(
+        method="PUT",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/assets/{asset_id}/checkout",
+        json={
+            "asset": {
+                "user_id": user_id,
+                "comments": comments,
+                "location_id": location_id,
+                "request_verification": request_verification,
+                "checkout_forever": checkout_forever,
+                "till": till,
+                "project_id": project_id,
+                "ignore_conflicting_reservations": ignore_conflicting_reservations,
+                "fulfill_user_conflicting_reservations": fulfill_user_conflicting_reservations,
+                "custom_fields": custom_fields,
+            }
+        },
+        context="Asset Checkout",
+    )
 
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/assets/{asset_id}/checkout"
-    payload = {
-        "asset": {
-            "user_id": user_id,
-            "comments": comments,
-            "location_id": location_id,
-            "request_verification": request_verification,
-            "checkout_forever": checkout_forever,
-            "till": till,
-            "ignore_conflicting_reservations": ignore_conflicting_reservations,
-            "fulfill_user_conflicting_reservations": fulfill_user_conflicting_reservations,
-            "custom_fields": custom_fields,
-        }
-    }
-    response = http_put(url=url, payload=payload, title="Asset Checkout")
-
-    if "messages" in response.json():
-        return ResponseMessages(**response.json()["messages"])
-    else:
-        return None
+    return _parse_response(
+        response=response,
+        key="messages",
+        model=ResponseMessages,
+    )
 
 
-@Decorators.check_env_vars
 def asset_retire(
     asset_id: int,
     retired_on: datetime,
@@ -504,26 +435,28 @@ def asset_retire(
     :return: The updated asset object with retired status if successful, else None.
     :rtype: Asset | None
     """
+    response = _http_request(
+        method="PUT",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/assets/{asset_id}/retire",
+        json={
+            "asset": {
+                "retired_on": retired_on,
+                "retire_reason_id": retire_reason_id,
+                "salvage_value": salvage_value,
+                "retire_comments": retire_comments,
+                "location_id": location_id,
+            }
+        },
+        context="Asset Retire",
+    )
 
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/assets/{asset_id}/retire"
-    payload = {
-        "asset": {
-            "retired_on": retired_on,
-            "retire_reason_id": retire_reason_id,
-            "salvage_value": salvage_value,
-            "retire_comments": retire_comments,
-            "location_id": location_id,
-        }
-    }
-    response = http_put(url=url, payload=payload, title="Asset Retire")
-
-    if "asset" in response.json():
-        return Asset(**response.json()["asset"])
-    else:
-        return None
+    return _parse_response(
+        response=response,
+        key="asset",
+        model=Asset,
+    )
 
 
-@Decorators.check_env_vars
 def asset_activate(asset_id: int, location_id: int | None = None) -> Asset | None:
     """
     Reactivates a retired asset.
@@ -536,18 +469,20 @@ def asset_activate(asset_id: int, location_id: int | None = None) -> Asset | Non
     :return: The updated asset object with active status if successful, else None.
     :rtype: Asset | None
     """
+    response = _http_request(
+        method="PUT",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/assets/{asset_id}/activate",
+        json={"asset": {"location_id": location_id}},
+        context="Asset Activate",
+    )
 
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/assets/{asset_id}/activate"
-    payload = {"asset": {"location_id": location_id}}
-    response = http_put(url=url, payload=payload, title="Asset Activate")
-
-    if "asset" in response.json():
-        return Asset(**response.json()["asset"])
-    else:
-        return None
+    return _parse_response(
+        response=response,
+        key="asset",
+        model=Asset,
+    )
 
 
-@Decorators.check_env_vars
 def asset_verification_request(asset_id: int, note: str) -> dict:
     """
     Creates a verification request for a particular asset. Prompts the user the
@@ -561,24 +496,25 @@ def asset_verification_request(asset_id: int, note: str) -> dict:
     :return: The response from the API as a dictionary.
     :rtype: dict
     """
-
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/assets/{asset_id}/audits.json"
-    # Not entirely sure on correct request body. Endpoint not yet documented in EZO v2
-    # API, so just copying what I'm seeing in the browser's network tools when doing a verification request
-    payload = {
-        "asset_id": asset_id,
-        "custom_substate_id": "",
-        "audit": {
-            "custom_required": "1",
-            "custom_note": note,
+    response = _http_request(
+        method="POST",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/assets/{asset_id}/audits.json",
+        # Not entirely sure on correct request body. Endpoint not yet documented in EZO v2
+        # API, so just copying what I'm seeing in the browser's network tools when doing a verification request
+        json={
+            "asset_id": asset_id,
+            "custom_substate_id": "",
+            "audit": {
+                "custom_required": "1",
+                "custom_note": note,
+            },
         },
-    }
-    response = http_post(url=url, payload=payload, title="Asset Verification Request")
+        context="Asset Verification Request",
+    )
 
     return response.json()
 
 
-@Decorators.check_env_vars
 def asset_delete(asset_id: int) -> ResponseMessages | None:
     """
     Delete a particular asset.
@@ -588,11 +524,14 @@ def asset_delete(asset_id: int) -> ResponseMessages | None:
     :return: ResponseMessages object if there are any messages, else None.
     :rtype: ResponseMessages | None
     """
+    response = _http_request(
+        method="DELETE",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/assets/{asset_id}",
+        context="Asset Delete",
+    )
 
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/assets/{asset_id}"
-    response = http_delete(url=url, title="Asset Delete")
-
-    if "messages" in response.json():
-        return ResponseMessages(**response.json()["messages"])
-    else:
-        return None
+    return _parse_response(
+        response=response,
+        key="messages",
+        model=ResponseMessages,
+    )

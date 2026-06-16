@@ -1,20 +1,21 @@
 """
-This module contains functions for interacting with members/roles/user setup in EZOfficeInventory
+This module contains functions for interacting with members/roles/user setup in EZOfficeInventory.
 """
 
 import logging
 import os
-import time
 
-from ezoff._auth import Decorators
-from ezoff._helpers import http_get, http_patch, http_post, http_put
+from ezoff._helpers import (
+    _get_ezo_headers,
+    _get_paginated,
+    _http_request,
+    _parse_response,
+)
 from ezoff.data_model import CustomRole, Member, MemberCreate, Team, UserListing
-from ezoff.exceptions import NoDataReturned
 
 logger = logging.getLogger(__name__)
 
 
-@Decorators.check_env_vars
 def member_create(
     first_name: str | None,
     last_name: str,
@@ -93,20 +94,23 @@ def member_create(
     :return: The created member, or None if creation failed
     :rtype: Member | None
     """
-
     params = {k: v for k, v in locals().items() if v is not None}
 
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/members"
-    payload = {"member": params}
-    response = http_post(url=url, payload=payload, title="Member Create")
+    response = _http_request(
+        method="POST",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/members",
+        json={"member": params},
+        context="Member Create",
+    )
 
-    if response.status_code == 200 and "member" in response.json():
-        return Member(**response.json()["member"])
-    else:
-        return None
+    return _parse_response(
+        response=response,
+        key="member",
+        model=Member,
+        success_status_codes=[200],
+    )
 
 
-@Decorators.check_env_vars
 def members_create(members: list[MemberCreate]) -> list[Member] | None:
     """
     Creates new members in bulk.
@@ -115,17 +119,19 @@ def members_create(members: list[MemberCreate]) -> list[Member] | None:
     :return: The list of created Members if successful, else None
     :rtype: list[Member]
     """
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/members/bulk_create"
-    payload = {"members": [member.model_dump(exclude_none=True) for member in members]}
-    response = http_post(url=url, payload=payload, title="Members Create")
+    response = _http_request(
+        method="POST",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/members/bulk_create",
+        json={"members": [member.model_dump(exclude_none=True) for member in members]},
+        context="Members Create",
+    )
 
     if response.status_code == 200 and "members" in response.json():
         return [Member(**x) for x in response.json()["members"]]
-    else:
-        return None
+
+    return None
 
 
-@Decorators.check_env_vars
 def member_return(member_id: int) -> Member | None:
     """
     Returns a particular member.
@@ -134,25 +140,20 @@ def member_return(member_id: int) -> Member | None:
     :return: The member if found, else None
     :rtype: Member | None
     """
+    response = _http_request(
+        method="GET",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/members/{member_id}",
+        context="Member Return",
+    )
 
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/members/{member_id}"
-    headers = {
-        "Accept": "application/json",
-        "Authorization": "Bearer " + os.environ["EZO_TOKEN"],
-        "Cache-Control": "no-cache",
-        "Host": f"{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Connection": "keep-alive",
-    }
-    response = http_post(url=url, headers=headers, title="Member Return")
-
-    if response.status_code == 200 and "member" in response.json():
-        return Member(**response.json()["member"])
-    else:
-        return None
+    return _parse_response(
+        response=response,
+        key="member",
+        model=Member,
+        success_status_codes=[200],
+    )
 
 
-@Decorators.check_env_vars
 def members_return(filter: dict | None = None) -> list[Member]:
     """
     Returns all members. Optionally, filter by one or more member fields.
@@ -162,55 +163,40 @@ def members_return(filter: dict | None = None) -> list[Member]:
     :return: List of members
     :rtype: list[Member]
     """
-
+    query_params = {}
     if filter:
-        for field in filter:
-            if field not in (
-                list(Member.model_fields.keys())
-                # Additional valid filters
-                + [
-                    "all",
-                    "login_enabled",
-                    "external",
-                    "inactive",
-                    "inactive_members_with_items",
-                    "inactive_members_with_pending_associations",
-                    "location_id",
-                ]
-            ):
-                raise ValueError(f"'{field}' is not a valid field for a member.")
-        filter = {"filters": filter}
-    else:
-        filter = None
+        invalid = filter.keys() - (
+            Member.model_fields.keys()
+            | {
+                "all",
+                "login_enabled",
+                "external",
+                "inactive",
+                "inactive_members_with_items",
+                "inactive_members_with_pending_associations",
+                "location_id",
+            }
+        )
+        if invalid:
+            raise ValueError(
+                f"'{next(iter(invalid))}' is not a valid field for a member."
+            )
+        query_params = {f"filters[{k}]": v for k, v in filter.items()}
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/members"
+    if query_params:
+        url += "?" + "&".join([f"{k}={v}" for k, v in query_params.items()])
 
-    all_members = []
-    while True:
-        response = http_get(url=url, payload=filter, title="Members Return")
-        data = response.json()
-
-        if "members" not in data:
-            raise NoDataReturned(f"No members found: {response.content}")
-
-        all_members.extend(data["members"])
-
-        if (
-            "metadata" not in data
-            or "next_page" not in data["metadata"]
-            or data["metadata"]["next_page"] is None
-        ):
-            break
-
-        # Get the next page's url from the current page of data.
-        url = data["metadata"]["next_page"]
-
-        time.sleep(1)
+    all_members = _get_paginated(
+        url=url,
+        headers=_get_ezo_headers(),
+        results_key="members",
+        context="members return",
+    )
 
     return [Member(**x) for x in all_members]
 
 
-@Decorators.check_env_vars
 def member_update(member_id: int, update_data: dict) -> Member | None:
     """
     Updates a particular member.
@@ -220,25 +206,26 @@ def member_update(member_id: int, update_data: dict) -> Member | None:
     :return: The updated member if successful, else None
     :rtype: Member | None
     """
+    invalid = update_data.keys() - Member.model_fields.keys()
+    if invalid:
+        raise ValueError(f"Invalid fields: {', '.join(invalid)}")
 
-    for field in update_data:
-        if field not in Member.model_fields:
-            raise ValueError(f"'{field}' is not a valid field for a member.")
-
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/members/{member_id}"
-    headers = ({"Authorization": "Bearer " + os.environ["EZO_TOKEN"]},)
-    payload = ({"member": update_data},)
-    response = http_patch(
-        url=url, headers=headers, payload=payload, title="Member Update"
+    response = _http_request(
+        method="PATCH",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/members/{member_id}",
+        headers=_get_ezo_headers(),
+        json={"member": update_data},
+        context="Member Update",
     )
 
-    if response.status_code == 200 and "member" in response.json():
-        return Member(**response.json()["member"])
-    else:
-        return None
+    return _parse_response(
+        response=response,
+        key="member",
+        model=Member,
+        success_status_codes=[200],
+    )
 
 
-@Decorators.check_env_vars
 def member_activate(member_id: int) -> Member | None:
     """
     Activates a particular member.
@@ -247,17 +234,20 @@ def member_activate(member_id: int) -> Member | None:
     :return: The activated member if successful, else None
     :rtype: Member | None
     """
+    response = _http_request(
+        method="PUT",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/members/{member_id}/activate",
+        context="Member Activate",
+    )
 
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/members/{member_id}/activate"
-    response = http_put(url=url, title="Member Activate")
+    return _parse_response(
+        response=response,
+        key="member",
+        model=Member,
+        success_status_codes=[200],
+    )
 
-    if response.status_code == 200 and "member" in response.json():
-        return Member(**response.json()["member"])
-    else:
-        return None
 
-
-@Decorators.check_env_vars
 def member_deactivate(member_id: int) -> Member | None:
     """
     Deactivates a particular member.
@@ -266,17 +256,20 @@ def member_deactivate(member_id: int) -> Member | None:
     :return: The deactivated member if successful, else None
     :rtype: Member | None
     """
+    response = _http_request(
+        method="PUT",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/members/{member_id}/deactivate",
+        context="Member Deactivate",
+    )
 
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/members/{member_id}/deactivate"
-    response = http_put(url=url, title="Member Deactivate")
+    return _parse_response(
+        response=response,
+        key="member",
+        model=Member,
+        success_status_codes=[200],
+    )
 
-    if response.status_code == 200 and "member" in response.json():
-        return Member(**response.json()["member"])
-    else:
-        return None
 
-
-@Decorators.check_env_vars
 def custom_roles_return() -> list[CustomRole]:
     """
     Get all custom roles.
@@ -284,36 +277,17 @@ def custom_roles_return() -> list[CustomRole]:
     :return: List of custom roles
     :rtype: list[CustomRole]
     """
-
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/custom_roles"
-
-    all_custom_roles = []
-    while True:
-        response = http_get(url=url, title="Custom Roles Return")
-        data = response.json()
-
-        if "custom_roles" not in data:
-            raise NoDataReturned(f"No custom roles found: {response.content}")
-
-        all_custom_roles.extend(data["custom_roles"])
-
-        if (
-            "metadata" not in data
-            or "next_page" not in data["metadata"]
-            or data["metadata"]["next_page"] is None
-        ):
-            break
-
-        # Get the next page's url from the current page of data.
-        url = data["metadata"]["next_page"]
-
-        time.sleep(1)
+    all_custom_roles = _get_paginated(
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/custom_roles",
+        headers=_get_ezo_headers(),
+        results_key="custom_roles",
+        context="Custom Roles Return",
+    )
 
     return [CustomRole(**x) for x in all_custom_roles]
 
 
-@Decorators.check_env_vars
-def custom_role_update(custom_role_id: int, update_data) -> CustomRole | None:
+def custom_role_update(custom_role_id: int, update_data: dict) -> CustomRole | None:
     """
     Updates a particular custom role.
 
@@ -322,22 +296,25 @@ def custom_role_update(custom_role_id: int, update_data) -> CustomRole | None:
     :return: The updated custom role if successful, else None
     :rtype: CustomRole | None
     """
-
     for field in update_data:
         if field not in CustomRole.model_fields:
             raise ValueError(f"'{field}' is not a valid field for a custom role.")
 
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/custom_roles/{custom_role_id}"
-    payload = {"custom_role": update_data}
-    response = http_patch(url=url, payload=payload, title="Custom Role Update")
+    response = _http_request(
+        method="PATCH",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/custom_roles/{custom_role_id}",
+        json={"custom_role": update_data},
+        context="Custom Role Update",
+    )
 
-    if response.status_code == 200 and "custom_role" in response.json():
-        return CustomRole(**response.json()["custom_role"])
-    else:
-        return None
+    return _parse_response(
+        response=response,
+        key="custom_role",
+        model=CustomRole,
+        success_status_codes=[200],
+    )
 
 
-@Decorators.check_env_vars
 def teams_return() -> list[Team]:
     """
     Get all teams.
@@ -345,35 +322,16 @@ def teams_return() -> list[Team]:
     :return: List of teams
     :rtype: list[Team]
     """
-
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/teams"
-
-    all_teams = []
-    while True:
-        response = http_get(url=url, title="Teams Return")
-        data = response.json()
-
-        if "teams" not in data:
-            raise NoDataReturned(f"No teams found: {response.content}")
-
-        all_teams.extend(data["teams"])
-
-        if (
-            "metadata" not in data
-            or "next_page" not in data["metadata"]
-            or data["metadata"]["next_page"] is None
-        ):
-            break
-
-        # Get the next page's url from the current page of data.
-        url = data["metadata"]["next_page"]
-
-        time.sleep(1)
+    all_teams = _get_paginated(
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/teams",
+        headers=_get_ezo_headers(),
+        results_key="teams",
+        context="Teams Return",
+    )
 
     return [Team(**x) for x in all_teams]
 
 
-@Decorators.check_env_vars
 def user_listings_return() -> list[UserListing]:
     """
     Returns all user listings.
@@ -383,29 +341,11 @@ def user_listings_return() -> list[UserListing]:
     :return: List of user listings
     :rtype: list[UserListing]
     """
-
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/user_listings"
-
-    all_user_listings = []
-    while True:
-        response = http_get(url=url, title="User Listings Return")
-        data = response.json()
-
-        if "user_listings" not in data:
-            raise NoDataReturned(f"No user_listings found: {response.content}")
-
-        all_user_listings.extend(data["user_listings"])
-
-        if (
-            "metadata" not in data
-            or "next_page" not in data["metadata"]
-            or data["metadata"]["next_page"] is None
-        ):
-            break
-
-        # Get the next page's url from the current page of data.
-        url = data["metadata"]["next_page"]
-
-        time.sleep(1)
+    all_user_listings = _get_paginated(
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/user_listings",
+        headers=_get_ezo_headers(),
+        results_key="user_listings",
+        context="User Listings Return",
+    )
 
     return [UserListing(**x) for x in all_user_listings]

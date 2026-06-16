@@ -1,19 +1,19 @@
 """
 Covers everything related to inventory assets.
+
+TODO: inventory_location_threshold_return (Doesn't seem to exist, getting a 404 when testing in Postman)
+TODO: inventory_line_item_locations_return (Doesn't seem to return useful info when testing this endpoint)
 """
 
 import logging
 import os
-import time
 from datetime import datetime
 
-from ezoff._auth import Decorators
 from ezoff._helpers import (
-    http_post,
-    http_put,
-    http_get,
-    http_patch,
-    http_delete,
+    _get_ezo_headers,
+    _get_paginated,
+    _http_request,
+    _parse_response,
 )
 from ezoff.data_model import (
     CustomFieldHistoryItem,
@@ -26,7 +26,6 @@ from ezoff.data_model import (
 logger = logging.getLogger(__name__)
 
 
-@Decorators.check_env_vars
 def inventory_create(
     name: str,
     group_id: int,
@@ -92,23 +91,23 @@ def inventory_create(
     :return: The created inventory item, or None if creation failed
     :rtype: Inventory | None
     """
-
     params = {k: v for k, v in locals().items() if v is not None}
 
-    url = (
-        f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/inventory"
+    response = _http_request(
+        method="POST",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/inventory",
+        json={"inventory": params},
+        context="Inventory Create",
     )
-    response = http_post(
-        url=url, payload={"inventory": params}, title="Inventory Create"
+
+    return _parse_response(
+        response=response,
+        key="inventory",
+        model=Inventory,
+        success_status_codes=[200],
     )
 
-    if response.status_code == 200 and "inventory" in response.json():
-        return Inventory(**response.json()["inventory"])
-    else:
-        return None
 
-
-@Decorators.check_env_vars
 def inventory_return(inventory_id: int) -> Inventory | None:
     """
     Get details for a particular inventory item.
@@ -118,17 +117,20 @@ def inventory_return(inventory_id: int) -> Inventory | None:
     :return: The inventory item with the specified ID, or None if not found
     :rtype: Inventory | None
     """
+    response = _http_request(
+        method="GET",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/inventory/{inventory_id}",
+        context="Inventory Return",
+    )
 
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/inventory/{inventory_id}"
-    response = http_get(url=url, title="Inventory Return")
+    return _parse_response(
+        response=response,
+        key="inventory",
+        model=Inventory,
+        success_status_codes=[200],
+    )
 
-    if "inventory" in response.json():
-        return Inventory(**response.json()["inventory"])
-    else:
-        return None
 
-
-@Decorators.check_env_vars
 def inventories_return(filter: dict | None = None) -> list[Inventory]:
     """
     Returns all inventory items.
@@ -138,47 +140,31 @@ def inventories_return(filter: dict | None = None) -> list[Inventory]:
     :return: A list of all inventory items matching the filter
     :rtype: list[Inventory]
     """
-
+    query_params = {}
     if filter:
-        for field in filter:
-            if field not in Inventory.model_fields:
-                raise ValueError(f"'{field}' is not a valid field for an inventory.")
-        filter = {"filters": filter}
-    else:
-        filter = None
+        invalid = filter.keys() - Inventory.model_fields.keys()
+        if invalid:
+            raise ValueError(
+                f"'{next(iter(invalid))}' is not a valid field for a member."
+            )
+        query_params = {f"filters[{k}]": v for k, v in filter.items()}
 
     url = (
         f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/inventory"
     )
+    if query_params:
+        url += "?" + "&".join(f"{k}={v}" for k, v in query_params.items())
 
-    all_inventories = []
-
-    while True:
-        response = http_get(url=url, payload=filter, title="Inventories Return")
-        data = response.json()
-
-        if "inventory" not in data:
-            logger.error(f"Error, could not get inventories: {response.content}")
-            raise Exception(f"Error, could not get inventories: {response.content}")
-
-        all_inventories.extend(data["inventory"])
-
-        if (
-            "metadata" not in data
-            or "next_page" not in data["metadata"]
-            or data["metadata"]["next_page"] is None
-        ):
-            break
-
-        # Get the next page's url from the current page of data.
-        url = data["metadata"]["next_page"]
-
-        time.sleep(1)
+    all_inventories = _get_paginated(
+        url=url,
+        headers=_get_ezo_headers(),
+        results_key="inventory",
+        context="Inventories Return",
+    )
 
     return [Inventory(**x) for x in all_inventories]
 
 
-@Decorators.check_env_vars
 def inventories_search(search_term: str) -> list[Inventory]:
     """
     Searches for inventory items. Largely equivalent to the search box in the EZO UI.
@@ -191,39 +177,16 @@ def inventories_search(search_term: str) -> list[Inventory]:
     :return: A list of inventory items matching the search term
     :rtype: list[Inventory]
     """
-
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/inventory/search"
-
-    all_inventories = []
-
-    while True:
-        response = http_get(
-            url=url, payload={"search": search_term}, title="Inventories Search"
-        )
-        data = response.json()
-
-        if "inventories" not in data:
-            logger.error(f"Error, could not get inventories: {response.content}")
-            raise Exception(f"Error, could not get inventories: {response.content}")
-
-        all_inventories.extend(data["inventories"])
-
-        if (
-            "metadata" not in data
-            or "next_page" not in data["metadata"]
-            or data["metadata"]["next_page"] is None
-        ):
-            break
-
-        # Get the next page's url from the current page of data.
-        url = data["metadata"]["next_page"]
-
-        time.sleep(1)
+    all_inventories = _get_paginated(
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/inventory/search?search={search_term}",
+        headers=_get_ezo_headers(),
+        results_key="inventories",
+        context="Inventories Search",
+    )
 
     return [Inventory(**x) for x in all_inventories]
 
 
-@Decorators.check_env_vars
 def inventory_add_stock(
     inventory_id: int,
     location_id: int,
@@ -259,22 +222,24 @@ def inventory_add_stock(
     :return: The updated inventory item, or None if the addition failed
     :rtype: Inventory | None
     """
-
     params = {k: v for k, v in locals().items() if v is not None}
     params.pop("inventory_id", None)
 
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/inventory/{inventory_id}/add_stock"
-    response = http_post(
-        url=url, payload={"inventory": params}, title="Inventory Add Stock"
+    response = _http_request(
+        method="POST",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/inventory/{inventory_id}/add_stock",
+        json={"inventory": params},
+        context="Inventory Add Stock",
     )
 
-    if response.status_code == 200 and "inventory" in response.json():
-        return Inventory(**response.json()["inventory"])
-    else:
-        return None
+    return _parse_response(
+        response=response,
+        key="inventory",
+        model=Inventory,
+        success_status_codes=[200],
+    )
 
 
-@Decorators.check_env_vars
 def inventory_remove_stock(
     inventory_id: int,
     location_id: int,
@@ -316,22 +281,24 @@ def inventory_remove_stock(
     :return: The updated inventory item, or None if the removal failed
     :rtype: Inventory | None
     """
-
     params = {k: v for k, v in locals().items() if v is not None}
     params.pop("inventory_id", None)
 
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/inventory/{inventory_id}/remove_stock"
-    response = http_post(
-        url=url, payload={"inventory": params}, title="Inventory Remove Stock"
+    response = _http_request(
+        method="POST",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/inventory/{inventory_id}/remove_stock",
+        json={"inventory": params},
+        context="Inventory Remove Stock",
     )
 
-    if response.status_code == 200 and "inventory" in response.json():
-        return Inventory(**response.json()["inventory"])
-    else:
-        return None
+    return _parse_response(
+        response=response,
+        key="inventory",
+        model=Inventory,
+        success_status_codes=[200],
+    )
 
 
-@Decorators.check_env_vars
 def inventory_update_location(inventory_id: int, location_id: int) -> Inventory | None:
     """
     Updates default location of inventory item.
@@ -343,21 +310,21 @@ def inventory_update_location(inventory_id: int, location_id: int) -> Inventory 
     :return: The updated inventory item, or None if the update failed
     :rtype: Inventory | None
     """
-
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/inventory/{inventory_id}/update_location"
-    response = http_patch(
-        url=url,
-        payload={"inventory": {"location_id": location_id}},
-        title="Inventory Update Location",
+    response = _http_request(
+        method="PATCH",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/inventory/{inventory_id}/update_location",
+        json={"inventory": {"location_id": location_id}},
+        context="Inventory Update Location",
     )
 
-    if response.status_code == 200 and "inventory" in response.json():
-        return Inventory(**response.json()["inventory"])
-    else:
-        return None
+    return _parse_response(
+        response=response,
+        key="inventory",
+        model=Inventory,
+        success_status_codes=[200],
+    )
 
 
-@Decorators.check_env_vars
 def inventory_transfer_stock(
     inventory_id: int,
     from_location_id: int,
@@ -366,7 +333,7 @@ def inventory_transfer_stock(
     total_price: float,
     comments: str | None = None,
     custom_fields: list[dict] | None = None,
-):
+) -> Inventory | None:
     """
     Transfers inventory item amount from one location to another.
 
@@ -387,29 +354,31 @@ def inventory_transfer_stock(
     :return: The updated inventory item, or None if the transfer failed
     :rtype: Inventory | None
     """
-
     params = {k: v for k, v in locals().items() if v is not None}
     params.pop("inventory_id", None)
 
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/inventory/{inventory_id}/transfer_stock"
-    response = http_post(
-        url=url, payload={"inventory": params}, title="Inventory Transfer Stock"
+    response = _http_request(
+        method="POST",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/inventory/{inventory_id}/transfer_stock",
+        json={"inventory": params},
+        context="Inventory Transfer Stock",
     )
 
-    if response.status_code == 200 and "inventory" in response.json():
-        return Inventory(**response.json()["inventory"])
-    else:
-        return None
+    return _parse_response(
+        response=response,
+        key="inventory",
+        model=Inventory,
+        success_status_codes=[200],
+    )
 
 
-@Decorators.check_env_vars
 def inventory_retire(
     inventory_id: int,
     retire_reason_id: int,
     salvage_value: float | None = None,
     retire_comments: str | None = None,
     location_id: int | None = None,
-):
+) -> Inventory | None:
     """
     Retires an inventory item.
 
@@ -426,23 +395,25 @@ def inventory_retire(
     :return: The updated inventory item, or None if the retirement failed
     :rtype: Inventory | None
     """
-
     params = {k: v for k, v in locals().items() if v is not None}
     params.pop("inventory_id", None)
 
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/inventory/{inventory_id}/retire"
-    response = http_put(
-        url=url, payload={"inventory": params}, title="Inventory Retire"
+    response = _http_request(
+        method="PUT",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/inventory/{inventory_id}/retire",
+        json={"inventory": params},
+        context="Inventory Retire",
     )
 
-    if response.status_code == 200 and "inventory" in response.json():
-        return Inventory(**response.json()["inventory"])
-    else:
-        return None
+    return _parse_response(
+        response=response,
+        key="inventory",
+        model=Inventory,
+        success_status_codes=[200],
+    )
 
 
-@Decorators.check_env_vars
-def inventory_activate(inventory_id: int):
+def inventory_activate(inventory_id: int) -> Inventory | None:
     """
     Reactivates a retired inventory item.
 
@@ -451,18 +422,21 @@ def inventory_activate(inventory_id: int):
     :return: The updated inventory item, or None if the reactivation failed
     :rtype: Inventory | None
     """
+    response = _http_request(
+        method="PUT",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/inventory/{inventory_id}/activate",
+        context="Inventory Activate",
+    )
 
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/inventory/{inventory_id}/activate"
-    response = http_put(url=url, title="Inventory Activate")
+    return _parse_response(
+        response=response,
+        key="inventory",
+        model=Inventory,
+        success_status_codes=[200],
+    )
 
-    if response.status_code == 200 and "inventory" in response.json():
-        return Inventory(**response.json()["inventory"])
-    else:
-        return None
 
-
-@Decorators.check_env_vars
-def inventory_delete(inventory_id: int):
+def inventory_delete(inventory_id: int) -> Inventory | None:
     """
     Deletes a particular inventory item.
 
@@ -471,17 +445,20 @@ def inventory_delete(inventory_id: int):
     :return: The deleted inventory item, or None if the deletion failed
     :rtype: Inventory | None
     """
+    response = _http_request(
+        method="DELETE",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/inventory/{inventory_id}",
+        context="Inventory Delete",
+    )
 
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/inventory/{inventory_id}"
-    response = http_delete(url=url, title="Inventory Delete")
+    return _parse_response(
+        response=response,
+        key="inventory",
+        model=Inventory,
+        success_status_codes=[200],
+    )
 
-    if response.status_code == 200 and "inventory" in response.json():
-        return Inventory(**response.json()["inventory"])
-    else:
-        return None
 
-
-@Decorators.check_env_vars
 def inventory_quantity_by_location_return(
     inventory_id: int, location_id: int
 ) -> int | None:
@@ -495,11 +472,11 @@ def inventory_quantity_by_location_return(
     :return: The quantity of the inventory item in the specified location, or None if not found
     :rtype: int | None
     """
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/inventory/{inventory_id}/get_quantity_by_location"
-    response = http_get(
-        url=url,
-        payload={"location_id": location_id},
-        title="Inventory Qty by Location Return",
+    response = _http_request(
+        method="GET",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/inventory/{inventory_id}/get_quantity_by_location",
+        params={"location_id": location_id},
+        context="Inventory Qty by Location Return",
     )
 
     if response.status_code != 200 or "quantity" not in response.json():
@@ -508,17 +485,6 @@ def inventory_quantity_by_location_return(
     return response.json()["quantity"]
 
 
-# @Decorators.check_env_vars
-# def inventory_line_item_locations_return(inventory_id: int):
-#     """
-#     TODO Doesn't seem to return useful info when testing this endpoint.
-#     Just returns a listing of all locations, not anything specific to the
-#     particular item.
-#     """
-#     pass
-
-
-@Decorators.check_env_vars
 def inventory_custom_field_history_return(
     inventory_id: int, custom_field_id: int
 ) -> list[CustomFieldHistoryItem]:
@@ -532,49 +498,16 @@ def inventory_custom_field_history_return(
     :return: A list of custom field history items for the specified inventory item and custom field
     :rtype: list[CustomFieldHistoryItem]
     """
-
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/inventory/{inventory_id}/custom_field_history/{custom_field_id}"
-
-    all_custom_history = []
-
-    while True:
-        response = http_get(url=url, title="Inventory Custom Field History Return")
-        data = response.json()
-
-        if "custom_field" not in data:
-            logger.error(
-                f"Error, could not get custom attribute history: {response.content}"
-            )
-            raise Exception(
-                f"Error, could not get custom attribute history: {response.content}"
-            )
-
-        all_custom_history.extend(data["custom_field"])
-
-        if (
-            "metadata" not in data
-            or "next_page" not in data["metadata"]
-            or data["metadata"]["next_page"] is None
-        ):
-            break
-
-        # Get the next page's url from the current page of data.
-        url = data["metadata"]["next_page"]
-
-        time.sleep(1)
+    all_custom_history = _get_paginated(
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/inventory/{inventory_id}/custom_field_history/{custom_field_id}",
+        headers=_get_ezo_headers(),
+        results_key="custom_field",
+        context="Inventory Custom Field History Return",
+    )
 
     return [CustomFieldHistoryItem(**x) for x in all_custom_history]
 
 
-# @Decorators.check_env_vars
-# def inventory_location_based_threshold_return():
-#     """
-#     TODO Doesn't seem to exist. Just getting a 404 when testing in Postman
-#     """
-#     pass
-
-
-@Decorators.check_env_vars
 def inventory_history_return(inventory_id: int) -> list[StockHistoryItem]:
     """
     Gets stock history of an inventory item.
@@ -584,39 +517,16 @@ def inventory_history_return(inventory_id: int) -> list[StockHistoryItem]:
     :return: A list of stock history items for the specified inventory item
     :rtype: list[StockHistoryItem]
     """
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/inventory/{inventory_id}/history"
-
-    all_stock_history = []
-
-    while True:
-        response = http_get(
-            url=url,
-            title="Inventory History Return",
-        )
-        data = response.json()
-
-        if "stock_history" not in data:
-            logger.error(f"Error, could not get stock history: {response.content}")
-            raise Exception(f"Error, could not get stock history: {response.content}")
-
-        all_stock_history.extend(data["stock_history"])
-
-        if (
-            "metadata" not in data
-            or "next_page" not in data["metadata"]
-            or data["metadata"]["next_page"] is None
-        ):
-            break
-
-        # Get the next page's url from the current page of data.
-        url = data["metadata"]["next_page"]
-
-        time.sleep(1)
+    all_stock_history = _get_paginated(
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/inventory/{inventory_id}/history",
+        headers=_get_ezo_headers(),
+        results_key="stock_history",
+        context="Inventory History Return",
+    )
 
     return [StockHistoryItem(**x) for x in all_stock_history]
 
 
-@Decorators.check_env_vars
 def inventory_reservations_return(inventory_id: int) -> list[Reservation]:
     """
     Returns all reservations on an inventory item.
@@ -626,40 +536,16 @@ def inventory_reservations_return(inventory_id: int) -> list[Reservation]:
     :return: A list of reservations for the specified inventory item
     :rtype: list[Reservation]
     """
-
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/inventory/{inventory_id}/reservations"
-
-    all_reservations = []
-
-    while True:
-        response = http_get(
-            url=url,
-            title="Inventory Reservations Return",
-        )
-        data = response.json()
-
-        if "reservations" not in data:
-            logger.error(f"Error, could not get reservations: {response.content}")
-            raise Exception(f"Error, could not get reservations: {response.content}")
-
-        all_reservations.extend(data["reservations"])
-
-        if (
-            "metadata" not in data
-            or "next_page" not in data["metadata"]
-            or data["metadata"]["next_page"] is None
-        ):
-            break
-
-        # Get the next page's url from the current page of data.
-        url = data["metadata"]["next_page"]
-
-        time.sleep(1)
+    all_reservations = _get_paginated(
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/inventory/{inventory_id}/reservations",
+        headers=_get_ezo_headers(),
+        results_key="reservations",
+        context="Inventory Reservations Return",
+    )
 
     return [Reservation(**x) for x in all_reservations]
 
 
-@Decorators.check_env_vars
 def inventory_link_to_project(
     project_id: int, inventory_ids: list[int]
 ) -> ResponseMessages | None:
@@ -673,21 +559,24 @@ def inventory_link_to_project(
     :return: Response messages if the linking was successful, or None if it failed
     :rtype: ResponseMessages | None
     """
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/inventory/link_to_project"
-    response = http_post(
-        url=url,
-        payload={"project_id": project_id, "ids": inventory_ids},
-        title="Inventory Link to Project",
+    response = _http_request(
+        method="POST",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/inventory/link_to_project",
+        json={"project_id": project_id, "ids": inventory_ids},
+        context="Inventory Link to Project",
     )
 
-    if response.status_code == 200 and "messages" in response.json():
-        return ResponseMessages(**response.json()["messages"])
-    else:
-        return None
+    return _parse_response(
+        response=response,
+        key="messages",
+        model=ResponseMessages,
+        success_status_codes=[200],
+    )
 
 
-@Decorators.check_env_vars
-def inventory_unlink_from_project(project_id: int, inventory_ids: list[int]):
+def inventory_unlink_from_project(
+    project_id: int, inventory_ids: list[int]
+) -> ResponseMessages | None:
     """
     Unlink one or more inventory items from a project.
 
@@ -698,14 +587,16 @@ def inventory_unlink_from_project(project_id: int, inventory_ids: list[int]):
     :return: Response messages if the unlinking was successful, or None if it failed
     :rtype: ResponseMessages | None
     """
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/inventory/unlink_from_project"
-    response = http_post(
-        url=url,
-        payload={"project_id": project_id, "ids": inventory_ids},
-        title="Inventory UnLink from Project",
+    response = _http_request(
+        method="POST",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/inventory/unlink_from_project",
+        json={"project_id": project_id, "ids": inventory_ids},
+        context="Inventory UnLink from Project",
     )
 
-    if response.status_code == 200 and "messages" in response.json(0):
-        return ResponseMessages(**response.json()["messages"])
-    else:
-        return None
+    return _parse_response(
+        response=response,
+        key="messages",
+        model=ResponseMessages,
+        success_status_codes=[200],
+    )

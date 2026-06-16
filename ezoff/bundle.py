@@ -1,15 +1,21 @@
+"""
+This module contains functions for interacting with bundles in EZOfficeInventory.
+"""
+
 import logging
 import os
-import time
 
-from ezoff._auth import Decorators
-from ezoff._helpers import http_post, http_get
+from ezoff._helpers import (
+    _get_ezo_headers,
+    _get_paginated,
+    _http_request,
+    _parse_response,
+)
 from ezoff.data_model import Bundle
 
 logger = logging.getLogger(__name__)
 
 
-@Decorators.check_env_vars
 def bundle_create(
     name: str,
     description: str,
@@ -41,16 +47,21 @@ def bundle_create(
     """
     params = {k: v for k, v in locals().items() if v is not None}
 
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/bundles"
-    response = http_post(url=url, payload={"bundle": params}, title="Bundle Create")
+    response = _http_request(
+        method="POST",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/bundles",
+        json={"bundle": params},
+        context="Bundle Create",
+    )
 
-    if response.status_code == 200 and "bundle" in response.json():
-        return Bundle(**response.json()["bundle"])
-    else:
-        return None
+    return _parse_response(
+        response=response,
+        key="bundle",
+        model=Bundle,
+        success_status_codes=[200],
+    )
 
 
-@Decorators.check_env_vars
 def bundle_return(bundle_id: int) -> Bundle | None:
     """
     Returns a particular bundle.
@@ -60,16 +71,20 @@ def bundle_return(bundle_id: int) -> Bundle | None:
     :return: The Bundle object if found, else None.
     :rtype: Bundle | None
     """
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/bundles/{bundle_id}"
-    response = http_get(url=url)
+    response = _http_request(
+        method="GET",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/bundles/{bundle_id}",
+        context="Bundle Return",
+    )
 
-    if response.status_code == 200 and "bundle" in response.json():
-        return Bundle(**response.json()["bundle"])
-    else:
-        return None
+    return _parse_response(
+        response=response,
+        key="bundle",
+        model=Bundle,
+        success_status_codes=[200],
+    )
 
 
-@Decorators.check_env_vars
 def bundles_return(filter: dict | None = None) -> list[Bundle]:
     """
     Returns all bundles.
@@ -79,38 +94,21 @@ def bundles_return(filter: dict | None = None) -> list[Bundle]:
     :return: A list of Bundle objects.
     :rtype: list[Bundle]
     """
+    query_params = {}
     if filter:
-        for field in filter:
-            if field not in Bundle.model_fields:
-                raise ValueError(f"'{field}' is not a valid field for a bundle.")
-        filter = {"filters": filter}
-    else:
-        filter = None
+        invalid = filter.keys() - Bundle.model_fields.keys()
+        if invalid:
+            raise ValueError(f"Invalid fields: {', '.join(invalid)}")
+        query_params = {f"filters[{k}]": v for k, v in filter.items()}
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/bundles"
+    if query_params:
+        url += "?" + "&".join(f"{k}={v}" for k, v in query_params.items())
 
-    all_bundles = []
-
-    while True:
-        response = http_get(url=url, payload=filter, title="Bundles Return")
-        data = response.json()
-
-        if "bundles" not in data:
-            logger.error(f"Error, could not get bundles: {response.content}")
-            raise Exception(f"Error, could not get bundles: {response.content}")
-
-        all_bundles.extend(data["bundles"])
-
-        if (
-            "metadata" not in data
-            or "next_page" not in data["metadata"]
-            or data["metadata"]["next_page"] is None
-        ):
-            break
-
-        # Get the next page's url from the current page of data.
-        url = data["metadata"]["next_page"]
-
-        time.sleep(1)
+    all_bundles = _get_paginated(
+        url=url,
+        headers=_get_ezo_headers(),
+        results_key="bundles",
+    )
 
     return [Bundle(**x) for x in all_bundles]

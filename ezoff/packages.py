@@ -1,16 +1,22 @@
+"""
+Covers package-related endpoints.
+"""
+
 import logging
 import os
-import time
 from datetime import datetime
 
-from ezoff._auth import Decorators
-from ezoff._helpers import http_post, http_put, http_get
+from ezoff._helpers import (
+    _get_ezo_headers,
+    _get_paginated,
+    _http_request,
+    _parse_response,
+)
 from ezoff.data_model import Package, ResponseMessages
 
 logger = logging.getLogger(__name__)
 
 
-@Decorators.check_env_vars
 def package_create(
     name: str,
     description: str | None = None,
@@ -33,16 +39,18 @@ def package_create(
     """
     params = {k: v for k, v in locals().items() if v is not None}
 
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/packages"
-    response = http_post(url=url, payload={"package": params}, title="Package Create")
+    response = _http_request(
+        method="POST",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/packages",
+        json={"package": params},
+        context="Package Create",
+    )
 
-    if response.status_code == 200 and "package" in response.json():
-        return Package(**response.json()["package"])
-    else:
-        return None
+    return _parse_response(
+        response=response, key="package", model=Package, success_status_codes=[200]
+    )
 
 
-@Decorators.check_env_vars
 def package_return(package_id: int) -> Package | None:
     """
     Returns a particular package.
@@ -51,16 +59,17 @@ def package_return(package_id: int) -> Package | None:
     :return: The package if found, else None
     :rtype: Package | None
     """
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/packages/{package_id}"
-    response = http_get(url=url, title="Package Return")
+    response = _http_request(
+        method="GET",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/packages/{package_id}",
+        context="Package Return",
+    )
 
-    if response.status_code == 200 and "package" in response.json():
-        return Package(**response.json()["package"])
-    else:
-        return None
+    return _parse_response(
+        response=response, key="package", model=Package, success_status_codes=[200]
+    )
 
 
-@Decorators.check_env_vars
 def packages_return() -> list[Package]:
     """
     Returns all packages.
@@ -68,36 +77,16 @@ def packages_return() -> list[Package]:
     :return: List of all packages
     :rtype: list[Package]
     """
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/packages"
-
-    all_packages = []
-
-    while True:
-        response = http_get(url=url, title="Packages Return")
-        data = response.json()
-
-        if "packages" not in data:
-            logger.error(f"Error, could not get packages: {response.content}")
-            raise Exception(f"Error, could not get packages: {response.content}")
-
-        all_packages.extend(data["packages"])
-
-        if (
-            "metadata" not in data
-            or "next_page" not in data["metadata"]
-            or data["metadata"]["next_page"] is None
-        ):
-            break
-
-        # Get the next page's url from the current page of data.
-        url = data["metadata"]["next_page"]
-
-        time.sleep(1)
+    all_packages = _get_paginated(
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/packages",
+        headers=_get_ezo_headers(),
+        results_key="packages",
+        context="Packages Return",
+    )
 
     return [Package(**x) for x in all_packages]
 
 
-@Decorators.check_env_vars
 def package_checkin(
     package_id: int, comments: str, location_id: int, checkin_date: datetime
 ) -> ResponseMessages | None:
@@ -115,20 +104,22 @@ def package_checkin(
     :return: Response messages if successful, else None
     :rtype: ResponseMessages | None
     """
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/packages/{package_id}/checkin"
-    response = http_put(
-        url=url,
-        payload={
+    response = _http_request(
+        method="PUT",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/packages/{package_id}/checkin",
+        json={
             "package": {
                 "comments": comments,
                 "location_id": location_id,
                 "checkin_date": checkin_date,
             }
         },
-        title="Package Checkin",
+        context="Package Checkin",
     )
 
-    if response.status_code == 200 and "messages" in response.json():
-        return ResponseMessages(**response.json()["messages"])
-    else:
-        return None
+    return _parse_response(
+        response=response,
+        key="messages",
+        model=ResponseMessages,
+        success_status_codes=[200],
+    )
