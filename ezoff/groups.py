@@ -1,20 +1,24 @@
 """
-Covers everything related to groups and subgroups in EZOfficeInventory
+Covers everything related to groups and subgroups in EZOfficeInventory.
+
+TODO: Add group depreciation rates
 """
 
 import logging
 import os
-import time
 from typing import Literal
 
-from ezoff._auth import Decorators
-from ezoff._helpers import http_post, http_get, http_patch, http_delete
+from ezoff._helpers import (
+    _get_ezo_headers,
+    _get_paginated,
+    _http_request,
+    _parse_response,
+)
 from ezoff.data_model import DepreciationRate, Group, ResponseMessages
 
 logger = logging.getLogger(__name__)
 
 
-@Decorators.check_env_vars
 def group_create(
     name: str,
     description: str | None = None,
@@ -58,20 +62,23 @@ def group_create(
     :return: The created group, or None if the creation failed
     :rtype: Group or None
     """
-
     params = {k: v for k, v in locals().items() if v is not None}
 
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/groups"
-    payload = {"group": params}
-    response = http_post(url=url, payload=payload, title="Group Create")
+    response = _http_request(
+        method="POST",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/groups",
+        json={"group": params},
+        context="Group Create",
+    )
 
-    if response.status_code == 200 and "group" in response.json(0):
-        return Group(**response.json()["group"])
-    else:
-        return None
+    return _parse_response(
+        response=response,
+        key="group",
+        model=Group,
+        success_status_codes=[200],
+    )
 
 
-@Decorators.check_env_vars
 def group_return(group_id: int) -> Group | None:
     """
     Returns a particular group.
@@ -81,16 +88,20 @@ def group_return(group_id: int) -> Group | None:
     :return: The group with the specified ID, or None if not found
     :rtype: Group or None
     """
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/groups/{group_id}"
-    response = http_get(url=url, title="Group Return")
+    response = _http_request(
+        method="GET",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/groups/{group_id}",
+        context="Group Return",
+    )
 
-    if response.status_code == 200 and "group" in response.json():
-        return Group(**response.json()["group"])
-    else:
-        return None
+    return _parse_response(
+        response=response,
+        key="group",
+        model=Group,
+        success_status_codes=[200],
+    )
 
 
-@Decorators.check_env_vars
 def groups_return() -> list[Group]:
     """
     Returns all groups.
@@ -98,37 +109,16 @@ def groups_return() -> list[Group]:
     :return: A list of all groups
     :rtype: list of Group
     """
-
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/groups"
-
-    all_groups = []
-
-    while True:
-        response = http_get(url=url, title="Groups Return")
-        data = response.json()
-
-        if "groups" not in data:
-            logger.error(f"Error, could not get groups: {response.content}")
-            raise Exception(f"Error, could not get groups: {response.content}")
-
-        all_groups.extend(data["groups"])
-
-        if (
-            "metadata" not in data
-            or "next_page" not in data["metadata"]
-            or data["metadata"]["next_page"] is None
-        ):
-            break
-
-        # Get the next page's url from the current page of data.
-        url = data["metadata"]["next_page"]
-
-        time.sleep(1)
+    all_groups = _get_paginated(
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/groups",
+        headers=_get_ezo_headers(),
+        results_key="groups",
+        context="Groups Return",
+    )
 
     return [Group(**x) for x in all_groups]
 
 
-@Decorators.check_env_vars
 def group_update(group_id: int, update_data: dict) -> Group | None:
     """
     Updates a particular group.
@@ -140,22 +130,25 @@ def group_update(group_id: int, update_data: dict) -> Group | None:
     :return: The updated group, or None if the update failed
     :rtype: Group | None
     """
-
     for field in update_data:
         if field not in Group.model_fields:
             raise ValueError(f"'{field}' is not a valid field for a group.")
 
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/groups/{group_id}"
-    payload = {"group": update_data}
-    response = http_patch(url=url, payload=payload, title="Group Update")
+    response = _http_request(
+        method="PATCH",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/groups/{group_id}",
+        json={"group": update_data},
+        context="Group Update",
+    )
 
-    if response.status_code == 200 and "group" in response.json():
-        return Group(**response.json()["group"])
-    else:
-        return None
+    return _parse_response(
+        response=response,
+        key="group",
+        model=Group,
+        success_status_codes=[200],
+    )
 
 
-@Decorators.check_env_vars
 def group_delete(group_id: int) -> ResponseMessages | None:
     """
     Deletes a particular group.
@@ -165,17 +158,20 @@ def group_delete(group_id: int) -> ResponseMessages | None:
     :return: ResponseMessages object if there are any messages, else None.
     :rtype: ResponseMessages | None
     """
+    response = _http_request(
+        method="DELETE",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/groups/{group_id}",
+        context="Group Delete",
+    )
 
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/groups/{group_id}"
-    response = http_delete(url=url, title="Group Delete")
+    return _parse_response(
+        response=response,
+        key="messages",
+        model=ResponseMessages,
+        success_status_codes=[200],
+    )
 
-    if response.status_code == 200 and "messages" in response.json():
-        return ResponseMessages(**response.json()["messages"])
-    else:
-        return None
 
-
-@Decorators.check_env_vars
 def subgroup_create(
     parent_id: int,
     name: str,
@@ -222,19 +218,23 @@ def subgroup_create(
     :return: The created subgroup, or None if the creation failed
     :rtype: Group | None
     """
-
     params = {k: v for k, v in locals().items() if v is not None}
 
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/groups/{parent_id}/sub_groups"
-    response = http_post(url=url, payload=params, title="SubGroup Create")
+    response = _http_request(
+        method="POST",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/groups/{parent_id}/sub_groups",
+        json={"sub_group": params},
+        context="SubGroup Create",
+    )
 
-    if response.status_code == 200 and "sub_group" in response.json():
-        return Group(**response.json()["sub_group"])
-    else:
-        return None
+    return _parse_response(
+        response=response,
+        key="sub_group",
+        model=Group,
+        success_status_codes=[200],
+    )
 
 
-@Decorators.check_env_vars
 def subgroup_return(group_id: int, subgroup_id: int) -> Group | None:
     """
     Returns a particular subgroup.
@@ -246,17 +246,20 @@ def subgroup_return(group_id: int, subgroup_id: int) -> Group | None:
     :return: The subgroup with the specified ID, or None if not found
     :rtype: Group | None
     """
+    response = _http_request(
+        method="GET",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/groups/{group_id}/sub_groups/{subgroup_id}",
+        context="SubGroup Return",
+    )
 
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/groups/{group_id}/sub_groups/{subgroup_id}"
-    response = http_get(url=url, title="SubGroup Return")
+    return _parse_response(
+        response=response,
+        key="sub_group",
+        model=Group,
+        success_status_codes=[200],
+    )
 
-    if response.status_code == 200 and "sub_group" in response.json():
-        return Group(**response.json()["sub_group"])
-    else:
-        return None
 
-
-@Decorators.check_env_vars
 def subgroups_return(group_id: int) -> list[Group]:
     """
     Get all subgroups under a particular group.
@@ -266,37 +269,16 @@ def subgroups_return(group_id: int) -> list[Group]:
     :return: A list of all subgroups under the specified group
     :rtype: list[Group]
     """
-
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/groups/{group_id}"
-
-    all_subgroups = []
-
-    while True:
-        response = http_get(url=url, title="SubGroups Return")
-        data = response.json()
-
-        if "groups" not in data:
-            logger.error(f"Error, could not get subgroups: {response.content}")
-            raise Exception(f"Error, could not get subgroups: {response.content}")
-
-        all_subgroups.extend(data["sub_groups"])
-
-        if (
-            "metadata" not in data
-            or "next_page" not in data["metadata"]
-            or data["metadata"]["next_page"] is None
-        ):
-            break
-
-        # Get the next page's url from the current page of data.
-        url = data["metadata"]["next_page"]
-
-        time.sleep(1)
+    all_subgroups = _get_paginated(
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/groups/{group_id}",
+        headers=_get_ezo_headers(),
+        results_key="sub_groups",
+        context="SubGroups Return",
+    )
 
     return [Group(**x) for x in all_subgroups]
 
 
-@Decorators.check_env_vars
 def subgroup_update(group_id: int, subgroup_id: int, update_data: dict) -> Group | None:
     """
     Updates a particular subgroup.
@@ -314,16 +296,21 @@ def subgroup_update(group_id: int, subgroup_id: int, update_data: dict) -> Group
         if field not in Group.model_fields:
             raise ValueError(f"'{field}' is not a valid field for a group.")
 
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/groups/{group_id}/sub_groups/{subgroup_id}"
-    response = http_patch(url=url, payload=update_data, title="SubGroup Update")
+    response = _http_request(
+        method="PATCH",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/groups/{group_id}/sub_groups/{subgroup_id}",
+        json={"sub_group": update_data},
+        context="SubGroup Update",
+    )
 
-    if response.status_code == 200 and "sub_group" in response.json():
-        return Group(**response.json()["sub_group"])
-    else:
-        return None
+    return _parse_response(
+        response=response,
+        key="sub_group",
+        model=Group,
+        success_status_codes=[200],
+    )
 
 
-@Decorators.check_env_vars
 def subgroup_delete(group_id: int, subgroup_id: int) -> ResponseMessages | None:
     """
     Deletes a particular subgroup.
@@ -335,14 +322,15 @@ def subgroup_delete(group_id: int, subgroup_id: int) -> ResponseMessages | None:
     :return: ResponseMessages object if there are any messages, else None.
     :rtype: ResponseMessages | None
     """
+    response = _http_request(
+        method="DELETE",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/groups/{group_id}/sub_groups/{subgroup_id}",
+        context="SubGroup Delete",
+    )
 
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/groups/{group_id}/sub_groups/{subgroup_id}"
-    response = http_delete(url=url, title="SubGroup Delete")
-
-    if response.status_code == 200 and "messages" in response.json():
-        return ResponseMessages(**response.json()["messages"])
-    else:
-        return None
-
-
-# TODO Add group depreciation rates
+    return _parse_response(
+        response=response,
+        key="messages",
+        model=ResponseMessages,
+        success_status_codes=[200],
+    )

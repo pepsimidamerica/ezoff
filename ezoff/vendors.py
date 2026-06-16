@@ -1,15 +1,21 @@
+"""
+Covers vendor-related endpoints.
+"""
+
 import logging
 import os
-import time
 
-from ezoff._auth import Decorators
-from ezoff._helpers import http_post, http_get, http_patch
+from ezoff._helpers import (
+    _get_ezo_headers,
+    _get_paginated,
+    _http_request,
+    _parse_response,
+)
 from ezoff.data_model import Vendor
 
 logger = logging.getLogger(__name__)
 
 
-@Decorators.check_env_vars
 def vendor_create(
     name: str,
     address: str | None = None,
@@ -51,16 +57,21 @@ def vendor_create(
     """
     params = {k: v for k, v in locals().items() if v is not None}
 
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/vendors"
-    response = http_post(url=url, payload={"vendor": params}, title="Vendor Create")
+    response = _http_request(
+        method="POST",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/vendors",
+        json={"vendor": params},
+        context="Vendor Create",
+    )
 
-    if response.status_code == 200 and "vendor" in response.json():
-        return Vendor(**response.json()["vendor"])
-    else:
-        return None
+    return _parse_response(
+        response=response,
+        key="vendor",
+        model=Vendor,
+        success_status_codes=[200],
+    )
 
 
-@Decorators.check_env_vars
 def vendor_return(vendor_id: int) -> Vendor | None:
     """
     Returns a particular vendor.
@@ -70,16 +81,20 @@ def vendor_return(vendor_id: int) -> Vendor | None:
     :return: The vendor object if found, else None.
     :rtype: Vendor | None
     """
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/vendors/{vendor_id}"
-    response = http_get(url=url, title="Vendor Return")
+    response = _http_request(
+        method="GET",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/vendors/{vendor_id}",
+        context="Vendor Return",
+    )
 
-    if response.status_code == 200 and "vendor" in response.json():
-        return Vendor(**response.json()["vendor"])
-    else:
-        return None
+    return _parse_response(
+        response=response,
+        key="vendor",
+        model=Vendor,
+        success_status_codes=[200],
+    )
 
 
-@Decorators.check_env_vars
 def vendors_return() -> list[Vendor]:
     """
     Returns all vendors.
@@ -87,36 +102,16 @@ def vendors_return() -> list[Vendor]:
     :return: List of all vendor objects.
     :rtype: list[Vendor]
     """
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/vendors"
-
-    all_vendors = []
-
-    while True:
-        response = http_get(url=url, title="Vendors Return")
-        data = response.json()
-
-        if "vendors" not in data:
-            logger.error(f"Error, could not get vendors: {response.content}")
-            raise Exception(f"Error, could not get vendors: {response.content}")
-
-        all_vendors.extend(data["vendors"])
-
-        if (
-            "metadata" not in data
-            or "next_page" not in data["metadata"]
-            or data["metadata"]["next_page"] is None
-        ):
-            break
-
-        # Get the next page's url from the current page of data.
-        url = data["metadata"]["next_page"]
-
-        time.sleep(1)
+    all_vendors = _get_paginated(
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/vendors",
+        headers=_get_ezo_headers(),
+        results_key="vendors",
+        context="Vendors Return",
+    )
 
     return [Vendor(**x) for x in all_vendors]
 
 
-@Decorators.check_env_vars
 def vendor_update(vendor_id: int, update_data: dict) -> Vendor | None:
     """
     Updates a particular vendor.
@@ -132,12 +127,16 @@ def vendor_update(vendor_id: int, update_data: dict) -> Vendor | None:
         if field not in Vendor.model_fields:
             raise ValueError(f"'{field}' is not a valid field for a vendor.")
 
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/vendors/{vendor_id}"
-    response = http_patch(
-        url=url, payload={"vendor": update_data}, title="Vendor Update"
+    response = _http_request(
+        method="PATCH",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/vendors/{vendor_id}",
+        json={"vendor": update_data},
+        context="Vendor Update",
     )
 
-    if response.status_code == 200 and "vendor" in response.json():
-        return Vendor(**response.json()["vendor"])
-    else:
-        return None
+    return _parse_response(
+        response=response,
+        key="vendor",
+        model=Vendor,
+        success_status_codes=[200],
+    )

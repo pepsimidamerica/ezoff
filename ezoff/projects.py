@@ -1,21 +1,25 @@
 """
-Projects in EZOffice
+Projects in EZOffice.
+
+TODO: project_linked_items_return (API seems to just 500 internal server error)
 """
 
 import logging
 import os
-import time
 from datetime import date
 from typing import Literal
 
-from ezoff._auth import Decorators
-from ezoff._helpers import http_post, http_get, http_patch
+from ezoff._helpers import (
+    _get_ezo_headers,
+    _get_paginated,
+    _http_request,
+    _parse_response,
+)
 from ezoff.data_model import Project
 
 logger = logging.getLogger(__name__)
 
 
-@Decorators.check_env_vars
 def project_create(
     name: str,
     description: str | None = None,
@@ -56,19 +60,23 @@ def project_create(
     :return: The created project or None if creation failed.
     :rtype: Project | None
     """
-
     params = {k: v for k, v in locals().items() if v is not None}
 
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/projects"
-    response = http_post(url=url, payload={"project": params}, title="Project Create")
+    response = _http_request(
+        method="POST",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/projects",
+        json={"project": params},
+        context="Project Create",
+    )
 
-    if response.status_code == 200 and "project" in response.json():
-        return Project(**response.json()["project"])
-    else:
-        return None
+    return _parse_response(
+        response,
+        "project",
+        Project,
+        success_status_codes=[200],
+    )
 
 
-@Decorators.check_env_vars
 def project_return(project_id: int) -> Project | None:
     """
     Returns a particular project.
@@ -78,16 +86,20 @@ def project_return(project_id: int) -> Project | None:
     :return: The requested project or None if not found.
     :rtype: Project | None
     """
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/projects/{project_id}"
-    response = http_get(url=url, title="Project Return")
+    response = _http_request(
+        method="GET",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/projects/{project_id}",
+        context="Project Return",
+    )
 
-    if response.status_code == 200 and "project" in response.json():
-        return Project(**response.json()["project"])
-    else:
-        return None
+    return _parse_response(
+        response=response,
+        key="project",
+        model=Project,
+        success_status_codes=[200],
+    )
 
 
-@Decorators.check_env_vars
 def projects_return() -> list[Project]:
     """
     Returns all projects.
@@ -95,46 +107,16 @@ def projects_return() -> list[Project]:
     :return: A list of all projects.
     :rtype: list[Project]
     """
-
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/projects"
-
-    all_projects = []
-
-    while True:
-        response = http_get(url=url, title="Projects Return")
-        data = response.json()
-
-        if "projects" not in data:
-            logger.error(f"Error, could not get projects: {response.content}")
-            raise Exception(f"Error, could not get projects: {response.content}")
-
-        all_projects.extend(data["projects"])
-
-        if (
-            "metadata" not in data
-            or "next_page" not in data["metadata"]
-            or data["metadata"]["next_page"] is None
-        ):
-            break
-
-        # Get the next page's url from the current page of data.
-        url = data["metadata"]["next_page"]
-
-        time.sleep(1)
+    all_projects = _get_paginated(
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/projects",
+        headers=_get_ezo_headers(),
+        results_key="projects",
+        context="Projects Return",
+    )
 
     return [Project(**x) for x in all_projects]
 
 
-# @Decorators.check_env_vars
-# def project_linked_items_return(project_id: int):
-#     """
-#     Returns objects for a given module linked to a project.
-#     # TODO API endpoint seems to just 500 internal server error
-#     # in my testing in Postman.
-#     """
-
-
-@Decorators.check_env_vars
 def project_mark_complete(project_id: int) -> Project | None:
     """
     Mark a project as complete.
@@ -144,17 +126,20 @@ def project_mark_complete(project_id: int) -> Project | None:
     :return: The updated project or None if marking complete failed.
     :rtype: Project | None
     """
+    response = _http_request(
+        method="PATCH",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/projects/{project_id}/mark_complete",
+        context="Project Mark Complete",
+    )
 
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/projects/{project_id}/mark_complete"
-    response = http_patch(url=url, title="Project Mark Complete")
+    return _parse_response(
+        response=response,
+        key="project",
+        model=Project,
+        success_status_codes=[200],
+    )
 
-    if response.status_code == 200 and "project" in response.json():
-        return Project(**response.json()["project"])
-    else:
-        return None
 
-
-@Decorators.check_env_vars
 def project_mark_in_progress(project_id: int) -> Project | None:
     """
     Mark a project as in progress.
@@ -164,11 +149,15 @@ def project_mark_in_progress(project_id: int) -> Project | None:
     :return: The updated project or None if marking in progress failed.
     :rtype: Project | None
     """
+    response = _http_request(
+        method="PATCH",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/projects/{project_id}/mark_in_progress",
+        context="Project Mark In-Progress",
+    )
 
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/projects/{project_id}/mark_in_progress"
-    response = http_patch(url=url, title="Project Mark In-Progress")
-
-    if response.status_code == 200 and "project" in response.json():
-        return Project(**response.json()["project"])
-    else:
-        return None
+    return _parse_response(
+        response=response,
+        key="project",
+        model=Project,
+        success_status_codes=[200],
+    )

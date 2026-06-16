@@ -1,8 +1,11 @@
+"""
+Covers retire reason-related endpoints.
+"""
+
 import logging
 import os
-import time
 
-from ezoff._helpers import http_get
+from ezoff._helpers import _get_ezo_headers, _get_paginated
 from ezoff.data_model import RetireReason
 
 logger = logging.getLogger(__name__)
@@ -15,31 +18,11 @@ def retire_reasons_return() -> list[RetireReason]:
     :return: A list of all retire reasons.
     :rtype: list[RetireReason]
     """
-
-    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/retire_reasons"
-
-    all_retire_reasons = []
-
-    while True:
-        response = http_get(url=url, title="Retire Reasons Return")
-        data = response.json()
-
-        if "retire_reasons" not in data:
-            logger.error(f"Error, could not get retire reasons: {response.content}")
-            raise Exception(f"Error, could not get retire reasons: {response.content}")
-
-        all_retire_reasons.extend(data["retire_reasons"])
-
-        if (
-            "metadata" not in data
-            or "next_page" not in data["metadata"]
-            or data["metadata"]["next_page"] is None
-        ):
-            break
-
-        # Get the next page's url from the current page of data.
-        url = data["metadata"]["next_page"]
-
-        time.sleep(1)
+    all_retire_reasons = _get_paginated(
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/retire_reasons",
+        headers=_get_ezo_headers(),
+        results_key="retire_reasons",
+        context="Retire Reasons Return",
+    )
 
     return [RetireReason(**x) for x in all_retire_reasons]
