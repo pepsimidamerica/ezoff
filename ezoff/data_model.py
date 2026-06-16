@@ -263,7 +263,7 @@ class Location(BaseModel):
     apply_default_return_date_to_child_locations: Optional[bool] = Field(default=None)
     checkout_indefinitely: Optional[bool] = Field(default=None)
     city: Optional[str] = Field(default=None)
-    comments_count: int
+    comments_count: Optional[int] = Field(default=0)
     country: Optional[str] = Field(default="")
     created_at: Optional[datetime] = Field(default=None)
     custom_fields: Optional[list] = Field(default=[])
@@ -271,22 +271,22 @@ class Location(BaseModel):
     default_return_duration_unit: Optional[str] = Field(default=None)
     default_return_time: Optional[datetime] = Field(default=None)
     description: Optional[str] = Field(default=None)
-    documents_count: int
-    hidden_on_webstore: bool
+    documents_count: Optional[int] = Field(default=0)
+    hidden_on_webstore: Optional[bool] = Field(default=False)
     id: int
     identification_number: Optional[str] = Field(default=None)
     latitude: Optional[float] = Field(default=None)
     longitude: Optional[float] = Field(default=None)
     manual_coordinates_provided: Optional[bool] = Field(default=None)
-    name: str
+    name: Optional[str] = Field(default="")
     parent_id: Optional[int] = Field(default=None)
-    secure_code: str
+    secure_code: Optional[str] = Field(default="")
     state: Optional[str] = Field(default=None)
-    status: str
+    status: Optional[str] = Field(default="")
     street1: Optional[str] = Field(default=None)
     street2: Optional[str] = Field(default=None)
     updated_at: Optional[datetime] = Field(default=None)
-    visible_on_webstore: bool
+    visible_on_webstore: Optional[bool] = Field(default=False)
     zip_code: Optional[str] = Field(default=None)
 
     # Custom fields
