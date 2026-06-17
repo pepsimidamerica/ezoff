@@ -108,6 +108,7 @@ from .locations import (
     location_create,
     location_deactivate,
     location_return,
+    location_return_v1,
     location_update,
     locations_return,
 )
@@ -231,6 +232,7 @@ __all__ = [
     "location_create",
     "location_deactivate",
     "location_return",
+    "location_return_v1",
     "location_update",
     "LocationCache",
     "LocationClass",

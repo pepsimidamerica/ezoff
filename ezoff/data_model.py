@@ -281,6 +281,7 @@ class Location(BaseModel):
     name: Optional[str] = Field(default="")
     parent_id: Optional[int] = Field(default=None)
     secure_code: Optional[str] = Field(default="")
+    sequence_num: Optional[int] = Field(default=None)
     state: Optional[str] = Field(default=None)
     status: Optional[str] = Field(default="")
     street1: Optional[str] = Field(default=None)

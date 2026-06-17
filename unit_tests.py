@@ -45,6 +45,11 @@ def check_location_return():
     pprint(loc.model_dump())
 
 
+def check_location_v1_return():
+    loc = location_return_v1(location_id=13075)
+    pprint(loc.model_dump())
+
+
 def check_locations_return():
     locs = locations_return()
     print(f"Returned {len(locs)} locations.")
@@ -58,7 +63,7 @@ def check_work_order_return():
 
 def check_work_orders_return():
     filter = {
-        "reviewer_id": 1336290, # Dispatch
+        "reviewer_id": 1336290,  # Dispatch
         "state": ["in_progress", "not_started"],
     }
 
@@ -74,11 +79,15 @@ def check_work_order_force_complete():
 def check_work_order_update():
     # work_order_id = 35220
     # update_data = {"custom_fields": [{"id": 739, "value": "11 Marion"}]}
-    
+
     work_order_id = 36736
-    update_data = {'location_id': 160, 'custom_fields': [{'id': 739, 'value': '11 Marion'}]}
+    update_data = {
+        "location_id": 160,
+        "custom_fields": [{"id": 739, "value": "11 Marion"}],
+    }
 
     work_order_update(work_order_id=work_order_id, update_data=update_data)
+
 
 def check_work_order_routing_update():
     work_order_routing_update(
@@ -91,6 +100,7 @@ def check_work_order_routing_update():
         reviewer_id=244379,
     )
 
+
 # check_work_order_return()
 # check_work_orders_return()
 # check_checklist_return()
@@ -102,8 +112,9 @@ def check_work_order_routing_update():
 
 # check_locations_return()
 # check_location_return()
+check_location_v1_return()
 
 # check_work_order_force_complete()
-check_work_order_update()
+# check_work_order_update()
 
 # check_work_order_routing_update()

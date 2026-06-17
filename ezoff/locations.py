@@ -114,6 +114,25 @@ def location_return(location_id: int) -> Location | None:
     else:
         return None
 
+@Decorators.check_env_vars
+def location_return_v1(location_id: int) -> dict | None:
+    """
+    Returns a particular location.
+
+    :param location_id: The ID of the location to return
+    :type location_id: int
+    :return: The location with the specified ID, or None if not found
+    :rtype: Location | None
+    """
+
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/locations/{location_id}.api"
+    response = http_get(url=url, title="Location Return")
+
+    if response.status_code == 200:
+        return Location(**response.json())
+    else:
+        return None
+
 
 @Decorators.check_env_vars
 def locations_return(
