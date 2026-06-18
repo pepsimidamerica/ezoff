@@ -480,6 +480,7 @@ def asset_checkout(
             "custom_fields": custom_fields,
         }
     }
+    payload = {"asset": {k: v for k, v in payload["asset"].items() if v is not None}}
     response = http_put(url=url, payload=payload, title="Asset Checkout")
 
     if "messages" in response.json():

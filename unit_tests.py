@@ -4,6 +4,24 @@ from pprint import pprint
 from ezoff import *
 
 
+def check_asset_checkout():
+    asset = asset_checkout(
+        asset_id=19671,
+        user_id=1285712,
+        location_id=8326,
+        request_verification=False,
+        comments=f"Checked out by 279 #TEST.",
+    )
+    pprint(asset.model_dump())
+
+            # ezoff.asset_checkout(
+            #     asset_id=asset_id,
+            #     user_id=member_id,
+            #     location_id=location_id,
+            #     request_verification=False,
+            #     comments=f"Checked out by 279 #{id_279}.",
+            # )
+
 def check_asset_update_location():
     asset = asset_update_location(asset_id=19671, location_seq_num=160)
     pprint(asset.model_dump())
@@ -23,6 +41,7 @@ def check_assets_return():
 
     for asset in assets:
         pprint(asset.model_dump())
+
 
 
 def check_checklist_return():
@@ -113,8 +132,9 @@ def check_work_order_routing_update():
 # check_members_return()
 # check_members_return_v1()
 
+check_asset_checkout()
 # check_assets_return()
-check_asset_update_location()
+# check_asset_update_location()
 
 # check_locations_return()
 # check_location_return()
