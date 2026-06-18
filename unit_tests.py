@@ -14,13 +14,6 @@ def check_asset_checkout():
     )
     pprint(asset.model_dump())
 
-            # ezoff.asset_checkout(
-            #     asset_id=asset_id,
-            #     user_id=member_id,
-            #     location_id=location_id,
-            #     request_verification=False,
-            #     comments=f"Checked out by 279 #{id_279}.",
-            # )
 
 def check_asset_update_location():
     asset = asset_update_location(asset_id=19671, location_seq_num=160)
@@ -41,7 +34,6 @@ def check_assets_return():
 
     for asset in assets:
         pprint(asset.model_dump())
-
 
 
 def check_checklist_return():
@@ -77,6 +69,48 @@ def check_location_v1_return():
 def check_locations_return():
     locs = locations_return()
     print(f"Returned {len(locs)} locations.")
+
+
+def check_work_order_create():
+    asset_id = 19671
+    wo = {
+        "assigned_to_id": 1336290,
+        "custom_fields": [
+            {
+                "id": 728,
+                "name": "Estimated Service Minutes",
+                "type": "double",
+                "value": 60,
+            },
+            {
+                "id": 729,
+                "name": "Service Details",
+                "type": "string",
+                "value": "Asset ID: 144788 : Fountain - Replacement for K8 "
+                "- 60 Minutes",
+            },
+            {"id": 739, "name": "Depot", "type": "dropdown", "value": "11 Marion"},
+        ],
+        "description": "Customer is in need of a new fountain. Existing fountain has ",
+        "due_date": "2026-06-17T06:00:00Z",
+        "expected_start_date": "2026-06-17T07:00:00Z",
+        "location_id": 7,
+        "mark_items_unavailable": False,
+        "priority": "medium",
+        "reviewer_id": "1336290",
+        "title": "279 IS TEST",
+        "work_type_name": "Delivery",
+    }
+    res = work_order_create(**wo)
+    pprint(res.model_dump())
+    wo_id = res.id
+
+    components = [{"resource_id": asset_id, "resource_type": "Asset"}]
+    res = work_order_add_component(work_order_id=wo_id, components=components)
+    pprint(res.model_dump())
+
+    res = work_order_add_checklist(work_order_id=wo_id, checklist_id=1223, asset_id=asset_id)
+    pprint(res)
 
 
 def check_work_order_return():
@@ -125,14 +159,11 @@ def check_work_order_routing_update():
     )
 
 
-# check_work_order_return()
-# check_work_orders_return()
-# check_checklist_return()
 
 # check_members_return()
 # check_members_return_v1()
 
-check_asset_checkout()
+# check_asset_checkout()
 # check_assets_return()
 # check_asset_update_location()
 
@@ -140,7 +171,12 @@ check_asset_checkout()
 # check_location_return()
 # check_location_v1_return()
 
+
+check_work_order_create()
+
+# check_work_order_return()
+# check_work_orders_return()
+# check_checklist_return()
 # check_work_order_force_complete()
 # check_work_order_update()
-
 # check_work_order_routing_update()

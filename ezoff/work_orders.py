@@ -27,7 +27,6 @@ logger = logging.getLogger(__name__)
 @Decorators.check_env_vars
 def work_order_create(
     title: str,
-    state: Literal["request"],
     priority: Literal["High", "Medium", "Low"],
     description: str | None = None,
     created_by_id: int | None = None,
@@ -51,6 +50,8 @@ def work_order_create(
     recurrence_based_on_completion: bool | None = None,
     recurrence_based_on_interval: bool | None = None,
     custom_fields: list[dict] | None = None,
+    state: Literal["request"] | None = None,
+    associated_assets: dict | None = None,
 ) -> WorkOrder | None:
     """
     Creates a work order.
