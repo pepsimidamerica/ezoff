@@ -360,6 +360,18 @@ def asset_update(asset_id: int, update_data: dict) -> Asset | None:
 
 
 @Decorators.check_env_vars
+def asset_update_location(asset_id: int, location_seq_num: int) -> Asset | None:
+    url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/assets/{asset_id}/update_location"
+    payload = {"asset": {"location_id": location_seq_num}}
+    response = http_patch(url=url, payload=payload, title="Asset Update Location")
+
+    if response.status_code == 200 and "asset" in response.json():
+        return Asset(**response.json()["asset"])
+    else:
+        return None
+
+
+@Decorators.check_env_vars
 def asset_checkin(
     asset_id: int,
     location_id: int,

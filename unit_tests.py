@@ -4,6 +4,11 @@ from pprint import pprint
 from ezoff import *
 
 
+def check_asset_update_location():
+    asset = asset_update_location(asset_id=19671, location_seq_num=160)
+    pprint(asset.model_dump())
+
+
 def check_asset_return():
     asset = asset_return(asset_id=88888)
     pprint(asset.model_dump())
@@ -109,10 +114,11 @@ def check_work_order_routing_update():
 # check_members_return_v1()
 
 # check_assets_return()
+check_asset_update_location()
 
 # check_locations_return()
 # check_location_return()
-check_location_v1_return()
+# check_location_v1_return()
 
 # check_work_order_force_complete()
 # check_work_order_update()
