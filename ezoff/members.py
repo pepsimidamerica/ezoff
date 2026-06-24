@@ -144,7 +144,7 @@ def member_return(member_id: int) -> Member | None:
         "Accept-Encoding": "gzip, deflate, br",
         "Connection": "keep-alive",
     }
-    response = http_post(url=url, headers=headers, title="Member Return")
+    response = http_get(url=url, headers=headers, title="Member Return")
 
     if response.status_code == 200 and "member" in response.json():
         return Member(**response.json()["member"])
