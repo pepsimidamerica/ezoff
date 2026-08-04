@@ -6,7 +6,7 @@ from datetime import date, datetime
 from typing import Any, Literal, Optional
 
 from ezoff.enums import AssetClass, CustomFieldID, LocationClass, ResourceType
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, computed_field
 
 
 class ResponseMessages(BaseModel):
@@ -296,6 +296,41 @@ class Location(BaseModel):
     location_class: Optional[LocationClass] = Field(default=LocationClass.NONE)
     tax_jurisdiction: Optional[str] = Field(default=None)
 
+    @computed_field
+    @property
+    def address(self) -> str:
+        addr = []
+
+        if self.street2 is not None and self.street2 != "":
+            addr.append(f"{self.street1}")
+            addr.append(f"{self.street2},")
+        else:
+            addr.append(f"{self.street1},")
+
+        addr.append(f"{self.city},")
+        addr.append(f"{self.state}")
+        addr.append(f"{self.zip_code},")
+        addr.append('USA')
+        return " ".join(addr)
+
+    @field_validator('description', 'street1', 'city', 'zip_code')
+    @classmethod
+    def convert_to_title_case(cls, v: str) -> str:
+        if v is None:
+            return v
+        return v.strip().title().replace(".", "").replace(" Road", " Rd").replace(" Street", " St")
+        # # Pydantic has already confirmed `v` is a string
+        # if not v.islower():
+        #     raise ValueError('Username must be completely lowercase')
+        # return v
+
+    @field_validator('state')
+    @classmethod
+    def convert_to_upper_case(cls, v: str) -> str:
+        if v is None:
+            return v        
+        return v.upper()
+
     def model_post_init(self, __context: Any) -> None:
         """
         Parse custom fields into specific model attributes.
@@ -334,7 +369,6 @@ class Location(BaseModel):
             # Clear out custom field list, to save space (if enabled).
             if self._clear_custom_fields:
                 self.custom_fields = None
-
 
 class Member(BaseModel):
     """
