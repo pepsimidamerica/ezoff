@@ -120,7 +120,7 @@ _basic_retry = retry(
 def _check_env_vars() -> None:
     """
     Raises an exception if required env vars have not been set before
-    a quest to EZO is made.
+    a request to EZO is made.
     """
     if "EZO_SUBDOMAIN" not in os.environ:
         raise Exception("EZO_SUBDOMAIN not found in environment variables.")
@@ -180,23 +180,6 @@ def _parse_response(
         return model(**response.json()[key])
 
     return None
-
-
-# def create_query_params_from_filter(
-#     filter: dict | None = None,
-#     valid_keys: list[str] | None = None,
-# ) -> str:
-#     """
-#     EZOffice GET endpoints accept a number of parameters. We accept a general
-#     filter dictionary that the user can use to filter the results. We first check
-#     that the filters they have provided are valid. We then convert them into the format
-#     EZOffice expects and return them as a query string that can be appended to the base URL.
-
-#     {"status": "active"} -> "?filters[status]=active"
-#     {} or None -> ""
-#     {"invalid_key": } -> ""
-#     """
-#     query_params = {}
 
 
 @_basic_retry
