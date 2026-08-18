@@ -120,6 +120,7 @@ def location_return(location_id: int) -> Location | None:
         success_status_codes=[200],
     )
 
+
 @Decorators.check_env_vars
 def location_return_v1(location_id: int) -> dict | None:
     """
