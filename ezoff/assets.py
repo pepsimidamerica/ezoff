@@ -18,6 +18,7 @@ from ezoff._helpers import (
     _http_request,
     _parse_response,
 )
+from ezoff._resource import AsyncResource, Resource
 from ezoff.data_model import (
     Asset,
     AssetHistoryItem,
@@ -27,6 +28,28 @@ from ezoff.data_model import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+class AssetResource(Resource[Asset]):
+    """
+    Synchronous collection resource for assets.
+    """
+
+    path = "/api/v2/assets"
+    model = Asset
+    results_key = "assets"
+    resource_key = "asset"
+
+
+class AsyncAssetResource(AsyncResource[Asset]):
+    """
+    Asynchronous collection resource for assets.
+    """
+
+    path = "/api/v2/assets"
+    model = Asset
+    results_key = "assets"
+    resource_key = "asset"
 
 
 def asset_create(

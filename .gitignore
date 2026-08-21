@@ -163,3 +163,4 @@ config.json
 ezoff/test.py
 test.py
 *.pkl
+.cache/

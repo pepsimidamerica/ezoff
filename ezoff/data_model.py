@@ -142,14 +142,13 @@ class Asset(BaseModel):
             # Process Asset Class
             if CustomFieldID.ASSET_CLASS.value in field_values:
                 value = field_values[CustomFieldID.ASSET_CLASS.value]
-                if value is not None and isinstance(value, list):
-                    if len(value) > 0:
-                        try:
-                            self.asset_class = AssetClass(value[0])
-                        except ValueError as e:
-                            raise ValueError(
-                                f"Invalid asset class in asset {self.id}: {value[0]}"
-                            )
+                if value is not None and isinstance(value, list) and len(value) > 0:
+                    try:
+                        self.asset_class = AssetClass(value[0])
+                    except ValueError as e:
+                        raise ValueError(
+                            f"Invalid asset class in asset {self.id}: {value[0]}"
+                        ) from e
 
 
 class Inventory(BaseModel):
@@ -615,6 +614,9 @@ class WorkOrder(BaseModel):
     depot_id: int | None = Field(default=None)
 
     def model_post_init(self, __context: Any) -> None:
+        """
+        Parse custom fields into their own attributes.
+        """
         # Parse custom fields.
         if self.custom_fields:
             # Create lookup dictionary
@@ -828,6 +830,10 @@ class Reservation(BaseModel):
 
 
 class TokenInput(BaseModel):
+    """
+    Represents an input in certain dropdown menus in EZO.
+    """
+
     id: int
     name: str
 

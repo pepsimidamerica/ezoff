@@ -11,9 +11,32 @@ from ezoff._helpers import (
     _http_request,
     _parse_response,
 )
+from ezoff._resource import AsyncResource, Resource
 from ezoff.data_model import Bundle
 
 logger = logging.getLogger(__name__)
+
+
+class BundleResource(Resource[Bundle]):
+    """
+    Resource for bundles.
+    """
+
+    path = "/api/v2/bundles"
+    model = Bundle
+    results_key = "bundles"
+    resource_key = "bundle"
+
+
+class AsyncBundleResource(AsyncResource[Bundle]):
+    """
+    Asynchronous collection resource for bundles.
+    """
+
+    path = "/api/v2/bundles"
+    model = Bundle
+    results_key = "bundles"
+    resource_key = "bundle"
 
 
 def bundle_create(

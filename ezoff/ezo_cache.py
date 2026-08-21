@@ -47,7 +47,7 @@ class EzoCache:
         self._api_call_single_param_name = "entry_id"
         self._api_call_multi = None
         self._data_model: type[BaseModel] | None = None
-        self._not_found_exception: type[Exception] | None = None
+        self._not_found_exception: type[Exception] = Exception
 
     def _get_cache_entry(self, entry_id: int, force_api: bool = False) -> BaseModel:
         """
@@ -69,12 +69,12 @@ class EzoCache:
 
             except self._not_found_exception as e:
                 raise self._not_found_exception(
-                    f"Entry ID {entry_id} not found. {str(e)}"
-                )
+                    f"Entry ID {entry_id} not found. {e}"
+                ) from e
 
         return self.cache[entry_id]
 
-    def clear(self):
+    def clear(self) -> None:
         """
         Clears EZO cached data.
         """
@@ -112,7 +112,7 @@ class EzoCache:
 
 
 class AssetCache(EzoCache):
-    def __init__(self, debug=False, use_saved=False):
+    def __init__(self, debug: bool = False, use_saved: bool = False):
         super().__init__(debug, use_saved)
         self.cache: dict[int, Asset] = {}
         self._pickle_file_name = "ezo_asset_cache.pkl"
@@ -131,7 +131,7 @@ class AssetCache(EzoCache):
 
 
 class LocationCache(EzoCache):
-    def __init__(self, debug=False, use_saved=False):
+    def __init__(self, debug: bool = False, use_saved: bool = False):
         super().__init__(debug, use_saved)
         self.cache: dict[int, Location] = {}
         self._pickle_file_name = "ezo_location_cache.pkl"
@@ -150,7 +150,7 @@ class LocationCache(EzoCache):
 
 
 class MemberCache(EzoCache):
-    def __init__(self, debug=False, use_saved=False):
+    def __init__(self, debug: bool = False, use_saved: bool = False):
         super().__init__(debug, use_saved)
         self.cache: dict[int, Member] = {}
         self._pickle_file_name = "ezo_member_cache.pkl"
@@ -169,7 +169,7 @@ class MemberCache(EzoCache):
 
 
 class WorkOrderCache(EzoCache):
-    def __init__(self, debug=False, use_saved=False):
+    def __init__(self, debug: bool = False, use_saved: bool = False):
         super().__init__(debug, use_saved)
         self.cache: dict[int, WorkOrder] = {}
         self._pickle_file_name = "ezo_workorder_cache.pkl"

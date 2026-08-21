@@ -11,9 +11,32 @@ from ezoff._helpers import (
     _http_request,
     _parse_response,
 )
+from ezoff._resource import AsyncResource, Resource
 from ezoff.data_model import Vendor
 
 logger = logging.getLogger(__name__)
+
+
+class VendorResource(Resource[Vendor]):
+    """
+    Synchronous collection resource for vendors.
+    """
+
+    path = "/api/v2/vendors"
+    model = Vendor
+    results_key = "vendors"
+    resource_key = "vendor"
+
+
+class AsyncVendorResource(AsyncResource[Vendor]):
+    """
+    Asynchronous collection resource for vendors.
+    """
+
+    path = "/api/v2/vendors"
+    model = Vendor
+    results_key = "vendors"
+    resource_key = "vendor"
 
 
 def vendor_create(
