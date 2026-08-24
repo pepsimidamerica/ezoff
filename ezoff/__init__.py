@@ -26,6 +26,7 @@ from .assets import (
 )
 from .bundle import bundle_create, bundle_return, bundles_return
 from .checklists import checklists_return
+from .client import AsyncEZOClient, EZOClient
 from .data_model import (
     Asset,
     AssetHistoryItem,
@@ -186,6 +187,7 @@ __all__ = [
     "AssetCache",
     "AssetClass",
     "AssetHistoryItem",
+    "AsyncEZOClient",
     "Bundle",
     "Checklist",
     "ChecklistLineItem",
@@ -194,6 +196,7 @@ __all__ = [
     "CustomFieldID",
     "CustomRole",
     "DepreciationRate",
+    "EZOClient",
     "EzoCache",
     "Group",
     "Inventory",

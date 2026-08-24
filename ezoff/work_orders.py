@@ -468,7 +468,7 @@ def work_order_routing_update(
     assigned_to_id: str,
     start_dttm: datetime,
     due_dttm: datetime,
-    task_type_id: int = None,
+    task_type_id: int | None = None,
     supervisor_id: str | None = None,
     reviewer_id: str | None = None,
 ) -> WorkOrder | None:
