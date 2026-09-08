@@ -187,6 +187,7 @@ def _http_request(
     method: Literal["GET", "POST", "PATCH", "DELETE", "PUT", "HEAD", "OPTIONS"],
     url: str,
     headers: dict | None = None,
+    json: str | None = None,
     context: str = "HTTP Request",
     **kwargs,
 ) -> requests.Response:
@@ -254,6 +255,7 @@ def _http_request(
             method,
             url,
             headers=headers,
+            json=json,
             timeout=kwargs.pop("timeout", DEFAULT_TIMEOUT),
             **kwargs,
         )
@@ -288,6 +290,7 @@ def _get_paginated(
     url: str,
     headers: dict,
     results_key: str,
+    body: str | None = None,
     context: str = "API request",
 ) -> list[dict]:
     """
@@ -314,6 +317,7 @@ def _get_paginated(
                 method="GET",
                 url=url,
                 context=context,
+                json=body,
                 headers=headers,
             )
         except requests.exceptions.HTTPError:

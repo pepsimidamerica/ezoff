@@ -228,15 +228,13 @@ def work_orders_return(filter: dict | None = None) -> list[WorkOrder]:
             raise ValueError(
                 f"'{next(iter(invalid))}' is not a valid field for a work order."
             )
-        query_params = {f"filters[{k}]": v for k, v in filter.items()}
 
     url = f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/work_orders"
-    if query_params:
-        url += "?" + "&".join([f"{k}={v}" for k, v in query_params.items()])
 
     all_work_orders = _get_paginated(
         url=url,
         headers=_get_ezo_headers(),
+        body={"filters": filter},
         results_key="work_orders",
         context="Work Orders Return",
     )
