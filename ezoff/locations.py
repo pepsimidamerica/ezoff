@@ -98,18 +98,18 @@ def location_create(
     )
 
 
-def location_return(location_id: int) -> Location | None:
+def location_return(seq_no: int) -> Location | None:
     """
     Returns a particular location.
 
-    :param location_id: The ID of the location to return
+    :param location_id: The sequence number ID of the location to return
     :type location_id: int
     :return: The location with the specified ID, or None if not found
     :rtype: Location | None
     """
     response = _http_request(
         method="GET",
-        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/locations/{location_id}",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/api/v2/locations/{seq_no}",
         context="Location Return",
     )
 
