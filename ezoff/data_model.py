@@ -3,7 +3,7 @@ Module contains any pydantic models used throughout the package.
 """
 
 from datetime import date, datetime
-from typing import Any, Literal
+from typing import Any, Literal, Optional
 
 from ezoff.enums import AssetClass, CustomFieldID, LocationClass, ResourceType
 from pydantic import BaseModel, Field, computed_field, field_validator
@@ -275,7 +275,7 @@ class Location(BaseModel):
     default_return_time: datetime | None = Field(default=None)
     description: str | None = Field(default=None)
     documents_count: int
-    hidden_on_webstore: bool
+    hidden_on_webstore: Optional[bool] = Field(default=False)
     id: int
     identification_number: str | None = Field(default=None)
     latitude: float | None = Field(default=None)
@@ -289,7 +289,7 @@ class Location(BaseModel):
     street1: str | None = Field(default=None)
     street2: str | None = Field(default=None)
     updated_at: datetime | None = Field(default=None)
-    visible_on_webstore: bool
+    visible_on_webstore: Optional[bool] = Field(default=False)
     zip_code: str | None = Field(default=None)
 
     # Custom fields
