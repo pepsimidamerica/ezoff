@@ -10,11 +10,15 @@ development and testing workflows.
 import json
 import logging
 import pickle
+from collections.abc import Sequence
 from pathlib import Path
+from typing import TypeVar
 
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
+
+M = TypeVar("M", bound=BaseModel)
 
 
 def _canonical_filter_key(filter: dict | None) -> str:
@@ -53,18 +57,27 @@ class Cache:
     # ------------------------------------------------------------------
     # Single-resource access
     # ------------------------------------------------------------------
-    def get_single(self, path: str, item_id: int) -> BaseModel | None:
+    def get_single(self, path: str, item_id: int, model: type[M]) -> M | None:
         """
         Returns a cached single resource, or None if not present.
+
+        The cached entry is validated against the expected model type so that
+        stale entries loaded from disk are not returned if the model shape has
+        changed.
 
         :param path: The resource's URL path.
         :type path: str
         :param item_id: The resource id.
         :type item_id: int
+        :param model: The expected model type for the cache entry.
+        :type model: type[M]
         :return: The cached model, or None.
-        :rtype: BaseModel | None
+        :rtype: M | None
         """
-        return self._singles.get(path, {}).get(item_id)
+        item = self._singles.get(path, {}).get(item_id)
+        if isinstance(item, model):
+            return item
+        return None
 
     def set_single(self, path: str, item_id: int, model: BaseModel) -> None:
         """
@@ -95,24 +108,36 @@ class Cache:
     # ------------------------------------------------------------------
     # Collection access
     # ------------------------------------------------------------------
-    def get_collection(self, path: str, filter_key: str) -> list[BaseModel] | None:
+    def get_collection(
+        self,
+        path: str,
+        filter_key: str,
+        model: type[M],
+    ) -> list[M] | None:
         """
         Returns a cached collection, or None if not present.
+
+        Cached entries are validated against the expected model type.
 
         :param path: The resource's URL path.
         :type path: str
         :param filter_key: The canonicalized filter key.
         :type filter_key: str
+        :param model: The expected model type for the cache entries.
+        :type model: type[M]
         :return: The cached list of models, or None.
-        :rtype: list[BaseModel] | None
+        :rtype: list[M] | None
         """
-        return self._collections.get(path, {}).get(filter_key)
+        items = self._collections.get(path, {}).get(filter_key)
+        if items is None:
+            return None
+        return [item for item in items if isinstance(item, model)]
 
     def set_collection(
         self,
         path: str,
         filter_key: str,
-        models: list[BaseModel],
+        models: Sequence[BaseModel],
     ) -> None:
         """
         Stores a collection result in the cache.
@@ -121,10 +146,10 @@ class Cache:
         :type path: str
         :param filter_key: The canonicalized filter key.
         :type filter_key: str
-        :param models: The list of models to cache.
-        :type models: list[BaseModel]
+        :param models: The collection of models to cache.
+        :type models: Sequence[BaseModel]
         """
-        self._collections.setdefault(path, {})[filter_key] = models
+        self._collections.setdefault(path, {})[filter_key] = list(models)
 
     def clear_collections(self, path: str) -> None:
         """

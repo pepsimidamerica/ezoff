@@ -1,6 +1,6 @@
 [project]
 name = "ezoff"
-version = "1.25.1.1"
+version = "1.26"
 description = "Python package for interacting with EZOffice API"
 readme = "README.md"
 authors = [{ name = "Jordan Maynor", email = "jmaynor@pepsimidamerica.com" }]
@@ -19,6 +19,11 @@ license = { file = "LICENSE" }
 [project.urls]
 Homepage = "https://github.com/pepsimidamerica/ezoff"
 
+[project.optional-dependencies]
+client = [
+    "httpx2>=2.12.0",
+]
+
 [build-system]
 requires = ["uv_build>=0.7.7,<0.13"]
 build-backend = "uv_build"
@@ -29,6 +34,5 @@ module-root = ""
 
 [dependency-groups]
 dev = [
-    "httpx2>=2.12.0",
     "python-dotenv>=1.1.1",
 ]

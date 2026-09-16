@@ -6,6 +6,11 @@ API v1: https://ezo.io/ezofficeinventory/developers/
 API v2: https://www.ezofficeinventory.com/api-docs/index.html
 """
 
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from .client import AsyncEZOClient, EZOClient
+
 from .assets import (
     asset_activate,
     asset_checkin,
@@ -26,7 +31,6 @@ from .assets import (
 )
 from .bundle import bundle_create, bundle_return, bundles_return
 from .checklists import checklists_return
-from .client import AsyncEZOClient, EZOClient
 from .data_model import (
     Asset,
     AssetHistoryItem,
@@ -344,3 +348,27 @@ __all__ = [
     "work_orders_search",
     "work_orders_start_component_service",
 ]
+
+
+_CLIENT_EXPORTS = ("EZOClient", "AsyncEZOClient")
+
+
+def __getattr__(name: str) -> Any:
+    """
+    Lazily exposes the beta client classes on demand.
+
+    This keeps import ezoff free of the optional httpx2
+    dependency.
+
+    :param name: attribute name being looked up.
+    :type name: str
+    :return: The requested client class.
+    :raises AttributeError: If the name is not a lazy client export.
+    """
+    if name in _CLIENT_EXPORTS:
+        from importlib import import_module
+
+        value = getattr(import_module(".client", __name__), name)
+        globals()[name] = value
+        return value
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

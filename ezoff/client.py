@@ -4,6 +4,11 @@ Object-oriented, async-friendly entry point for the ezoff client.
 EZOClient and AsyncEZOClient expose resources as attributes
 (e.g. client.vendors) and provide ergonomic accessors for a single
 identified resource (e.g. client.vendor(3)).
+
+This client is BETA and subject to change.
+
+It requires the optional client extra to be installed:
+pip install ezoff[client].
 """
 
 import os

@@ -15,12 +15,12 @@ import logging
 from collections.abc import AsyncIterator, Iterator
 from typing import TYPE_CHECKING, Generic, TypeVar
 
-import httpx2 as httpx
 from ezoff._cache import _canonical_filter_key
 from ezoff.data_model import ResponseMessages
 from pydantic import BaseModel
 
 if TYPE_CHECKING:
+    import httpx2
     from ezoff.client import AsyncEZOClient, EZOClient
 
 logger = logging.getLogger(__name__)
@@ -29,7 +29,7 @@ M = TypeVar("M", bound=BaseModel)
 
 
 def _parse(
-    response: httpx.Response,
+    response: "httpx2.Response",
     key: str,
     model: type[M],
     success_status_codes: list[int] | None = None,
@@ -148,7 +148,7 @@ class Resource(_ResourceConfig[M]):
         key = _canonical_filter_key(filter)
 
         if not force:
-            cached = self._client.cache.get_collection(path, key)
+            cached = self._client.cache.get_collection(path, key, self.model)
             if cached is not None:
                 return cached
 
@@ -223,7 +223,7 @@ class BoundResource(Generic[M]):
         """
         path = self._resource._item_url(self.id)
         if not force and self._client._caching:
-            cached = self._client.cache.get_single(path, self.id)
+            cached = self._client.cache.get_single(path, self.id, self._resource.model)
             if cached is not None:
                 return cached
 
@@ -326,7 +326,7 @@ class AsyncResource(_ResourceConfig[M]):
         key = _canonical_filter_key(filter)
 
         if not force:
-            cached = self._client.cache.get_collection(path, key)
+            cached = self._client.cache.get_collection(path, key, self.model)
             if cached is not None:
                 return cached
 
@@ -401,7 +401,7 @@ class AsyncBoundResource(Generic[M]):
         """
         path = self._resource._item_url(self.id)
         if not force and self._client._caching:
-            cached = self._client.cache.get_single(path, self.id)
+            cached = self._client.cache.get_single(path, self.id, self._resource.model)
             if cached is not None:
                 return cached
 
