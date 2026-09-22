@@ -649,6 +649,22 @@ def work_order_mark_complete(
     return _parse_response(response=response, key="messages", model=ResponseMessages)
 
 
+def work_order_add_comment(work_order_id: int, comment: str) -> ResponseMessages | None:
+    response = _http_request(
+        method="POST",
+        url=f"https://{os.environ['EZO_SUBDOMAIN']}.ezofficeinventory.com/tasks/{work_order_id}/comments.json",
+        json={"comment":{"content": comment}},
+        context="Work Order Add Comment",
+    )
+
+    return _parse_response(
+        response=response,
+        key="messages",
+        model=ResponseMessages,
+        success_status_codes=[200],
+    )
+
+
 def work_order_add_linked_wo(
     work_order_id: int, wo_ids_to_link: list[int]
 ) -> ResponseMessages | None:

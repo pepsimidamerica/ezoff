@@ -146,6 +146,10 @@ def check_work_order_update():
 
     work_order_update(work_order_id=work_order_id, update_data=update_data)
 
+def check_work_order_comment():
+    work_order_id = 64358
+    work_order_add_comment(work_order_id=work_order_id, comment="Python comment 1234")
+
 
 def check_work_order_routing_update():
     work_order_routing_update(
@@ -172,7 +176,8 @@ def check_work_order_routing_update():
 # check_location_v1_return()
 
 
-check_work_order_create()
+# check_work_order_create()
+check_work_order_comment()
 
 # check_work_order_return()
 # check_work_orders_return()
