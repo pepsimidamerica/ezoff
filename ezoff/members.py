@@ -165,17 +165,20 @@ def members_return(filter: dict | None = None) -> list[Member]:
     """
     query_params = {}
     if filter:
-        invalid = filter.keys() - (
-            Member.model_fields.keys()
-            | {
-                "all",
-                "login_enabled",
-                "external",
-                "inactive",
-                "inactive_members_with_items",
-                "inactive_members_with_pending_associations",
-                "location_id",
-            }
+        invalid = (
+            filter.keys()
+            - (
+                Member.model_fields.keys()
+                | {
+                    "all",
+                    "login_enabled",
+                    "external",
+                    "inactive",  # FYI, filter may not work as expected. Noticed I was still getting inactive employees when doing inactive=False
+                    "inactive_members_with_items",
+                    "inactive_members_with_pending_associations",
+                    "location_id",
+                }
+            )
         )
         if invalid:
             raise ValueError(
