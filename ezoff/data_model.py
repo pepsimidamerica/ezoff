@@ -579,7 +579,7 @@ class WorkOrder(BaseModel):
     project_id: int | None = Field(default=None)
     recurrence_based_on_completion_date: bool
     recurrence_task_id: int | None = Field(default=None)
-    repeat_every_basis: int | None = Field(default=None)
+    repeat_every_basis: str | None = Field(default=None)
     repeat_every_value: int
     repetition_end_date: str | None = Field(default=None)
     repetition_starting: str | None = Field(default=None)
